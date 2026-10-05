@@ -1,73 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- You may freely edit this file. See commented blocks below for -->
-<!-- some examples of how to customize the build. -->
-<!-- (If you delete it and reopen the project it will be recreated.) -->
-<!-- By default, only the Clean and Build commands use this build script. -->
-<!-- Commands such as Run, Debug, and Test only use this build script if -->
-<!-- the Compile on Save feature is turned off for the project. -->
-<!-- You can turn off the Compile on Save (or Deploy on Save) setting -->
-<!-- in the project's Project Properties dialog box.-->
-<project name="MinesweeperOnline" default="default" basedir=".">
-    <description>Builds, tests, and runs the project MinesweeperOnline.</description>
-    <import file="nbproject/build-impl.xml"/>
-    <!--
+<project name="MinesweeperOnline" default="compile" basedir=".">
+    <description>MinesweeperOnline - Turn-based competitive online minesweeper system</description>
 
-    There exist several targets which are by default empty and which can be 
-    used for execution of your tasks. These targets are usually executed 
-    before and after some main targets. They are: 
+    <!-- Global Properties -->
+    <property name="src.dir" value="src"/>
+    <property name="build.dir" value="build"/>
+    <property name="build.classes.dir" value="${build.dir}/classes"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="dist.jar" value="${dist.dir}/MinesweeperOnline.jar"/>
+    <property name="lib.dir" value="lib"/>
 
-      -pre-init:                 called before initialization of project properties
-      -post-init:                called after initialization of project properties
-      -pre-compile:              called before javac compilation
-      -post-compile:             called after javac compilation
-      -pre-compile-single:       called before javac compilation of single file
-      -post-compile-single:      called after javac compilation of single file
-      -pre-compile-test:         called before javac compilation of JUnit tests
-      -post-compile-test:        called after javac compilation of JUnit tests
-      -pre-compile-test-single:  called before javac compilation of single JUnit test
-      -post-compile-test-single: called after javac compilation of single JUunit test
-      -pre-jar:                  called before JAR building
-      -post-jar:                 called after JAR building
-      -post-clean:               called after cleaning build products
+    <!-- Compilation and Runtime Classpath -->
+    <path id="classpath">
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
 
-    (Targets beginning with '-' are not intended to be called on their own.)
+    <path id="run.classpath">
+        <pathelement location="${build.classes.dir}"/>
+        <path refid="classpath"/>
+    </path>
 
-    Example of inserting an obfuscator after compilation could look like this:
+    <!-- Clean build products -->
+    <target name="clean" description="Removes build and distribution directories">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+        <echo message="Clean completed."/>
+    </target>
 
-        <target name="-post-compile">
-            <obfuscate>
-                <fileset dir="${build.classes.dir}"/>
-            </obfuscate>
-        </target>
+    <!-- Initialize build directories -->
+    <target name="init">
+        <mkdir dir="${build.classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
 
-    For list of available properties check the imported 
-    nbproject/build-impl.xml file. 
+    <!-- Compile Java sources -->
+    <target name="compile" depends="init" description="Compiles Java source files">
+        <javac srcdir="${src.dir}"
+               destdir="${build.classes.dir}"
+               classpathref="classpath"
+               includeantruntime="false"
+               encoding="UTF-8"
+               debug="true"
+               source="26"
+               target="26">
+        </javac>
+        <copy todir="${build.classes.dir}">
+            <fileset dir="${src.dir}">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <mkdir dir="bin"/>
+        <copy todir="bin" failonerror="false">
+            <fileset dir="${build.classes.dir}"/>
+        </copy>
+        <copy todir="C:/Users/ADMIN/AppData/Roaming/Antigravity IDE/User/workspaceStorage/20648212c74a7e3bb93485f77ca2fc45/redhat.java/jdt_ws/MinesweeperOnline_e2ee376f/bin" failonerror="false">
+            <fileset dir="${build.classes.dir}"/>
+        </copy>
+        <echo message="Compilation successful."/>
+    </target>
 
+    <!-- Package application into executable JAR -->
+    <target name="jar" depends="compile" description="Packages classes and libraries into a JAR">
+        <jar destfile="${dist.jar}" basedir="${build.classes.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="minesweeperonline.server.MainServer"/>
+                <attribute name="Class-Path" value="lib/gson.jar lib/mysql-connector-j.jar"/>
+            </manifest>
+        </jar>
+        <mkdir dir="${dist.dir}/lib"/>
+        <copy todir="${dist.dir}/lib">
+            <fileset dir="${lib.dir}">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+        <echo message="JAR created at: ${dist.jar}"/>
+    </target>
 
-    Another way to customize the build is by overriding existing main targets.
-    The targets of interest are: 
+    <!-- Run MainServer -->
+    <target name="run-server" depends="compile" description="Starts the Minesweeper TCP Server">
+        <echo message="Starting Minesweeper Server..."/>
+        <java classname="minesweeperonline.server.MainServer"
+              classpathref="run.classpath"
+              fork="true">
+        </java>
+    </target>
 
-      -init-macrodef-javac:     defines macro for javac compilation
-      -init-macrodef-junit:     defines macro for junit execution
-      -init-macrodef-debug:     defines macro for class debugging
-      -init-macrodef-java:      defines macro for class execution
-      -do-jar:                  JAR building
-      run:                      execution of project 
-      -javadoc-build:           Javadoc generation
-      test-report:              JUnit report generation
+    <!-- Run MainClient -->
+    <target name="run-client" depends="compile" description="Starts the Minesweeper Swing Client">
+        <echo message="Starting Minesweeper Client..."/>
+        <java classname="minesweeperonline.client.MainClient"
+              classpathref="run.classpath"
+              fork="true">
+        </java>
+    </target>
 
-    An example of overriding the target for project execution could look like this:
-
-        <target name="run" depends="MinesweeperOnline-impl.jar">
-            <exec dir="bin" executable="launcher.exe">
-                <arg file="${dist.jar}"/>
-            </exec>
-        </target>
-
-    Notice that the overridden target depends on the jar target and not only on 
-    the compile target as the regular run target does. Again, for a list of available 
-    properties which you can use, check the target you are overriding in the
-    nbproject/build-impl.xml file. 
-
-    -->
 </project>

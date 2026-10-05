@@ -1,0 +1,278 @@
+GAME DÒ MÌN THI ĐẤU ĐỐI KHÁNG ONLINENhóm 7 • Học phần Lập trình mạng
+Kiến trúc và thiết kế chung hệ thống
+Tài liệu trình bày kiến trúc và thiết kế dùng chung của nhóm. Hệ thống có một Server phục vụ nhiều Client; mỗi trận gồm hai người chơi. Server quản lý trạng thái chính thức, xử lý luật chơi và đồng bộ kết quả cho các Client.
+1 Phân công thực hiện
+Thành viên
+Phần việc phụ trách
+Trần Mạnh Khiêm
+Server & Network
+Latda Vongsikhai
+Game Logic
+Giang Văn Huy
+Database & Protocol
+Phạm Hồng Khởi
+Client & UI
+2 Phạm vi và nguyên tắc thiết kế
+Hệ thống hỗ trợ đăng ký, đăng nhập, xem người chơi online, thách đấu, thi đấu, chơi lại, xem lịch sử và bảng xếp hạng. Client hiển thị bàn của mình và bàn đối thủ thu nhỏ, đồng thời gửi yêu cầu thao tác đến Server.
+Server là trọng tài: Client không quyết định mìn, giá trị ô, thời gian, kết quả hoặc điểm số. Cơ sở dữ liệu chỉ được truy cập qua Server. Các trận độc lập nhưng thao tác trong cùng một trận được xử lý theo thứ tự do Server xác lập.
+Các thành phần và luồng dưới đây là thiết kế dự kiến từ hai tài liệu đầu vào, không phải báo cáo xác nhận đã triển khai hoặc kiểm thử. TCP, tên lớp và mô hình dữ liệu được cụ thể hóa để làm cơ sở tích hợp các phần việc.
+3 Kiến trúc chung của hệ thống
+Hình N1  Kiến trúc Client Server và các thành phần phía Server
+Mỗi Client duy trì kết nối TCP với Server. Network tiếp nhận yêu cầu và chuyển đến thành phần nghiệp vụ phù hợp; Server trả phản hồi và chủ động gửi thông báo khi danh sách online hoặc trạng thái trận thay đổi. Sơ đồ thể hiện quan hệ giao tiếp; dữ liệu phản hồi đi theo chiều ngược lại.
+3.1 Tách trách nhiệm giữa các thành phần
+Client & UI quản lý màn hình và thao tác người dùng. Server & Network quản lý kết nối, phiên đăng nhập, lời mời và điều phối trận. Game Logic sinh bàn, xử lý mở ô, BFS, cờ và phân xử. Database & Protocol thống nhất cấu trúc thông điệp và lưu dữ liệu bền vững.
+3.2 Dữ liệu trong bộ nhớ và dữ liệu lưu trữ
+Socket, danh sách online, lời mời, bàn cờ và deadline được quản lý trong bộ nhớ Server. Tài khoản, kết quả, điểm số và lịch sử được lưu vào cơ sở dữ liệu. Khi kết thúc trận, Server chuyển dữ liệu kết quả sang tầng lưu trữ.
+4 Thiết kế chung các chức năng
+Nhóm chức năng
+Thiết kế xử lý
+Tài khoản và sảnh
+Đăng ký, xác thực đăng nhập; ánh xạ kết nối với người chơi. Danh sách online có tên, điểm và trạng thái RẢNH hoặc ĐANG THI ĐẤU.
+Thách đấu
+Chỉ mời người khác đang rảnh. Lời mời PENDING có hạn 30 giây; giữ chỗ hai người để tránh tạo trận trùng. ACCEPT tạo trận; REJECT hoặc hết hạn giải phóng giữ chỗ.
+Khởi tạo trận
+Hai bàn 12 × 12 độc lập; mỗi bàn 23 mìn và 121 ô an toàn. READY 5 giây rồi PLAYING tối đa 5 phút với một deadline chung.
+Mở ô
+Kiểm tra người gửi, trận, thời gian, tọa độ và ô. Ô số mở trực tiếp; ô 0 mở bằng BFS và mở các ô số ở biên. Không mở tự động mìn hoặc ô đang có cờ.
+Đặt và gỡ cờ
+Chỉ đặt trên ô chưa mở, chưa có cờ; tối đa 23 cờ hiện tại. Gỡ cờ trước khi mở ô có cờ. Server không xác nhận cờ đúng hay sai.
+Đồng bộ
+Gửi kết quả cho người thao tác và trạng thái được phép hiển thị cho đối thủ. Không gửi bản đồ mìn ẩn qua dữ liệu đồng bộ.
+Sau trận
+Chốt kết quả, cập nhật điểm và lịch sử. Hai người cùng PLAY AGAIN tạo trận mới; EXIT hoặc hết thời gian chờ thì trở về sảnh.
+Mỗi thao tác hợp lệ làm tăng totalActions một lần. Các ô mở thêm bởi BFS làm tăng openedSafeCells nhưng không tăng số thao tác. flagsPlaced là tổng số lần đặt cờ; flagsRemoved là tổng số lần gỡ cờ; currentFlags là số cờ hiện còn trên bàn.
+Tài liệu nguồn chưa quy định bảo đảm an toàn ở lần mở đầu tiên; thiết kế này giữ cách sinh bàn khi tạo trận và không tự thêm luật bảo vệ lần mở đầu.
+5 Trạng thái trận và quy tắc kết thúc
+Hình N2  Vòng đời GameSession
+FINISHED là trạng thái kết thúc được bổ sung để mô hình hóa thống nhất. VICTORY, DEFEAT, DRAW và FORFEIT là kết quả của từng người chơi, không phải bốn trạng thái đồng thời của một GameSession. TIMEOUT là bước khóa thao tác và phân xử khi hết giờ.
+Mở trúng mìn: người mở thua ngay. Mở đủ 121 ô an toàn: người hoàn thành trước thắng ngay. Các yêu cầu gần đồng thời được xét theo thứ tự xử lý chính thức; sau khi chốt trận, yêu cầu tiếp theo bị từ chối.
+Khi TIMEOUT, lần lượt so sánh: nhiều openedSafeCells hơn; ít totalActions hơn; nhiều flagsPlaced hơn. Nếu cả ba bằng nhau thì hòa. flagsRemoved không tham gia phân xử.
+Thoát hoặc mất kết nối trong READY hay PLAYING: người rời trận nhận FORFEIT, đối thủ thắng. Mất kết nối khi chỉ có lời mời không bị trừ điểm. Trận đã kết thúc không bị chốt lại khi Client ngắt kết nối.
+Kết quả
+Điểm theo luật
+Thống kê
+VICTORY
++5
+wins +1
+DEFEAT
+−3
+losses +1
+FORFEIT
+−5
+losses +1
+DRAW
++1 mỗi người
+draws +1 mỗi người
+6 Thiết kế giao tiếp và dữ liệu
+6.1 Các nhóm thông điệp
+Mục đích
+Yêu cầu từ Client
+Tài khoản và sảnh
+REGISTER, LOGIN, GET_ONLINE_PLAYERS
+Lời mời
+CHALLENGE, ACCEPT, REJECT
+Thi đấu
+OPEN_CELL, PLACE_FLAG, REMOVE_FLAG, FORFEIT
+Sau trận
+PLAY_AGAIN; yêu cầu EXIT, xem lịch sử và bảng xếp hạng cần thống nhất thêm tên với phần Protocol
+Đề xuất khung thông điệp gồm type, requestId, gameId khi liên quan đến trận và payload. Phản hồi chứa trạng thái thành công hoặc mã lỗi. Thông báo cập nhật có gameId và số phiên bản trạng thái để Client nhận biết thứ tự. Cách mã hóa và phân định thông điệp trên luồng TCP do phần Protocol thống nhất; không giả định một lần đọc TCP là một thông điệp hoàn chỉnh.
+6.2 Mô hình lưu trữ khái niệm
+Thực thể
+Dữ liệu chính
+User
+Mã người chơi, tên đăng nhập, dữ liệu xác thực, tổng điểm và thống kê tổng.
+Match
+Mã trận, thời điểm bắt đầu/kết thúc, thời lượng, nguyên nhân kết thúc.
+MatchPlayer
+Mã trận và mã người chơi; kết quả, thống kê ô/cờ/thao tác; điểm trước, mức thay đổi thực tế, điểm sau.
+Một User có nhiều MatchPlayer; mỗi Match có đúng hai MatchPlayer. Cặp mã trận và mã người chơi là duy nhất để tránh ghi kết quả trùng. Ghi kết quả của hai người và cập nhật điểm trong cùng giao dịch cơ sở dữ liệu.
+Điểm sau trận = max(0, điểm trước + mức điểm theo luật). Lịch sử lưu thay đổi thực tế bằng điểm sau trừ điểm trước. Bảng xếp hạng sắp theo tổng điểm giảm dần, sau đó số trận thắng giảm dần.
+6.3 Tích hợp và kiểm soát đồng thời
+Một hàng đợi tuần tự hoặc vùng khóa cho từng GameSession bảo vệ cập nhật trạng thái. Kiểm tra deadline ngay trong vùng xử lý này. Việc đóng trận phải có cơ chế chỉ thực hiện một lần để tránh cộng điểm kép khi trúng mìn, hết giờ và mất kết nối xảy ra gần nhau.
+Nội dung cá nhân
+Trần Mạnh Khiêm — B23DCCN437Phần việc: Server & Network
+1.Phần việc tôi phụ trách
+Phần việc cá nhân được trình bày thành bốn nhóm chức năng. Mỗi nhóm có một biểu đồ mô tả cách xử lý và phần giải thích bên dưới; bảng cuối tài liệu đối chiếu các hình với chức năng tương ứng.
+Nhóm chức năng
+Nội dung tôi thực hiện
+Kết nối và người chơi online
+Nhận nhiều kết nối, tiếp nhận yêu cầu đăng nhập, gắn tài khoản đã xác thực với kết nối và cập nhật danh sách online.
+Thách đấu và tạo trận
+Kiểm tra lời mời, gửi lời mời đến đối thủ, xử lý phản hồi hoặc hết hạn và tạo phiên đấu cho hai người.
+Điều phối và đồng bộ trận đấu
+Nhận thao tác, gọi Game Logic, quản lý thời gian, gửi cập nhật và kết quả cho hai Client; phối hợp lưu kết quả và xử lý chơi lại.
+Xử lý mất kết nối
+Phát hiện ngắt kết nối, xử lý theo trạng thái hiện tại, thông báo và giải phóng tài nguyên.
+Cách triển khai và phối hợp trong nhóm
+Phương án triển khai là Java TCP Socket: ServerSocket nhận kết nối mới; mỗi Client có một Socket và một bộ xử lý kết nối. Bộ xử lý này có thể đặt tên là ClientHandler. Các Client giữ kết nối để Server có thể nhận yêu cầu và chủ động gửi thông báo.
+2. Kết nối và quản lý người chơi online
+Hình 1  Tiếp nhận kết nối và đưa người chơi vào sảnh
+Giải thích biểu đồ
+Khi Client kết nối, Server nhận Socket và tạo bộ xử lý riêng để tiếp tục trao đổi dữ liệu với Client đó. Server vẫn tiếp tục nhận các Client khác; một người chơi chờ gửi yêu cầu không làm các người chơi còn lại phải chờ theo.
+Khi nhận yêu cầu đăng nhập, Server gọi chức năng xác thực tài khoản. Nếu thông tin sai, Server trả lỗi và chưa đưa người chơi vào sảnh. Nếu đúng, Server lưu tài khoản nào đang sử dụng kết nối nào, rồi cập nhật danh sách online.
+Danh sách online gồm tên, điểm và trạng thái rảnh hoặc đang thi đấu. Khi có người đăng nhập, rời hệ thống hoặc vào trận, Server gửi thông tin thay đổi để Client cập nhật sảnh. Các mũi tên rẽ nhánh trong hình thể hiện đăng nhập hợp lệ hoặc không hợp lệ.
+3. Xử lý thách đấu và tạo trận
+Hình 2  Xử lý lời mời thi đấu và bắt đầu trận
+Giải thích biểu đồ
+A chọn B để thách đấu. Server kiểm tra B đang online, không phải chính A, cả hai đang rảnh và chưa bị giữ chỗ bởi lời mời khác. Nếu không hợp lệ, Server trả lỗi. Nếu hợp lệ, Server giữ chỗ cả hai, gửi lời mời cho B và chờ tối đa 30 giây.
+B từ chối hoặc lời mời hết hạn: Server hủy lời mời và giải phóng giữ chỗ. B chấp nhận: Server kiểm tra lại người phản hồi, thời hạn và trạng thái lời mời, sau đó tạo một GameSession, tức một phiên đấu chứa hai người chơi. Việc kiểm tra và giữ chỗ được bảo vệ để tránh ghép một người vào hai trận cùng lúc.
+Server gọi Game Logic tạo hai bàn 12 × 12, mỗi bàn 23 mìn độc lập; chuyển READY trong 5 giây rồi bắt đầu PLAYING. Trong READY, người chơi chưa được mở ô hoặc thay đổi cờ. Khi bắt đầu PLAYING, Server đặt thời hạn chung 5 phút.
+4. Điều phối và đồng bộ trận đấu
+Hình 3  Xử lý thao tác và gửi cập nhật cho hai người chơi
+Giải thích biểu đồ
+Khi nhận yêu cầu mở ô, đặt cờ hoặc gỡ cờ, Server xác định người gửi từ phiên đã đăng nhập, tìm đúng trận và kiểm tra quyền, trạng thái PLAYING, thời gian còn lại. Yêu cầu sai bị từ chối và không làm thay đổi thống kê.
+Yêu cầu hợp lệ được chuyển cho Game Logic để xử lý ô, BFS hoặc cờ. Sau đó Server điều phối cập nhật, kiểm tra kết thúc và gửi trạng thái phù hợp cho cả hai Client. Không gửi vị trí mìn còn ẩn. Các thao tác trong cùng trận được xử lý tuần tự để tránh cập nhật chồng chéo.
+Nếu trận kết thúc, Server chốt kết quả một lần, gọi tầng Database lưu lịch sử và cập nhật điểm, rồi thông báo kết quả. Server cũng chủ động xử lý khi hết 5 phút, kể cả khi không có ai gửi thao tác; việc hết giờ dùng cùng cơ chế kiểm tra và chốt kết quả.
+5. Xử lý người chơi mất kết nối
+Hình 4  Xử lý mất kết nối theo trạng thái người chơi
+Giải thích biểu đồ
+Bộ xử lý kết nối phát hiện Client đóng kết nối hoặc gặp lỗi đọc/ghi dữ liệu, sau đó kiểm tra người chơi đang ở sảnh, chờ lời mời, đang thi đấu hay chờ chơi lại. Có thể bổ sung cơ chế kiểm tra kết nối định kỳ theo quy ước Protocol để phát hiện kết nối bị treo.
+Nếu chưa có trận đang diễn ra, Server hủy lời mời hoặc yêu cầu chơi lại liên quan, giải phóng giữ chỗ và không thay đổi điểm. Nếu trận đang READY hoặc PLAYING, Server xử lý người mất kết nối là FORFEIT, đối thủ là VICTORY, theo luật nhóm.
+Việc kết thúc chỉ được chốt một lần. Nếu trận đã kết thúc trước khi xử lý sự kiện mất kết nối, Server giữ nguyên kết quả cũ. Sau đó Server thông báo cho các Client liên quan, cập nhật danh sách online, đóng Socket và hủy các lịch hẹn không còn cần thiết.
+6. Ánh xạ hình vẽ với chức năng cá nhân
+Bảng dưới đây đối chiếu mỗi biểu đồ với nhóm chức năng đã nêu ở mục 1. Người đọc có thể dùng bảng để biết hình nào mô tả phần việc nào của tôi.
+Hình vẽ
+Chức năng cá nhân
+Nội dung được thể hiện
+Hình 1
+Kết nối và người chơi online
+Tiếp nhận Client, nhận yêu cầu đăng nhập, gắn tài khoản với kết nối và cập nhật danh sách online.
+Hình 2
+Thách đấu và tạo trận
+Kiểm tra người chơi, gửi lời mời, chờ phản hồi, xử lý từ chối/hết hạn, tạo phiên đấu và bắt đầu trận.
+Hình 3
+Điều phối và đồng bộ trận đấu
+Nhận thao tác, kiểm tra quyền và thời gian, gọi Game Logic, gửi cập nhật, chốt và phối hợp lưu kết quả. Timer và chơi lại được giải thích dưới hình.
+Hình 4
+Xử lý mất kết nối
+Phân biệt chưa có trận và đang thi đấu; hủy lời mời hoặc xử lý FORFEIT; thông báo và dọn kết nối.
+Sinh viên Phạm Hồng Khởi-B23DCCN451
+Phần việc: Client&UI 
+2.1. CLIENT
+2.1.1. Kiến trúc Client
+Kiến trúc Client mô tả cách các thành phần phía máy người chơi được tổ chức và phối hợp. Bao gồm UI, Client Controller, Client State/Data và Network Client. UI nhận thao tác người chơi; Controller xử lý sự kiện và điều phối; Network Client giao tiếp với Server; State/Data lưu trạng thái cần thiết để cập nhật UI. Client không tự quyết định kết quả trận đấu, mà nhận kết quả chính thức từ Server rồi hiển thị cho người chơi. 
+Biểu đồ
+2.1.2. Kết nối và giao tiếp với Server
+Client thực hiện kết nối với Server để trao đổi dữ liệu trong quá trình sử dụng hệ thống. Sau khi thiết lập kết nối, Client gửi các yêu cầu phát sinh từ thao tác của người chơi và tiếp nhận phản hồi hoặc thông báo từ Server để cập nhật trạng thái và giao diện.
+Luồng giao tiếp cơ bản được thực hiện theo trình tự:
+2.1.3. Xử lý yêu cầu từ người dùng
+Client tiếp nhận các thao tác của người chơi thông qua giao diện UI và chuyển các thao tác này thành yêu cầu tương ứng. Client Controller chịu trách nhiệm tiếp nhận sự kiện, xác định thao tác cần thực hiện và điều phối việc gửi yêu cầu thông qua Network Client.
+Các thao tác chính của người chơi gồm đăng nhập, đăng ký, xem danh sách người chơi, gửi hoặc phản hồi lời mời thách đấu, mở ô, đặt hoặc bỏ cờ, đầu hàng và thực hiện các thao tác sau trận đấu.
+2.1.4. Tiếp nhận và xử lý dữ liệu từ Server
+Sau khi xử lý các yêu cầu từ Client, Server gửi phản hồi hoặc thông báo tương ứng về Client. Network Client tiếp nhận dữ liệu và chuyển cho Client Controller xử lý.
+Client Controller phân tích dữ liệu nhận được, cập nhật Client State/Data và thông báo cho UI thay đổi nội dung hiển thị. Các dữ liệu nhận được có thể bao gồm trạng thái trận đấu, thông tin ô được mở, trạng thái đối thủ, thông báo đóng băng, kết quả trận đấu và các thông tin liên quan khác.
+2.1.5. Quản lý trạng thái Client
+Client duy trì các trạng thái và dữ liệu cần thiết để phục vụ quá trình hiển thị và tương tác với hệ thống. Các trạng thái này được cập nhật dựa trên thao tác của người chơi và dữ liệu chính thức nhận được từ Server. Khi nhận dữ liệu mới từ Server, Client cập nhật trạng thái tương ứng và đồng bộ với UI.
+2.1.6. Đồng bộ Client với UI
+Client thực hiện đồng bộ dữ liệu và trạng thái với UI để giao diện phản ánh đúng trạng thái hiện tại của hệ thống. Khi người chơi thực hiện thao tác hoặc Client nhận được dữ liệu mới từ Server, Client Controller cập nhật Client State/Data tương ứng. UI sau đó sử dụng trạng thái mới để cập nhật các thành phần hiển thị.
+Quá trình đồng bộ được thực hiện theo hai chiều:
+Từ UI đến Client: UI phát sinh sự kiện khi người chơi thực hiện thao tác. Client Controller tiếp nhận và xử lý sự kiện tương ứng.
+Từ Client đến UI: Khi Client State/Data thay đổi, UI cập nhật các thành phần hiển thị như bàn cờ, thông tin đối thủ, thời gian, trạng thái trận đấu và kết quả.
+ 
+Ánh xạ hình vẽ với chức năng:
+STT
+Thành phần Client
+Chức năng 
+1
+UI
+Tiếp nhận thao tác người chơi và hiển thị thông tin
+2
+Client Controller
+Tiếp nhận sự kiện từ UI, điều phối xử lý và cập nhật trạng thái
+3
+Network Client
+Thiết lập kết nối, gửi yêu cầu và nhận dữ liệu từ Server
+4
+Client State / Data
+Lưu trữ và cập nhật trạng thái, dữ liệu cần thiết cho Client
+5
+Server
+Xử lý yêu cầu và cung cấp dữ liệu chính thức cho Client
+2.2. UI
+2.2.1. Login / Register
+2.2.2. Lobby
+2.2.3. Challenge
+2.2.4. Game
+2.2.5. Result
+2.2.6. Statistics / Ranking
+2.2.7 Ánh xạ UI → chức năng
+STT
+Hình giao diện
+Thành phần chính trên giao diện
+Chức năng được ánh xạ
+1
+Hình 2.2.1 Giao diện Đăng nhập / Đăng ký
+Ô tên đăng nhập, ô mật khẩu, nút Đăng nhập, nút Đăng ký
+Cho phép người chơi đăng nhập vào hệ thống hoặc tạo tài khoản mới. Sau khi đăng nhập thành công, Client chuyển người chơi đến màn hình chính.
+2
+Hình 2.2.2 Giao diện Lobby
+Thông tin người chơi hiện tại, danh sách người chơi online, điểm số, trạng thái RẢNH/ĐANG THI ĐẤU, nút Thách đấu
+Hiển thị danh sách người chơi đang online và trạng thái của từng người. Cho phép người chơi chọn một đối thủ đang RẢNH để gửi lời mời thách đấu.
+3
+Hình 2.2.4 Giao diện Game – trạng thái PLAYING
+Bàn mìn của người chơi, bàn đối thủ, đồng hồ chung 5 phút, số ô đã mở, số cờ đang sử dụng
+Cho phép người chơi thực hiện các thao tác mở ô bằng chuột trái và cắm/tháo cờ bằng chuột phải. Hiển thị tiến độ của bản thân và đối thủ trong thời gian thực.
+4
+Hình 2.2.5 Giao diện Game – trạng thái kết thúc
+Kết quả VICTORY/DEFEAT/DRAW/FORFEIT, thống kê trận đấu, điểm thay đổi
+Hiển thị kết quả trận đấu và các thông tin thống kê như số ô đã mở, số thao tác, số lần cắm cờ và điểm số thay đổi.
+5
+Hình 2.2.6 Giao diện Statistics / Ranking
+Danh sách thống kê, bảng xếp hạng
+Cho phép người chơi xem bảng xếp hạng người chơi theo tổng điểm và tổng số trận thắng.
+Giang Văn Huy
+MÔ TẢ BIỂU ĐỒ Database & Protocol
+ 
+Hình vẽ
+Chức năng
+Nội dung
+Hình 1
+Thiết kế csdl
+Mô hình hóa các thực thể User, Match, MatchPlayer để lưu trữ dữ liệu bền vững của hệ thống.
+Hình 2
+Giao thức thông điệp tcp
+Mô hình hóa các thực thể User, Match, MatchPlayer để lưu trữ dữ liệu bền vững của hệ thống.
+Hình 3
+Xử lý giao dịch lưu kết quả
+Đảm bảo cập nhật điểm số và thống kê của cả hai người chơi trong cùng một giao dịch cơ sở dữ liệu (Transaction)
+Latda Vongsikhai — B23DCCN989
+Phần công việc cá nhân: Game Logic
+Vai trò của Game Logic
+Trong hệ thống Game Dò mìn thi đấu đối kháng online, Game Logic là phần xử lý các luật chính của trò chơi. Phần này chịu trách nhiệm quản lý trạng thái của bàn cờ và xử lý các thao tác trong quá trình thi đấu. Các chức năng chính gồm khởi tạo bàn cờ, xử lý mở ô, mở rộng vùng ô an toàn bằng thuật toán BFS, đặt và gỡ cờ, đồng thời kiểm tra và xác định kết quả của trận đấu.
+2. Luồng xử lý tổng quát
+ 
+Hình 1. Luồng xử lý tổng quát của Game Logic
+Khi nhận thao tác từ Server, Game Logic xác định loại thao tác và thực hiện xử lý mở ô, đặt cờ hoặc gỡ cờ. Sau đó, hệ thống cập nhật trạng thái bàn cờ, kiểm tra điều kiện kết thúc và xác định kết quả trận đấu nếu trận đấu kết thúc.
+3. Các chức năng của Game Logic
+3.1. Khởi tạo bàn cờ
+Hình 2. Quy trình khởi tạo bàn cờ
+Khi bắt đầu trận đấu, Game Logic thực hiện khởi tạo bàn cờ 12 × 12, gồm 144 ô và sinh ngẫu nhiên 23 vị trí mìn. Sau đó, hệ thống tính số mìn lân cận cho các ô còn lại. Trận đấu chuyển sang trạng thái READY trong 5 giây và sau đó chuyển sang PLAYING với thời gian tối đa 5 phút.
+3.2. Xử lý mở ô 
+Khi người chơi thực hiện thao tác mở ô, Game Logic kiểm tra tính hợp lệ của ô và xử lý theo giá trị của ô. Nếu ô chứa mìn thì người chơi thua. Nếu ô là ô số thì mở ô đó. Nếu ô có giá trị 0 thì sử dụng BFS để mở rộng vùng ô an toàn liên tiếp.
+Hình 3. Luồng xử lý thao tác mở ô 
+Khi người chơi chọn một ô để mở, Game Logic sẽ kiểm tra ô đó có thể mở hay không. Nếu ô có mìn thì người chơi thua. Nếu ô có số thì mở ô đó. Nếu ô có giá trị 0 thì hệ thống dùng BFS để mở thêm các ô an toàn xung quanh. Sau đó, trạng thái bàn cờ được cập nhật.
+3.3. Quản lý cờ
+Người chơi có thể đặt cờ vào ô chưa mở để đánh dấu vị trí nghi ngờ có mìn. Khi muốn bỏ đánh dấu, người chơi có thể gỡ cờ. Game Logic sẽ kiểm tra điều kiện trước khi thực hiện và cập nhật lại trạng thái của ô cũng như số lượng cờ hiện tại.
+Hình 4. Luồng xử lý đặt và gỡ cờ
+3.4. Kiểm tra kết thúc và phân xử
+Trong quá trình thi đấu, Game Logic kiểm tra các điều kiện kết thúc trận đấu. Nếu người chơi mở trúng ô mìn thì trận đấu kết thúc và người chơi thua. Nếu mở đủ 121 ô an toàn thì người chơi thắng. Khi hết thời gian, hệ thống thực hiện phân xử dựa trên các thông tin thống kê của trận đấu. Nếu các tiêu chí phân xử đều bằng nhau thì kết quả là hòa.
+Hình 5. Kiểm tra kết thúc và phân xử
+4. Ánh xạ biểu đồ với chức năng của Game Logic
+Hình vẽ
+Chức năng
+Nội dung chính
+Hình 1
+Luồng xử lý tổng quát
+Thể hiện luồng xử lý các thao tác của Game Logic trong trận đấu.
+Hình 2
+Khởi tạo bàn cờ
+Tạo bàn cờ 12 × 12, sinh 23 mìn và tính giá trị các ô; thiết lập trạng thái READY và PLAYING.
+Hình 3
+Xử lý mở ô
+Kiểm tra ô cần mở, xử lý ô mìn, ô số và sử dụng BFS khi ô có giá trị 0.
+Hình 4
+Quản lý cờ
+Xử lý đặt cờ, gỡ cờ và cập nhật trạng thái, số lượng cờ.
+Hình 5
+Kiểm tra kết thúc và phân xử
+Xác định VICTORY, DEFEAT, FORFEIT và phân xử khi TIMEOUT theo các tiêu chí.
