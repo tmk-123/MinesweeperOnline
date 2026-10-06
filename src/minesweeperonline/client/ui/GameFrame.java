@@ -41,6 +41,9 @@ public class GameFrame extends JFrame {
     private int mySafeCells = 0;
     private int myFlags = 0;
     private int myActions = 0;
+    private int oppSafeCells = 0;
+    private int oppFlags = 0;
+    private int oppActions = 0;
 
     public GameFrame(ServerConnection connection, User currentUser, String opponentName, String gameId, JFrame parentLobby) {
         this.connection = connection;
@@ -56,7 +59,7 @@ public class GameFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Trận đấu [" + gameId + "] (" + currentUser.getUsername() + " vs " + opponentName + ")");
-        setSize(820, 720);
+        setSize(820, 740);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
@@ -241,7 +244,7 @@ public class GameFrame extends JFrame {
         if (p.has("totalActions")) {
             myActions = p.get("totalActions").getAsInt();
         }
-        infoPanel.updateSelfStats(mySafeCells, myFlags);
+        infoPanel.updateSelfStats(mySafeCells, myFlags, myActions);
     }
 
     private void onFlagPlaced(JsonObject p) {
@@ -254,7 +257,7 @@ public class GameFrame extends JFrame {
         if (p.has("totalActions")) {
             myActions = p.get("totalActions").getAsInt();
         }
-        infoPanel.updateSelfStats(mySafeCells, myFlags);
+        infoPanel.updateSelfStats(mySafeCells, myFlags, myActions);
     }
 
     private void onFlagRemoved(JsonObject p) {
@@ -267,13 +270,20 @@ public class GameFrame extends JFrame {
         if (p.has("totalActions")) {
             myActions = p.get("totalActions").getAsInt();
         }
-        infoPanel.updateSelfStats(mySafeCells, myFlags);
+        infoPanel.updateSelfStats(mySafeCells, myFlags, myActions);
     }
 
     private void onGameUpdate(JsonObject p) {
-        int oppSafe = p.has("opponentOpenedSafeCells") ? p.get("opponentOpenedSafeCells").getAsInt() : 0;
-        int oppFlags = p.has("opponentCurrentFlags") ? p.get("opponentCurrentFlags").getAsInt() : 0;
-        infoPanel.updateOpponentStats(oppSafe, oppFlags);
+        if (p.has("opponentOpenedSafeCells")) {
+            oppSafeCells = p.get("opponentOpenedSafeCells").getAsInt();
+        }
+        if (p.has("opponentCurrentFlags")) {
+            oppFlags = p.get("opponentCurrentFlags").getAsInt();
+        }
+        if (p.has("opponentTotalActions")) {
+            oppActions = p.get("opponentTotalActions").getAsInt();
+        }
+        infoPanel.updateOpponentStats(oppSafeCells, oppFlags, oppActions);
 
         // Update opponent mini-board
         if (p.has("openedCoords") && p.get("openedCoords").isJsonArray()) {

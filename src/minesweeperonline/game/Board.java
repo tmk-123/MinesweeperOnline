@@ -32,6 +32,7 @@ public class Board {
     private int flagsPlaced;
     private int flagsRemoved;
     private int totalActions;
+    private boolean minesGenerated;
 
     public Board() {
         this.grid = new Cell[ROWS][COLS];
@@ -44,7 +45,8 @@ public class Board {
     }
 
     /**
-     * Initializes the board and places 23 mines randomly.
+     * Initializes the board state without placing mines.
+     * Mines are generated lazily upon the first cell opening click.
      */
     public final void initialize() {
         this.openedSafeCells = 0;
@@ -52,8 +54,13 @@ public class Board {
         this.flagsPlaced = 0;
         this.flagsRemoved = 0;
         this.totalActions = 0;
+        this.minesGenerated = false;
 
-        MineGenerator.generateMines(grid, ROWS, COLS, TOTAL_MINES);
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                this.grid[r][c].reset();
+            }
+        }
     }
 
     public boolean isValidCoordinate(int r, int c) {
@@ -65,8 +72,14 @@ public class Board {
         return grid[r][c];
     }
 
+    public boolean isMinesGenerated() {
+        return minesGenerated;
+    }
+
     /**
      * Executes OPEN_CELL action.
+     * If this is the first open action, generates 23 mines ensuring the first
+     * cell has 0 adjacent mines (safe 3x3 neighborhood) and expands via BFS.
      *
      * @param r row coordinate (0-11)
      * @param c col coordinate (0-11)
@@ -81,6 +94,12 @@ public class Board {
         Cell target = grid[r][c];
         if (target.isOpened() || target.isFlagged()) {
             return OpenResult.INVALID;
+        }
+
+        // Lazy mine generation on first click: guarantees target cell has 0 adjacent mines
+        if (!this.minesGenerated) {
+            MineGenerator.generateMines(grid, ROWS, COLS, TOTAL_MINES, r, c);
+            this.minesGenerated = true;
         }
 
         // Each valid player click increases totalActions by 1

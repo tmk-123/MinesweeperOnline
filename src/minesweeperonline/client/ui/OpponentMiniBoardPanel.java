@@ -87,8 +87,9 @@ public class OpponentMiniBoardPanel extends JPanel {
                     int[] xPoints = {x + 5, x + 13, x + 5};
                     int[] yPoints = {y + 4, y + 8, y + 12};
                     g2.fillPolygon(xPoints, yPoints, 3);
-                    g2.setColor(Color.DARK_GRAY);
-                    g2.drawLine(x + 5, y + 4, x + 5, y + 15);
+                    g2.setColor(new Color(50, 50, 50));
+                    g2.drawLine(x + 5, y + 3, x + 5, y + 14);
+                    g2.drawLine(x + 3, y + 14, x + 7, y + 14);
 
                 } else {
                     // Hidden cell

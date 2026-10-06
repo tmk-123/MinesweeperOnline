@@ -22,11 +22,47 @@ public class TestPhase6 {
         System.out.println("       RUNNING PHASE 6 GAME LOGIC VERIFICATION    ");
         System.out.println("==================================================");
 
-        // 1. Validate Board and MineGenerator counts
+        // 1. Validate Initial Board state (No mines generated yet)
         Board board = new Board();
+        assert !board.isMinesGenerated() : "Mines must NOT be generated when game starts!";
+        int initialMines = 0;
+        for (int r = 0; r < Board.ROWS; r++) {
+            for (int c = 0; c < Board.COLS; c++) {
+                Cell cell = board.getCell(r, c);
+                if (cell.isMine()) initialMines++;
+                assert cell.getAdjacentMines() == 0 : "Adjacent mines must be 0 before generation!";
+                assert !cell.isOpened() : "Cell must be unopened at start!";
+            }
+        }
+        assert initialMines == 0 : "Board must have 0 mines before first click!";
+        System.out.println("[PASS] Board initially created: 144 clean cells, no mines generated yet.");
+
+        // 2. Validate Flagging logic & limits before first click
+        int testFlagR = 0, testFlagC = 0;
+        boolean flagPlaced = board.placeFlag(testFlagR, testFlagC);
+        assert flagPlaced : "Failed to place flag!";
+        assert board.getCell(testFlagR, testFlagC).isFlagged() : "Cell not marked flagged!";
+        assert board.getCurrentFlags() == 1 : "currentFlags mismatch!";
+        assert board.getTotalActions() == 1 : "totalActions mismatch!";
+        System.out.println("[PASS] Flag placed successfully on (" + testFlagR + "," + testFlagC + ").");
+
+        boolean flagRemoved = board.removeFlag(testFlagR, testFlagC);
+        assert flagRemoved : "Failed to remove flag!";
+        assert !board.getCell(testFlagR, testFlagC).isFlagged() : "Cell still marked flagged!";
+        assert board.getCurrentFlags() == 0 : "currentFlags should be 0!";
+        assert board.getTotalActions() == 2 : "totalActions should be 2!";
+        System.out.println("[PASS] Flag removed successfully.");
+
+        // 3. Validate First Click (Lazy Mine Generation & Guaranteed 0-cell)
+        int firstR = 5, firstC = 5;
+        List<Cell> openedList = new ArrayList<>();
+        Board.OpenResult openRes = board.openCell(firstR, firstC, openedList);
+        assert openRes == Board.OpenResult.SAFE : "First click must always be SAFE!";
+        assert board.isMinesGenerated() : "Mines must be generated after first click!";
+
+        // 3a. Validate Mine count (exactly 23 mines, 121 safe cells)
         int mineCount = 0;
         int safeCount = 0;
-
         for (int r = 0; r < Board.ROWS; r++) {
             for (int c = 0; c < Board.COLS; c++) {
                 Cell cell = board.getCell(r, c);
@@ -37,12 +73,27 @@ public class TestPhase6 {
                 }
             }
         }
-
         assert mineCount == Board.TOTAL_MINES : "Mine count mismatch! Expected 23, got " + mineCount;
         assert safeCount == Board.TOTAL_SAFE_CELLS : "Safe count mismatch! Expected 121, got " + safeCount;
-        System.out.println("[PASS] Board generated: 144 cells, exactly 23 mines, 121 safe cells.");
+        System.out.println("[PASS] 23 mines placed on first click (121 safe cells total).");
 
-        // 2. Validate Adjacent Mines Calculation correctness
+        // 3b. Validate that first cell has 0 adjacent mines and 3x3 surrounding zone has no mines
+        Cell firstCell = board.getCell(firstR, firstC);
+        assert !firstCell.isMine() : "First clicked cell must NOT be a mine!";
+        assert firstCell.getAdjacentMines() == 0 : "First clicked cell must have 0 adjacent mines! Got: " + firstCell.getAdjacentMines();
+
+        for (int dr = -1; dr <= 1; dr++) {
+            for (int dc = -1; dc <= 1; dc++) {
+                int nr = firstR + dr;
+                int nc = firstC + dc;
+                if (board.isValidCoordinate(nr, nc)) {
+                    assert !board.getCell(nr, nc).isMine() : "3x3 neighborhood around first click must not contain mines! Mine found at (" + nr + "," + nc + ")";
+                }
+            }
+        }
+        System.out.println("[PASS] First clicked cell (5,5) is guaranteed 0, and entire 3x3 zone is free of mines.");
+
+        // 3c. Validate neighbor calculations across the entire board
         for (int r = 0; r < Board.ROWS; r++) {
             for (int c = 0; c < Board.COLS; c++) {
                 Cell cell = board.getCell(r, c);
@@ -65,44 +116,42 @@ public class TestPhase6 {
         }
         System.out.println("[PASS] Neighbor mine calculations verified for all cells.");
 
-        // 3. Validate Flagging logic & limits
-        int safeR = -1, safeC = -1;
+        // 3d. Validate BFS Flood-fill opening
+        assert openedList.size() >= 9 : "BFS on interior 0-cell must open at least the 3x3 area (9 cells)! Opened: " + openedList.size();
+        assert board.getOpenedSafeCells() == openedList.size() : "openedSafeCells count mismatch!";
+        assert board.getTotalActions() == 3 : "totalActions must only increment by 1 for the click!";
+        for (Cell opened : openedList) {
+            assert !opened.isMine() : "Opened cell must never be a mine!";
+            assert opened.isOpened() : "Opened cell must be marked opened!";
+        }
+        System.out.println("[PASS] BFS flood-fill automatically opened " + openedList.size() +
+                " cells | openedSafeCells=" + board.getOpenedSafeCells() +
+                " | totalActions=" + board.getTotalActions() + " (actions not inflated).");
+
+        // 3e. Validate that subsequent clicks do NOT regenerate mines
+        boolean[][] mineMapBefore = new boolean[Board.ROWS][Board.COLS];
         for (int r = 0; r < Board.ROWS; r++) {
             for (int c = 0; c < Board.COLS; c++) {
-                if (!board.getCell(r, c).isMine()) {
-                    safeR = r;
-                    safeC = c;
+                mineMapBefore[r][c] = board.getCell(r, c).isMine();
+            }
+        }
+        // Find an unopened safe cell to click
+        for (int r = 0; r < Board.ROWS; r++) {
+            for (int c = 0; c < Board.COLS; c++) {
+                Cell cCell = board.getCell(r, c);
+                if (!cCell.isOpened() && !cCell.isMine()) {
+                    List<Cell> nextOpened = new ArrayList<>();
+                    board.openCell(r, c, nextOpened);
                     break;
                 }
             }
-            if (safeR != -1) break;
         }
-
-        boolean flagPlaced = board.placeFlag(safeR, safeC);
-        assert flagPlaced : "Failed to place flag!";
-        assert board.getCell(safeR, safeC).isFlagged() : "Cell not marked flagged!";
-        assert board.getCurrentFlags() == 1 : "currentFlags mismatch!";
-        assert board.getTotalActions() == 1 : "totalActions mismatch!";
-        System.out.println("[PASS] Flag placed successfully on (" + safeR + "," + safeC + ").");
-
-        boolean flagRemoved = board.removeFlag(safeR, safeC);
-        assert flagRemoved : "Failed to remove flag!";
-        assert !board.getCell(safeR, safeC).isFlagged() : "Cell still marked flagged!";
-        assert board.getCurrentFlags() == 0 : "currentFlags should be 0!";
-        assert board.getTotalActions() == 2 : "totalActions should be 2!";
-        System.out.println("[PASS] Flag removed successfully.");
-
-        // 4. Validate BFS Flood-fill
-        List<Cell> openedList = new ArrayList<>();
-        Board.OpenResult openRes = board.openCell(safeR, safeC, openedList);
-        assert openRes == Board.OpenResult.SAFE : "Expected SAFE open result!";
-        assert openedList.size() >= 1 : "At least 1 cell must be opened!";
-        assert board.getOpenedSafeCells() == openedList.size() : "openedSafeCells count mismatch!";
-        // Crucial test: totalActions must only have incremented by 1 (totalActions was 2 before click, now 3)
-        assert board.getTotalActions() == 3 : "totalActions must only increment by 1 for the click!";
-        System.out.println("[PASS] Cell opened! Newly opened cells: " + openedList.size() +
-                " | openedSafeCells=" + board.getOpenedSafeCells() +
-                " | totalActions=" + board.getTotalActions() + " (BFS did not inflate action count).");
+        for (int r = 0; r < Board.ROWS; r++) {
+            for (int c = 0; c < Board.COLS; c++) {
+                assert board.getCell(r, c).isMine() == mineMapBefore[r][c] : "Mines must NOT change positions on subsequent clicks!";
+            }
+        }
+        System.out.println("[PASS] Mine positions remain strictly fixed on subsequent clicks.");
 
         // 5. Validate GameRules.arbitrateTimeout rules
         Player p1 = new Player(10, "P1", 0);

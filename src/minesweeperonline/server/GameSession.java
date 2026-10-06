@@ -272,7 +272,9 @@ public class GameSession {
                 oppUpdate.setGameId(gameId);
                 JsonObject op = new JsonObject();
                 op.addProperty("opponentId", actingPlayer.getUserId());
+                op.addProperty("opponentOpenedSafeCells", targetBoard.getOpenedSafeCells());
                 op.addProperty("opponentCurrentFlags", targetBoard.getCurrentFlags());
+                op.addProperty("opponentTotalActions", targetBoard.getTotalActions());
                 op.addProperty("flagRow", row);
                 op.addProperty("flagCol", col);
                 op.addProperty("flagState", true);
@@ -313,7 +315,9 @@ public class GameSession {
                 oppUpdate.setGameId(gameId);
                 JsonObject op = new JsonObject();
                 op.addProperty("opponentId", actingPlayer.getUserId());
+                op.addProperty("opponentOpenedSafeCells", targetBoard.getOpenedSafeCells());
                 op.addProperty("opponentCurrentFlags", targetBoard.getCurrentFlags());
+                op.addProperty("opponentTotalActions", targetBoard.getTotalActions());
                 op.addProperty("flagRow", row);
                 op.addProperty("flagCol", col);
                 op.addProperty("flagState", false);
