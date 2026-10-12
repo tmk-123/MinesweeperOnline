@@ -9,7 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Registration window for creating new player accounts.
+ * Cửa sổ đăng ký để tạo tài khoản người chơi mới.
  */
 public class RegisterFrame extends JFrame {
 
@@ -21,6 +21,7 @@ public class RegisterFrame extends JFrame {
     private JPasswordField txtConfirmPassword;
     private JButton btnRegister;
     private JButton btnBack;
+    private ServerConnection.MessageListener registerListener;
 
     public RegisterFrame(ServerConnection connection, LoginFrame loginFrame) {
         this.connection = connection;
@@ -103,8 +104,14 @@ public class RegisterFrame extends JFrame {
         connection.sendMessage(registerMsg);
     }
 
+    @Override
+    public void dispose() {
+        connection.removeMessageListener(registerListener);
+        super.dispose();
+    }
+
     private void setupNetworkListener() {
-        connection.addMessageListener(message -> {
+        registerListener = message -> {
             SwingUtilities.invokeLater(() -> {
                 if (message.getType() == MessageType.REGISTER_SUCCESS) {
                     JOptionPane.showMessageDialog(this,
@@ -122,6 +129,7 @@ public class RegisterFrame extends JFrame {
                     JOptionPane.showMessageDialog(this, reason, "Lỗi đăng ký", JOptionPane.ERROR_MESSAGE);
                 }
             });
-        });
+        };
+        connection.addMessageListener(registerListener);
     }
 }

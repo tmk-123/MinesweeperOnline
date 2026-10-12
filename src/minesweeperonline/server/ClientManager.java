@@ -9,14 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Manages all active client connections and authenticated online players.
+ * Quản lý tất cả kết nối client đang hoạt động và các người chơi đã đăng nhập (online).
  */
 public class ClientManager {
 
-    // All active connected handlers
+    // Tất cả handler đang kết nối
     private final List<ClientHandler> allClients = new CopyOnWriteArrayList<>();
 
-    // Map userId -> authenticated ClientHandler
+    // Map userId -> ClientHandler đã đăng nhập
     private final ConcurrentHashMap<Integer, ClientHandler> onlineUsers = new ConcurrentHashMap<>();
 
     public void addClient(ClientHandler client) {
@@ -77,13 +77,14 @@ public class ClientManager {
     }
 
     /**
-     * Returns the list of online players, excluding the current requesting user.
+     * Trả về danh sách người chơi đang online, trừ chính user đang gửi yêu cầu.
      */
     public List<Player> getOnlinePlayers(int excludeUserId) {
         List<Player> list = new ArrayList<>();
         for (ClientHandler handler : onlineUsers.values()) {
-            if (handler.getPlayer() != null && handler.getPlayer().getUserId() != excludeUserId) {
-                list.add(handler.getPlayer());
+            Player p = handler.getPlayer(); // chỉ đọc một lần: có thể thành null khi LOGOUT
+            if (p != null && p.getUserId() != excludeUserId) {
+                list.add(p);
             }
         }
         return list;

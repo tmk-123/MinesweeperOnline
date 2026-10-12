@@ -164,6 +164,7 @@ Hoặc bằng lệnh `java`:
 ```powershell
 java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonline.client.MainClient
 ```
+Kết nối tới server ở máy khác trong mạng LAN: thêm `<host> <port>`, ví dụ `... minesweeperonline.client.MainClient 192.168.1.10 2209` (chi tiết: [docs/Server-Network/09-chay-va-kiem-thu.md](docs/Server-Network/09-chay-va-kiem-thu.md)).
 
 ---
 

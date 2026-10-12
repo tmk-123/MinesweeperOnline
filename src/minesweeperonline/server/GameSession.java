@@ -23,9 +23,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Represents an active match session between two players.
- * Server-authoritative game lifecycle, countdown timers, action validation,
- * and transactional result recording.
+ * Đại diện cho một phiên đấu (session) đang diễn ra giữa hai người chơi.
+ * Server nắm quyền quyết định toàn bộ vòng đời trận đấu, các timer đếm ngược,
+ * kiểm tra hợp lệ thao tác và ghi kết quả bằng transaction.
  */
 public class GameSession {
 
@@ -44,7 +44,7 @@ public class GameSession {
     private long endedAt;
     private int remainingSeconds;
 
-    private int winnerUserId = -1; // -1 = ongoing, 0 = draw, >0 = winner userId
+    private int winnerUserId = -1; // -1 = đang đấu, 0 = hòa, >0 = userId người thắng
     private String endReason = "";
 
     private final Object gameLock = new Object();
@@ -77,7 +77,7 @@ public class GameSession {
     }
 
     /**
-     * Starts the 5-second READY countdown before transitioning into PLAYING.
+     * Bắt đầu đếm ngược READY 5 giây trước khi chuyển sang PLAYING.
      */
     private void startReadyCountdown() {
         System.out.println("[GameSession] Match " + gameId + " created. Starting " +
@@ -90,7 +90,7 @@ public class GameSession {
                     this.startedAt = System.currentTimeMillis();
                 }
 
-                // Broadcast GAME_START to both players
+                // Gửi GAME_START cho cả hai người chơi
                 Message startMsg = new Message(MessageType.GAME_START);
                 startMsg.setGameId(gameId);
                 JsonObject p = new JsonObject();
@@ -109,7 +109,7 @@ public class GameSession {
     }
 
     /**
-     * Ticks every second during PLAYING state. Triggers TIMEOUT when reaching 0.
+     * Đếm mỗi giây trong trạng thái PLAYING. Kích hoạt TIMEOUT khi về 0.
      */
     private void startPlayingTimer() {
         matchTimerTask = timerScheduler.scheduleAtFixedRate(() -> {
@@ -128,14 +128,16 @@ public class GameSession {
     }
 
     private void stopTimers() {
+        // Không interrupt: stopTimers() có thể chạy ngay trên thread của timer (TIMEOUT),
+        // và chính thread đó sau đó còn phải ghi kết quả vào database.
         if (matchTimerTask != null) {
-            matchTimerTask.cancel(true);
+            matchTimerTask.cancel(false);
         }
-        timerScheduler.shutdownNow();
+        timerScheduler.shutdown();
     }
 
     /**
-     * Processes OPEN_CELL action from a player.
+     * Xử lý thao tác OPEN_CELL của một người chơi.
      */
     public void handleOpenCell(int userId, int row, int col) {
         synchronized (gameLock) {
@@ -162,10 +164,10 @@ public class GameSession {
             actingPlayer.setTotalActions(targetBoard.getTotalActions());
 
             if (result == Board.OpenResult.MINE) {
-                // Stepped on a mine -> Immediate Defeat
+                // Mở trúng mìn -> thua ngay lập tức
                 finishGame(opponentPlayer.getUserId(), "CLICKED_MINE");
 
-                // Notify loser
+                // Báo cho người thua
                 Message loseMsg = new Message(MessageType.GAME_LOSE);
                 loseMsg.setGameId(gameId);
                 JsonObject pLose = new JsonObject();
@@ -174,7 +176,7 @@ public class GameSession {
                 loseMsg.setPayload(pLose);
                 actingHandler.sendMessage(loseMsg);
 
-                // Notify winner
+                // Báo cho người thắng
                 Message winMsg = new Message(MessageType.GAME_WIN);
                 winMsg.setGameId(gameId);
                 JsonObject pWin = new JsonObject();
@@ -184,7 +186,7 @@ public class GameSession {
                 opponentHandler.sendMessage(winMsg);
 
             } else if (result == Board.OpenResult.SAFE) {
-                // Check if all 121 safe cells have been cleared
+                // Kiểm tra đã mở hết 121 ô an toàn chưa
                 if (targetBoard.isAllSafeCellsOpened()) {
                     finishGame(actingPlayer.getUserId(), "CLEARED_ALL_SAFE_CELLS");
 
@@ -205,7 +207,7 @@ public class GameSession {
                     opponentHandler.sendMessage(loseMsg);
 
                 } else {
-                    // Send opened cells to acting player
+                    // Gửi các ô vừa mở cho người chơi thực hiện thao tác
                     Message updateSelf = new Message(MessageType.CELL_OPENED);
                     updateSelf.setGameId(gameId);
                     JsonObject pSelf = new JsonObject();
@@ -215,7 +217,7 @@ public class GameSession {
                     updateSelf.setPayload(pSelf);
                     actingHandler.sendMessage(updateSelf);
 
-                    // Send progress update to opponent (without secret mine positions)
+                    // Gửi cập nhật tiến độ cho đối thủ (không lộ vị trí mìn)
                     Message updateOpp = new Message(MessageType.GAME_UPDATE);
                     updateOpp.setGameId(gameId);
                     JsonObject pOpp = new JsonObject();
@@ -224,7 +226,7 @@ public class GameSession {
                     pOpp.addProperty("opponentCurrentFlags", targetBoard.getCurrentFlags());
                     pOpp.addProperty("opponentTotalActions", targetBoard.getTotalActions());
 
-                    // Miniature board sync: send newly opened coordinates (row, col)
+                    // Đồng bộ bàn cờ thu nhỏ: gửi tọa độ (row, col) các ô vừa mở
                     JsonArray openedCoords = new JsonArray();
                     for (Cell c : newlyOpened) {
                         JsonObject coord = new JsonObject();
@@ -242,7 +244,7 @@ public class GameSession {
     }
 
     /**
-     * Processes PLACE_FLAG action from a player.
+     * Xử lý thao tác PLACE_FLAG của một người chơi.
      */
     public void handlePlaceFlag(int userId, int row, int col) {
         synchronized (gameLock) {
@@ -267,7 +269,7 @@ public class GameSession {
                 res.setPayload(p);
                 actingHandler.sendMessage(res);
 
-                // Notify opponent of flag count & mini-board flag placement
+                // Báo đối thủ số cờ hiện tại & vị trí cắm cờ trên bàn cờ thu nhỏ
                 Message oppUpdate = new Message(MessageType.GAME_UPDATE);
                 oppUpdate.setGameId(gameId);
                 JsonObject op = new JsonObject();
@@ -285,7 +287,7 @@ public class GameSession {
     }
 
     /**
-     * Processes REMOVE_FLAG action from a player.
+     * Xử lý thao tác REMOVE_FLAG của một người chơi.
      */
     public void handleRemoveFlag(int userId, int row, int col) {
         synchronized (gameLock) {
@@ -310,7 +312,7 @@ public class GameSession {
                 res.setPayload(p);
                 actingHandler.sendMessage(res);
 
-                // Notify opponent of flag count & mini-board flag removal
+                // Báo đối thủ số cờ hiện tại & vị trí gỡ cờ trên bàn cờ thu nhỏ
                 Message oppUpdate = new Message(MessageType.GAME_UPDATE);
                 oppUpdate.setGameId(gameId);
                 JsonObject op = new JsonObject();
@@ -328,14 +330,14 @@ public class GameSession {
     }
 
     /**
-     * Handles TIMEOUT arbitration when the 5-minute game clock reaches 0.
+     * Phân xử TIMEOUT khi đồng hồ trận đấu 5 phút về 0.
      */
     private void handleTimeout() {
         int winner = GameRules.arbitrateTimeout(player1, player2);
         finishGame(winner, "TIMEOUT");
 
         if (winner == 0) {
-            // DRAW
+            // Hòa (DRAW)
             Message drawMsg = new Message(MessageType.GAME_DRAW);
             drawMsg.setGameId(gameId);
             JsonObject p = new JsonObject();
@@ -367,8 +369,8 @@ public class GameSession {
     }
 
     /**
-     * Handles PLAY_AGAIN request from a player after a match concludes.
-     * When both players vote PLAY_AGAIN, a fresh GameSession is instantiated.
+     * Xử lý yêu cầu PLAY_AGAIN của người chơi sau khi trận đấu kết thúc.
+     * Khi cả hai người chơi cùng chọn PLAY_AGAIN thì tạo một GameSession mới.
      */
     public void handlePlayAgain(int userId, GameManager gameManager) {
         synchronized (gameLock) {
@@ -380,7 +382,7 @@ public class GameSession {
             ClientHandler opponentHandler = (userId == player1.getUserId()) ? handler2 : handler1;
 
             if (playAgainRequests.size() >= 2) {
-                // Both players want to play again -> Start rematch!
+                // Cả hai đều muốn chơi lại -> bắt đầu tái đấu!
                 gameManager.removeSession(this.gameId);
 
                 GameSession newSession = gameManager.createSession(
@@ -388,7 +390,7 @@ public class GameSession {
                         player2, handler2
                 );
 
-                // Send MATCH_CREATED to both players
+                // Gửi MATCH_CREATED cho cả hai người chơi
                 Message p1Msg = new Message(MessageType.MATCH_CREATED);
                 JsonObject p1 = new JsonObject();
                 p1.addProperty("gameId", newSession.getGameId());
@@ -408,7 +410,7 @@ public class GameSession {
                 System.out.println("[GameSession] Rematch created: " + newSession.getGameId() +
                         " between [" + player1.getUsername() + "] and [" + player2.getUsername() + "]");
             } else {
-                // 1 player requested -> Send WAITING to self and REQUESTED to opponent
+                // Mới có 1 người yêu cầu -> gửi WAITING cho người đó và REQUESTED cho đối thủ
                 Message reqMsg = new Message(MessageType.PLAY_AGAIN);
                 JsonObject pReq = new JsonObject();
                 pReq.addProperty("status", "WAITING");
@@ -429,7 +431,7 @@ public class GameSession {
     }
 
     /**
-     * Handles EXIT request from a player after a match concludes.
+     * Xử lý yêu cầu EXIT của người chơi sau khi trận đấu kết thúc.
      */
     public void handleExit(int userId, GameManager gameManager) {
         synchronized (gameLock) {
@@ -451,7 +453,7 @@ public class GameSession {
     }
 
     /**
-     * Transactional database recording for match outcome and scores.
+     * Ghi kết quả trận đấu và điểm số vào database bằng transaction.
      */
     public void saveMatchToDatabase(int winnerId, String reason) {
         String res1, res2;
@@ -473,6 +475,10 @@ public class GameSession {
             delta2 = ServerConfig.SCORE_VICTORY;
             delta1 = (res1.equals("FORFEIT")) ? ServerConfig.SCORE_FORFEIT : ServerConfig.SCORE_DEFEAT;
         }
+
+        // Giữ điểm trong bộ nhớ đồng bộ với DB (hiển thị ở danh sách người chơi online)
+        player1.setTotalScore(Math.max(0, player1.getTotalScore() + delta1));
+        player2.setTotalScore(Math.max(0, player2.getTotalScore() + delta2));
 
         MatchPlayerDAO dao = new MatchPlayerDAO();
         dao.saveFullMatchTransaction(
@@ -497,8 +503,9 @@ public class GameSession {
     }
 
     /**
-     * Thread-safe, single-execution finish method that marks session finished,
-     * stops all timers, updates statuses, and executes database transaction recording.
+     * Hàm kết thúc trận thread-safe, chỉ thực thi một lần: đánh dấu session đã kết thúc,
+     * dừng mọi timer và ghi kết quả vào database bằng transaction.
+     * Người chơi vẫn ở trạng thái PLAYING (trong phòng kết quả) cho đến khi EXIT / mất kết nối.
      */
     public boolean finishGame(int winnerUserId, String reason) {
         if (finished.compareAndSet(false, true)) {
@@ -508,9 +515,6 @@ public class GameSession {
                 this.endedAt = System.currentTimeMillis();
                 this.winnerUserId = winnerUserId;
                 this.endReason = reason;
-
-                player1.setStatus(Player.STATUS_IDLE);
-                player2.setStatus(Player.STATUS_IDLE);
             }
             saveMatchToDatabase(winnerUserId, reason);
             return true;

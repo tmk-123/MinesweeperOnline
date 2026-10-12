@@ -4,8 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Miniature 12x12 board panel showing the opponent's game progression in real-time.
- * Displays opened cells and flagged cells without disclosing mine locations.
+ * Panel bàn cờ 12x12 thu nhỏ, hiển thị tiến trình chơi của đối thủ theo thời gian thực.
+ * Hiển thị các ô đã mở và ô đã cắm cờ mà không để lộ vị trí mìn.
  */
 public class OpponentMiniBoardPanel extends JPanel {
 
@@ -66,7 +66,7 @@ public class OpponentMiniBoardPanel extends JPanel {
                 byte state = cellStates[r][c];
 
                 if (state == STATE_OPENED) {
-                    // Safe revealed cell
+                    // Ô an toàn đã mở
                     g2.setColor(new Color(220, 224, 230));
                     g2.fillRect(x, y, CELL_SIZE, CELL_SIZE);
                     g2.setColor(new Color(180, 190, 200));
@@ -76,13 +76,13 @@ public class OpponentMiniBoardPanel extends JPanel {
                     g2.fillOval(x + CELL_SIZE / 2 - 2, y + CELL_SIZE / 2 - 2, 4, 4);
 
                 } else if (state == STATE_FLAGGED) {
-                    // Flagged cell
+                    // Ô đã cắm cờ
                     g2.setColor(new Color(255, 230, 230));
                     g2.fillRect(x, y, CELL_SIZE, CELL_SIZE);
                     g2.setColor(new Color(220, 140, 140));
                     g2.drawRect(x, y, CELL_SIZE, CELL_SIZE);
 
-                    // Mini red flag
+                    // Lá cờ đỏ thu nhỏ
                     g2.setColor(new Color(220, 30, 30));
                     int[] xPoints = {x + 5, x + 13, x + 5};
                     int[] yPoints = {y + 4, y + 8, y + 12};
@@ -92,7 +92,7 @@ public class OpponentMiniBoardPanel extends JPanel {
                     g2.drawLine(x + 3, y + 14, x + 7, y + 14);
 
                 } else {
-                    // Hidden cell
+                    // Ô chưa mở
                     g2.setColor(new Color(195, 205, 218));
                     g2.fillRect(x, y, CELL_SIZE, CELL_SIZE);
                     g2.setColor(new Color(160, 175, 192));

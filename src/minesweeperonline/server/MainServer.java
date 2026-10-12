@@ -5,8 +5,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Main TCP Server for MinesweeperOnline.
- * Listens on port 2209 and spawns a dedicated Thread for each connecting Client.
+ * TCP Server chính của MinesweeperOnline.
+ * Lắng nghe trên cổng 2209 và tạo một Thread riêng cho mỗi client kết nối tới.
  */
 public class MainServer {
 
@@ -32,7 +32,7 @@ public class MainServer {
             System.out.println("[MainServer] Server started successfully on port: " + port);
             System.out.println("[MainServer] Waiting for client connections...");
 
-            // Graceful shutdown hook
+            // Hook để tắt server an toàn khi JVM dừng
             Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
 
             while (running) {

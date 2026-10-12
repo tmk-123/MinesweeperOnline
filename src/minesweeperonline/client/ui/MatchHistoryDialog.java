@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Dialog displaying player's recent match history and performance statistics.
+ * Dialog hiển thị lịch sử các trận gần đây và thống kê thành tích của người chơi.
  */
 public class MatchHistoryDialog extends JDialog {
 
@@ -42,7 +42,7 @@ public class MatchHistoryDialog extends JDialog {
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(8, 8));
 
-        // Top Header
+        // Phần tiêu đề phía trên
         JPanel headerPanel = new JPanel(new BorderLayout(5, 5));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
         headerPanel.setBackground(new Color(245, 248, 255));
@@ -59,7 +59,7 @@ public class MatchHistoryDialog extends JDialog {
         headerPanel.add(lblSubtitle, BorderLayout.SOUTH);
         add(headerPanel, BorderLayout.NORTH);
 
-        // Center Table
+        // Bảng ở giữa
         String[] columns = {"Thời gian", "Đối thủ", "Kết quả", "Điểm số", "Thời lượng", "Ô an toàn", "Cờ / Thao tác", "Ghi chú"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -76,17 +76,17 @@ public class MatchHistoryDialog extends JDialog {
         table.getTableHeader().setReorderingAllowed(false);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Column widths
-        table.getColumnModel().getColumn(0).setPreferredWidth(125); // Thoi gian
-        table.getColumnModel().getColumn(1).setPreferredWidth(95);  // Doi thu
-        table.getColumnModel().getColumn(2).setPreferredWidth(95);  // Ket qua
-        table.getColumnModel().getColumn(3).setPreferredWidth(70);  // Diem
-        table.getColumnModel().getColumn(4).setPreferredWidth(75);  // Thoi luong
-        table.getColumnModel().getColumn(5).setPreferredWidth(80);  // O an toan
-        table.getColumnModel().getColumn(6).setPreferredWidth(100); // Co / Thao tac
-        table.getColumnModel().getColumn(7).setPreferredWidth(140); // Ghi chu
+        // Độ rộng các cột
+        table.getColumnModel().getColumn(0).setPreferredWidth(125); // Thời gian
+        table.getColumnModel().getColumn(1).setPreferredWidth(95);  // Đối thủ
+        table.getColumnModel().getColumn(2).setPreferredWidth(95);  // Kết quả
+        table.getColumnModel().getColumn(3).setPreferredWidth(70);  // Điểm
+        table.getColumnModel().getColumn(4).setPreferredWidth(75);  // Thời lượng
+        table.getColumnModel().getColumn(5).setPreferredWidth(80);  // Ô an toàn
+        table.getColumnModel().getColumn(6).setPreferredWidth(100); // Cờ / Thao tác
+        table.getColumnModel().getColumn(7).setPreferredWidth(140); // Ghi chú
 
-        // Custom Cell Renderer
+        // Cell renderer tùy chỉnh
         DefaultTableCellRenderer customRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
@@ -101,7 +101,7 @@ public class MatchHistoryDialog extends JDialog {
                     }
                 }
 
-                // Format Result column (Col 2)
+                // Định dạng cột Kết quả (cột 2)
                 if (col == 2 && val != null) {
                     String res = val.toString();
                     setFont(getFont().deriveFont(Font.BOLD));
@@ -112,9 +112,9 @@ public class MatchHistoryDialog extends JDialog {
                     } else if ("FORFEIT".equalsIgnoreCase(res) || res.contains("BỎ CUỘC")) {
                         c.setForeground(new Color(230, 126, 34));
                     } else {
-                        c.setForeground(new Color(41, 128, 185)); // Draw
+                        c.setForeground(new Color(41, 128, 185)); // Hòa
                     }
-                } else if (col == 3 && val != null) { // Score column
+                } else if (col == 3 && val != null) { // Cột điểm số
                     String score = val.toString();
                     setFont(getFont().deriveFont(Font.BOLD));
                     if (score.startsWith("+")) {
@@ -146,7 +146,7 @@ public class MatchHistoryDialog extends JDialog {
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         add(scrollPane, BorderLayout.CENTER);
 
-        // Bottom Summary & Buttons Panel
+        // Panel phía dưới: tổng kết & các nút
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 5));
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 12, 16));
 
@@ -189,7 +189,7 @@ public class MatchHistoryDialog extends JDialog {
     }
 
     /**
-     * Parses MATCH_HISTORY Message from server and updates the table.
+     * Parse message MATCH_HISTORY từ server và cập nhật bảng.
      */
     public void updateHistoryFromMessage(Message message) {
         if (message == null || message.getPayload() == null) return;
@@ -211,7 +211,7 @@ public class MatchHistoryDialog extends JDialog {
     }
 
     /**
-     * Updates the UI table with the provided list of entries.
+     * Cập nhật bảng trên giao diện với danh sách bản ghi được truyền vào.
      */
     public void updateHistory(List<MatchHistoryEntry> entries) {
         SwingUtilities.invokeLater(() -> {

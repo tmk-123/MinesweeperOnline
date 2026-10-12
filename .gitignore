@@ -1,0 +1,7 @@
+# Build output (Ant / NetBeans / VS Code Java)
+bin/
+build/
+dist/
+
+# NetBeans per-user settings
+nbproject/private/

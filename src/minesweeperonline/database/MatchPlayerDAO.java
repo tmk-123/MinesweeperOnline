@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Data Access Object for MatchPlayer entity.
- * Handles transactional recording of match players, user score updates, and match history retrieval.
+ * DAO (Data Access Object) cho entity MatchPlayer.
+ * Xử lý việc lưu thông tin người chơi trong trận theo transaction, cập nhật điểm user và lấy lịch sử đấu.
  */
 public class MatchPlayerDAO {
 
@@ -46,7 +46,7 @@ public class MatchPlayerDAO {
     private static final CopyOnWriteArrayList<FallbackMatchRecord> fallbackMatches = new CopyOnWriteArrayList<>();
 
     /**
-     * Inserts a player's performance record for a match within an active transaction.
+     * Thêm bản ghi thành tích của một người chơi trong trận, trong transaction đang mở.
      */
     public boolean insertMatchPlayer(Connection conn, String matchId, int userId, String result,
                                      int openedSafeCells, int totalActions, int flagsPlaced,
@@ -66,7 +66,7 @@ public class MatchPlayerDAO {
     }
 
     /**
-     * Overload for backward compatibility.
+     * Hàm overload để tương thích ngược với code cũ.
      */
     public boolean saveFullMatchTransaction(
             String matchId, String matchStatus, long startedAt, long endedAt, Integer winnerId, String outcomeDescription,
@@ -86,7 +86,7 @@ public class MatchPlayerDAO {
     }
 
     /**
-     * Saves the entire match result and updates both players' scores in a SINGLE TRANSACTION.
+     * Lưu toàn bộ kết quả trận đấu và cập nhật điểm của cả hai người chơi trong MỘT TRANSACTION DUY NHẤT.
      */
     public boolean saveFullMatchTransaction(
             String matchId, String matchStatus, long startedAt, long endedAt, Integer winnerId, String outcomeDescription,
@@ -96,19 +96,19 @@ public class MatchPlayerDAO {
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false); // Begin Transaction
+            conn.setAutoCommit(false); // Bắt đầu transaction
 
-            // 1. Insert Match
+            // 1. Thêm bản ghi Match
             MatchDAO matchDAO = new MatchDAO();
             matchDAO.insertMatch(conn, matchId, matchStatus, startedAt, endedAt, winnerId, outcomeDescription);
 
-            // 2. Insert MatchPlayer 1
+            // 2. Thêm MatchPlayer của người chơi 1
             insertMatchPlayer(conn, matchId, user1Id, res1, opened1, actions1, flags1, scoreDelta1);
 
-            // 3. Insert MatchPlayer 2
+            // 3. Thêm MatchPlayer của người chơi 2
             insertMatchPlayer(conn, matchId, user2Id, res2, opened2, actions2, flags2, scoreDelta2);
 
-            // 4. Update User 1 Score (Score cannot be negative: GREATEST(0, totalScore + delta))
+            // 4. Cập nhật điểm User 1 (điểm không được âm: GREATEST(0, totalScore + delta))
             String sqlScore = "UPDATE `User` SET totalScore = GREATEST(0, totalScore + ?) WHERE id = ?";
             try (PreparedStatement ps1 = conn.prepareStatement(sqlScore)) {
                 ps1.setInt(1, scoreDelta1);
@@ -116,14 +116,14 @@ public class MatchPlayerDAO {
                 ps1.executeUpdate();
             }
 
-            // 5. Update User 2 Score
+            // 5. Cập nhật điểm User 2
             try (PreparedStatement ps2 = conn.prepareStatement(sqlScore)) {
                 ps2.setInt(1, scoreDelta2);
                 ps2.setInt(2, user2Id);
                 ps2.executeUpdate();
             }
 
-            conn.commit(); // Commit Transaction
+            conn.commit(); // Commit transaction
             System.out.println("[MatchPlayerDAO] Transaction committed successfully for match: " + matchId);
             recordFallbackMatchDetails(matchId, outcomeDescription, startedAt, endedAt,
                     user1Id, user1Name, res1, opened1, actions1, flags1, scoreDelta1,
@@ -132,7 +132,7 @@ public class MatchPlayerDAO {
 
         } catch (SQLException e) {
             System.err.println("[MatchPlayerDAO] Transaction error, rolling back: " + e.getMessage());
-            // Fallback: update in-memory user score and stats
+            // Fallback: cập nhật điểm và thống kê của user trong bộ nhớ
             UserDAO userDAO = new UserDAO();
             User u1 = userDAO.getUserById(user1Id);
             if (u1 != null) {
@@ -166,7 +166,7 @@ public class MatchPlayerDAO {
     }
 
     /**
-     * Retrieves match history for a given user, newest first.
+     * Lấy lịch sử đấu của một user, trận mới nhất xếp trước.
      */
     public List<MatchHistoryEntry> getMatchHistory(int userId, int limit) {
         List<MatchHistoryEntry> list = new ArrayList<>();
@@ -225,7 +225,7 @@ public class MatchPlayerDAO {
     }
 
     /**
-     * Fallback match history when database is offline.
+     * Lịch sử đấu fallback (lưu trong bộ nhớ) khi database không hoạt động.
      */
     public static List<MatchHistoryEntry> getFallbackMatchHistory(int userId, int limit) {
         List<MatchHistoryEntry> list = new ArrayList<>();

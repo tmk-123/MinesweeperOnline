@@ -1,7 +1,7 @@
 package minesweeperonline.game;
 
 /**
- * Represents a single cell on the server-authoritative 12x12 board.
+ * Đại diện cho một ô trên bàn cờ 12x12 do server quản lý.
  */
 public class Cell {
 

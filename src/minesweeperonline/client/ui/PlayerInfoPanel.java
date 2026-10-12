@@ -4,8 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Top header panel of GameFrame showing both players' statistics side by side,
- * including opened safe cells, current flags, and total actions.
+ * Panel tiêu đề phía trên của GameFrame, hiển thị song song thống kê của hai người chơi,
+ * gồm số ô an toàn đã mở, số cờ đang cắm và tổng số thao tác.
  */
 public class PlayerInfoPanel extends JPanel {
 
@@ -31,7 +31,7 @@ public class PlayerInfoPanel extends JPanel {
         Font titleFont = new Font("Arial", Font.BOLD, 13);
         Font statFont = new Font("Arial", Font.PLAIN, 12);
 
-        // Player (Self) Panel - Left
+        // Panel của người chơi (bản thân) - bên trái
         JPanel selfPanel = new JPanel(new GridLayout(4, 1, 2, 2));
         selfPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(180, 210, 240), 1),
@@ -59,7 +59,7 @@ public class PlayerInfoPanel extends JPanel {
         selfPanel.add(lblPlayerActions);
         add(selfPanel);
 
-        // Opponent Panel - Right
+        // Panel của đối thủ - bên phải
         JPanel oppPanel = new JPanel(new GridLayout(4, 1, 2, 2));
         oppPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(240, 200, 190), 1),

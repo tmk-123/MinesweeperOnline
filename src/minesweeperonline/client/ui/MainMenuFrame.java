@@ -7,6 +7,7 @@ import minesweeperonline.client.network.ServerConnection;
 import minesweeperonline.common.model.LeaderboardEntry;
 import minesweeperonline.common.model.Player;
 import minesweeperonline.common.model.User;
+import minesweeperonline.common.protocol.JsonProtocol;
 import minesweeperonline.common.protocol.Message;
 import minesweeperonline.common.protocol.MessageType;
 
@@ -16,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Main menu and lobby window after successful login.
+ * Cửa sổ menu chính và sảnh chờ sau khi đăng nhập thành công.
  */
 public class MainMenuFrame extends JFrame {
 
@@ -27,6 +28,7 @@ public class MainMenuFrame extends JFrame {
     private Timer autoRefreshTimer;
     private LeaderboardDialog leaderboardDialog;
     private MatchHistoryDialog matchHistoryDialog;
+    private ServerConnection.MessageListener lobbyListener;
 
     public MainMenuFrame(ServerConnection connection, User currentUser) {
         this.connection = connection;
@@ -34,10 +36,10 @@ public class MainMenuFrame extends JFrame {
         initComponents();
         setupNetworkListener();
 
-        // Initial request for players
+        // Gửi yêu cầu lấy danh sách người chơi lần đầu
         onlinePanel.refreshOnlinePlayers();
 
-        // Periodically refresh lobby online list every 4 seconds
+        // Tự động làm mới danh sách online ở sảnh chờ mỗi 4 giây
         autoRefreshTimer = new Timer(4000, e -> {
             if (this.isVisible()) {
                 onlinePanel.refreshOnlinePlayers();
@@ -55,8 +57,9 @@ public class MainMenuFrame extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
 
-        // Header Panel: User Info
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        // Header 2 hàng: thông tin người chơi ở trên, các nút ở dưới.
+        // Đặt cùng một hàng thì cụm nút đè lên nhãn khi cửa sổ hẹp (520px).
+        JPanel headerPanel = new JPanel(new BorderLayout(0, 8));
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(200, 200, 200)),
                 BorderFactory.createEmptyBorder(8, 12, 8, 12)
@@ -67,7 +70,7 @@ public class MainMenuFrame extends JFrame {
         lblUserInfo.setFont(new Font("Arial", Font.BOLD, 13));
         lblUserInfo.setForeground(new Color(20, 50, 100));
 
-        JPanel rightHeaderBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel rightHeaderBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         rightHeaderBtns.setOpaque(false);
 
         JButton btnLeaderboard = new JButton("🏆 Bảng xếp hạng");
@@ -96,6 +99,7 @@ public class MainMenuFrame extends JFrame {
 
         JButton btnLogout = new JButton("Đăng xuất");
         btnLogout.addActionListener(e -> {
+            connection.sendMessage(JsonProtocol.createLogout());
             if (autoRefreshTimer != null) autoRefreshTimer.stop();
             if (leaderboardDialog != null && leaderboardDialog.isDisplayable()) {
                 leaderboardDialog.dispose();
@@ -111,21 +115,29 @@ public class MainMenuFrame extends JFrame {
         rightHeaderBtns.add(btnLeaderboard);
         rightHeaderBtns.add(btnMatchHistory);
         rightHeaderBtns.add(btnLogout);
-        headerPanel.add(lblUserInfo, BorderLayout.WEST);
-        headerPanel.add(rightHeaderBtns, BorderLayout.EAST);
+        headerPanel.add(lblUserInfo, BorderLayout.NORTH);
+        headerPanel.add(rightHeaderBtns, BorderLayout.CENTER);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // Center: Online Players Table
+        // Ở giữa: bảng người chơi online
         onlinePanel = new OnlinePlayersPanel(connection);
         mainPanel.add(onlinePanel, BorderLayout.CENTER);
 
         add(mainPanel);
     }
 
+    @Override
+    public void dispose() {
+        // Nếu không gỡ listener, sảnh chờ cũ vẫn tiếp tục bật dialog CHALLENGE_REQUEST sau khi đăng xuất
+        connection.removeMessageListener(lobbyListener);
+        super.dispose();
+    }
+
     private void setupNetworkListener() {
-        connection.addMessageListener(message -> {
+        lobbyListener = message -> {
             SwingUtilities.invokeLater(() -> handleServerMessage(message));
-        });
+        };
+        connection.addMessageListener(lobbyListener);
     }
 
     private void handleServerMessage(Message message) {

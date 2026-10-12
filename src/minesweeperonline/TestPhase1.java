@@ -10,17 +10,17 @@ public class TestPhase1 {
         System.out.println("       RUNNING PHASE 1 VERIFICATION         ");
         System.out.println("============================================");
 
-        // 1. Test User model
+        // 1. Kiểm tra model User
         User user = new User(1, "player_test", "secret123", 15, "2026-10-05 22:00:00");
         System.out.println("[PASS] User model created: " + user);
 
-        // 2. Test Player model & stats
+        // 2. Kiểm tra model Player và các chỉ số
         Player player = new Player(1, "player_test", 15);
         player.placeFlag();
         player.incrementOpenedSafeCells();
         System.out.println("[PASS] Player model created: " + player);
 
-        // 3. Test BoardState & CellState
+        // 3. Kiểm tra BoardState và CellState
         BoardState board = new BoardState();
         CellState cell = board.getCell(0, 0);
         cell.setOpened(true);
@@ -31,11 +31,11 @@ public class TestPhase1 {
         BoardState opponentView = board.toOpponentView();
         System.out.println("[PASS] Masked opponent view generated successfully.");
 
-        // 4. Test GameState
+        // 4. Kiểm tra GameState
         GameState state = GameState.READY;
         System.out.println("[PASS] GameState enum: " + state);
 
-        // 5. Test JsonProtocol & Message Serialization
+        // 5. Kiểm tra JsonProtocol và tuần tự hóa Message
         Message loginMsg = JsonProtocol.createLogin("player_test", "secret123");
         loginMsg.setRequestId("REQ-001");
         String json = JsonProtocol.serializeWithNewline(loginMsg);
@@ -47,7 +47,7 @@ public class TestPhase1 {
         System.out.println("[PASS] Deserialized Message Type: " + parsedMsg.getType());
         System.out.println("[PASS] Deserialized Payload: " + parsedMsg.getPayload());
 
-        // 6. Test OpenCell message
+        // 6. Kiểm tra message OpenCell
         Message openCellMsg = JsonProtocol.createOpenCell("GAME-100", 3, 5);
         String openCellJson = JsonProtocol.serialize(openCellMsg);
         Message parsedOpenCell = JsonProtocol.deserialize(openCellJson);

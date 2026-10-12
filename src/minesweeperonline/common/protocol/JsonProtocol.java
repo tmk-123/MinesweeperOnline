@@ -3,14 +3,14 @@ package minesweeperonline.common.protocol;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonParseException;
 import minesweeperonline.common.model.MatchHistoryEntry;
 
 import java.util.List;
 
 /**
- * Handles JSON serialization, deserialization, and message factory utilities
- * for MinesweeperOnline network communication.
+ * Xử lý serialize/deserialize JSON và cung cấp các hàm tiện ích tạo message
+ * cho giao tiếp mạng của MinesweeperOnline.
  */
 public class JsonProtocol {
 
@@ -21,7 +21,7 @@ public class JsonProtocol {
     }
 
     /**
-     * Serializes a Message into a single-line JSON string without line breaks.
+     * Serialize một Message thành chuỗi JSON trên một dòng, không có ký tự xuống dòng.
      */
     public static String serialize(Message message) {
         if (message == null) {
@@ -31,15 +31,15 @@ public class JsonProtocol {
     }
 
     /**
-     * Serializes a Message and appends the standard protocol newline delimiter (\n).
+     * Serialize một Message và thêm ký tự phân tách dòng chuẩn của protocol (\n).
      */
     public static String serializeWithNewline(Message message) {
         return serialize(message) + "\n";
     }
 
     /**
-     * Deserializes a JSON string into a Message object.
-     * Returns null if parsing fails.
+     * Deserialize chuỗi JSON thành đối tượng Message.
+     * Trả về null nếu parse thất bại.
      */
     public static Message deserialize(String json) {
         if (json == null || json.trim().isEmpty()) {
@@ -47,14 +47,14 @@ public class JsonProtocol {
         }
         try {
             return gson.fromJson(json.trim(), Message.class);
-        } catch (JsonSyntaxException e) {
+        } catch (JsonParseException e) {
             System.err.println("JsonProtocol parse error: " + e.getMessage() + " | payload: " + json);
             return null;
         }
     }
 
     // ==========================================
-    // Convenience Factory Methods
+    // Các hàm factory tiện ích tạo message
     // ==========================================
 
     public static Message createRegister(String username, String password) {
@@ -107,6 +107,10 @@ public class JsonProtocol {
         p.addProperty("reason", reason);
         msg.setPayload(p);
         return msg;
+    }
+
+    public static Message createLogout() {
+        return new Message(MessageType.LOGOUT);
     }
 
     public static Message createGetOnlinePlayers() {

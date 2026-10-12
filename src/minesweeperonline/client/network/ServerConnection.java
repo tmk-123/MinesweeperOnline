@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Manages the TCP Socket connection from Client to Server.
- * Runs a background listener thread to read newline-delimited JSON messages
- * and dispatches them to registered listeners.
+ * Quản lý kết nối TCP Socket từ Client tới Server.
+ * Chạy một listener thread nền để đọc các message JSON phân tách bằng ký tự xuống dòng
+ * và chuyển chúng tới các listener đã đăng ký.
  */
 public class ServerConnection {
 
@@ -46,7 +46,7 @@ public class ServerConnection {
 
         try {
             socket = new Socket();
-            // Connect with 5-second timeout
+            // Kết nối với timeout 5 giây
             socket.connect(new InetSocketAddress(host, port), 5000);
 
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
@@ -54,7 +54,7 @@ public class ServerConnection {
 
             connected = true;
 
-            // Start background receiver thread
+            // Khởi động thread nền nhận dữ liệu
             listenerThread = new Thread(this::listenForIncomingMessages, "Client-Network-Listener");
             listenerThread.setDaemon(true);
             listenerThread.start();
@@ -97,7 +97,7 @@ public class ServerConnection {
                 socket.close();
             }
         } catch (IOException e) {
-            // Ignored
+            // Bỏ qua
         }
 
         notifyDisconnected(reason);

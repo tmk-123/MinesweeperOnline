@@ -14,13 +14,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Data Access Object for User entity.
- * Uses MySQL database via DatabaseConnection.
- * Gracefully falls back to memory cache if MySQL is not yet configured or temporarily offline.
+ * DAO (Data Access Object) cho entity User.
+ * Dùng database MySQL thông qua DatabaseConnection.
+ * Tự động fallback sang cache trong bộ nhớ nếu MySQL chưa được cấu hình hoặc tạm thời không hoạt động.
  */
 public class UserDAO {
 
-    // Fallback in-memory storage if MySQL is temporarily offline/unconfigured
+    // Bộ nhớ lưu trữ fallback khi MySQL tạm thời không hoạt động/chưa cấu hình
     private static final ConcurrentHashMap<String, User> fallbackUsers = new ConcurrentHashMap<>();
     private static final AtomicInteger fallbackIdGen = new AtomicInteger(100);
 
@@ -31,7 +31,7 @@ public class UserDAO {
     }
 
     /**
-     * Authenticates a user by username and password.
+     * Xác thực user bằng username và password.
      */
     public User authenticate(String username, String password) {
         String sql = "SELECT id, username, password, totalScore, createdAt FROM `User` WHERE username = ? AND password = ?";
@@ -46,9 +46,9 @@ public class UserDAO {
                     return mapRow(rs);
                 }
             }
-            return null; // Username or password wrong in MySQL
+            return null; // Sai username hoặc password trong MySQL
         } catch (SQLException e) {
-            // MySQL error/offline -> Fallback to in-memory store
+            // MySQL lỗi/không hoạt động -> fallback sang bộ nhớ trong
             System.err.println("[UserDAO] MySQL unavailable (" + e.getMessage() + "), using fallback in-memory store.");
             User u = fallbackUsers.get(username);
             if (u != null && u.getPassword().equals(password)) {
@@ -59,7 +59,7 @@ public class UserDAO {
     }
 
     /**
-     * Checks if a username already exists.
+     * Kiểm tra username đã tồn tại hay chưa.
      */
     public boolean existsByUsername(String username) {
         String sql = "SELECT 1 FROM `User` WHERE username = ?";
@@ -76,7 +76,7 @@ public class UserDAO {
     }
 
     /**
-     * Registers a new user.
+     * Đăng ký user mới.
      */
     public boolean register(String username, String password) {
         if (existsByUsername(username)) {
@@ -110,7 +110,7 @@ public class UserDAO {
     }
 
     /**
-     * Updates user's total score.
+     * Cập nhật tổng điểm của user.
      */
     public boolean updateScore(int userId, int newTotalScore) {
         String sql = "UPDATE `User` SET totalScore = ? WHERE id = ?";
@@ -148,7 +148,7 @@ public class UserDAO {
     }
 
     /**
-     * Retrieves top users ordered by score descending, then by wins descending.
+     * Lấy danh sách user top đầu, sắp xếp theo điểm giảm dần, sau đó theo số trận thắng giảm dần.
      */
     public List<LeaderboardEntry> getLeaderboard(int limit) {
         List<LeaderboardEntry> list = new ArrayList<>();
@@ -176,14 +176,14 @@ public class UserDAO {
                 return list;
             }
         } catch (SQLException e) {
-            // Fallback in-memory leaderboard
+            // Bảng xếp hạng fallback lấy từ bộ nhớ trong
             List<User> allUsers = new ArrayList<>(fallbackUsers.values());
             allUsers.sort((u1, u2) -> {
                 int scoreCmp = Integer.compare(u2.getTotalScore(), u1.getTotalScore());
                 if (scoreCmp != 0) return scoreCmp;
                 int[] s1 = MatchPlayerDAO.getFallbackStats(u1.getId());
                 int[] s2 = MatchPlayerDAO.getFallbackStats(u2.getId());
-                return Integer.compare(s2[0], s1[0]); // wins descending
+                return Integer.compare(s2[0], s1[0]); // số trận thắng giảm dần
             });
 
             int rank = 1;
@@ -197,7 +197,7 @@ public class UserDAO {
     }
 
     /**
-     * Retrieves top users ordered by score descending.
+     * Lấy danh sách user top đầu, sắp xếp theo điểm giảm dần.
      */
     public List<User> getTopRankings(int limit) {
         List<User> list = new ArrayList<>();

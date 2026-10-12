@@ -6,32 +6,32 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Generates random non-overlapping mines and calculates adjacent mine counts.
- * Supports first-click safety: ensures the first clicked cell has 0 adjacent mines (3x3 safe zone).
+ * Sinh mìn ngẫu nhiên không trùng lặp và tính số mìn xung quanh mỗi ô.
+ * Hỗ trợ an toàn ở lần click đầu: đảm bảo ô được click đầu tiên có 0 mìn xung quanh (vùng an toàn 3x3).
  */
 public class MineGenerator {
 
     private static final Random random = new Random();
 
     /**
-     * Generates mines without a safe zone (legacy/fallback).
+     * Sinh mìn không có vùng an toàn (bản cũ/fallback).
      */
     public static void generateMines(Cell[][] grid, int rows, int cols, int mineCount) {
         generateMines(grid, rows, cols, mineCount, -1, -1);
     }
 
     /**
-     * Places exact number of mines randomly without duplicates across the grid,
-     * ensuring that the cell at (safeRow, safeCol) and its 8 neighbors (3x3 zone)
-     * contain NO mines, so that the first clicked cell has an adjacent mine count of 0.
-     * Then calculates adjacentMines for all safe cells on the board.
+     * Đặt ngẫu nhiên đúng số lượng mìn trên lưới, không trùng lặp,
+     * đảm bảo ô (safeRow, safeCol) và 8 ô xung quanh nó (vùng 3x3)
+     * KHÔNG có mìn, để ô được click đầu tiên có số mìn xung quanh bằng 0.
+     * Sau đó tính adjacentMines cho tất cả các ô an toàn trên bàn cờ.
      *
-     * @param grid the 2D cell grid
-     * @param rows number of rows
-     * @param cols number of columns
-     * @param mineCount number of mines to place
-     * @param safeRow row of the first click (-1 if no safe zone)
-     * @param safeCol column of the first click (-1 if no safe zone)
+     * @param grid lưới ô 2 chiều
+     * @param rows số hàng
+     * @param cols số cột
+     * @param mineCount số mìn cần đặt
+     * @param safeRow hàng của lần click đầu tiên (-1 nếu không có vùng an toàn)
+     * @param safeCol cột của lần click đầu tiên (-1 nếu không có vùng an toàn)
      */
     public static void generateMines(Cell[][] grid, int rows, int cols, int mineCount, int safeRow, int safeCol) {
         int totalCells = rows * cols;
@@ -39,7 +39,7 @@ public class MineGenerator {
             throw new IllegalArgumentException("Mine count must be strictly less than total cells.");
         }
 
-        // Clear existing mines and adjacent counts without clearing flags or opened states
+        // Xóa mìn và số mìn xung quanh hiện có, giữ nguyên trạng thái cờ và ô đã mở
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 grid[r][c].setMine(false);
@@ -47,7 +47,7 @@ public class MineGenerator {
             }
         }
 
-        // Collect candidate cells outside the safe zone (safe cell + 8 surrounding neighbors)
+        // Gom các ô ứng viên nằm ngoài vùng an toàn (ô an toàn + 8 ô xung quanh)
         List<int[]> candidates = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
@@ -61,17 +61,17 @@ public class MineGenerator {
             throw new IllegalArgumentException("Mine count (" + mineCount + ") exceeds available candidates (" + candidates.size() + ").");
         }
 
-        // Randomly place mineCount mines
+        // Đặt ngẫu nhiên mineCount quả mìn
         Collections.shuffle(candidates, random);
         for (int i = 0; i < mineCount; i++) {
             int[] pos = candidates.get(i);
             grid[pos[0]][pos[1]].setMine(true);
         }
 
-        // Calculate adjacent mines for all cells
+        // Tính số mìn xung quanh cho tất cả các ô
         calculateAdjacentMines(grid, rows, cols);
 
-        // Verification check for safe cell
+        // Kiểm tra lại ô an toàn
         if (safeRow >= 0 && safeRow < rows && safeCol >= 0 && safeCol < cols) {
             if (grid[safeRow][safeCol].isMine() || grid[safeRow][safeCol].getAdjacentMines() != 0) {
                 throw new IllegalStateException("First click cell (" + safeRow + ", " + safeCol + ") must be safe and have 0 adjacent mines!");
@@ -80,7 +80,7 @@ public class MineGenerator {
     }
 
     /**
-     * Checks if cell (r, c) falls within the 3x3 safe zone centered at (safeRow, safeCol).
+     * Kiểm tra ô (r, c) có nằm trong vùng an toàn 3x3 có tâm tại (safeRow, safeCol) hay không.
      */
     public static boolean isInSafeZone(int r, int c, int safeRow, int safeCol) {
         if (safeRow < 0 || safeCol < 0) {
@@ -90,7 +90,7 @@ public class MineGenerator {
     }
 
     /**
-     * Calculates the adjacent mine count for all safe cells on the grid.
+     * Tính số mìn xung quanh cho tất cả các ô an toàn trên lưới.
      */
     public static void calculateAdjacentMines(Cell[][] grid, int rows, int cols) {
         for (int r = 0; r < rows; r++) {

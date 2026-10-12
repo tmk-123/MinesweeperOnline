@@ -3,7 +3,7 @@ package minesweeperonline.common.model;
 import java.io.Serializable;
 
 /**
- * Represents a registered user in the database.
+ * Đại diện cho một người dùng đã đăng ký trong cơ sở dữ liệu.
  */
 public class User implements Serializable {
 

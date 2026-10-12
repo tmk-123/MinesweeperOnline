@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Queue;
 
 /**
- * Server-authoritative Minesweeper Board (12x12, 23 mines, 121 safe cells).
- * Implements game actions (open cell, place/remove flag) and BFS flood-fill opening.
+ * Bàn cờ Minesweeper do server quản lý (12x12, 23 mìn, 121 ô an toàn).
+ * Xử lý các thao tác trong game (mở ô, cắm/gỡ cờ) và mở ô lan rộng bằng BFS flood-fill.
  */
 public class Board {
 
@@ -45,8 +45,8 @@ public class Board {
     }
 
     /**
-     * Initializes the board state without placing mines.
-     * Mines are generated lazily upon the first cell opening click.
+     * Khởi tạo trạng thái bàn cờ nhưng chưa đặt mìn.
+     * Mìn chỉ được sinh ra (lazy) khi người chơi mở ô đầu tiên.
      */
     public final void initialize() {
         this.openedSafeCells = 0;
@@ -77,14 +77,14 @@ public class Board {
     }
 
     /**
-     * Executes OPEN_CELL action.
-     * If this is the first open action, generates 23 mines ensuring the first
-     * cell has 0 adjacent mines (safe 3x3 neighborhood) and expands via BFS.
+     * Thực hiện thao tác OPEN_CELL.
+     * Nếu đây là lần mở ô đầu tiên thì sinh 23 mìn, đảm bảo ô đầu tiên
+     * có 0 mìn xung quanh (vùng 3x3 an toàn) rồi mở lan bằng BFS.
      *
-     * @param r row coordinate (0-11)
-     * @param c col coordinate (0-11)
-     * @param openedList output list collecting all newly opened cells (for network updates)
-     * @return OpenResult (INVALID, SAFE, or MINE)
+     * @param r tọa độ hàng (0-11)
+     * @param c tọa độ cột (0-11)
+     * @param openedList danh sách đầu ra chứa tất cả các ô vừa được mở (để gửi cập nhật qua mạng)
+     * @return OpenResult (INVALID, SAFE hoặc MINE)
      */
     public OpenResult openCell(int r, int c, List<Cell> openedList) {
         if (!isValidCoordinate(r, c)) {
@@ -96,16 +96,16 @@ public class Board {
             return OpenResult.INVALID;
         }
 
-        // Lazy mine generation on first click: guarantees target cell has 0 adjacent mines
+        // Sinh mìn ở lần click đầu tiên: đảm bảo ô được chọn có 0 mìn xung quanh
         if (!this.minesGenerated) {
             MineGenerator.generateMines(grid, ROWS, COLS, TOTAL_MINES, r, c);
             this.minesGenerated = true;
         }
 
-        // Each valid player click increases totalActions by 1
+        // Mỗi lần click hợp lệ của người chơi tăng totalActions thêm 1
         this.totalActions++;
 
-        // Case 1: Opened a mine -> immediate defeat
+        // Trường hợp 1: Mở trúng mìn -> thua ngay lập tức
         if (target.isMine()) {
             target.setExploded(true);
             target.setOpened(true);
@@ -113,7 +113,7 @@ public class Board {
             return OpenResult.MINE;
         }
 
-        // Case 2: Opened numbered cell (adjacentMines > 0) -> single open
+        // Trường hợp 2: Mở ô có số (adjacentMines > 0) -> chỉ mở đúng ô đó
         if (target.getAdjacentMines() > 0) {
             target.setOpened(true);
             this.openedSafeCells++;
@@ -121,7 +121,7 @@ public class Board {
             return OpenResult.SAFE;
         }
 
-        // Case 3: Opened blank cell (adjacentMines == 0) -> BFS expansion
+        // Trường hợp 3: Mở ô trống (adjacentMines == 0) -> mở lan bằng BFS
         Queue<Cell> queue = new ArrayDeque<>();
         target.setOpened(true);
         this.openedSafeCells++;
@@ -144,7 +144,7 @@ public class Board {
                             this.openedSafeCells++;
                             if (openedList != null) openedList.add(neighbor);
 
-                            // Only propagate queue for 0-cells
+                            // Chỉ đưa vào hàng đợi để lan tiếp với các ô có giá trị 0
                             if (neighbor.getAdjacentMines() == 0) {
                                 queue.add(neighbor);
                             }
@@ -158,7 +158,7 @@ public class Board {
     }
 
     /**
-     * Executes PLACE_FLAG action.
+     * Thực hiện thao tác PLACE_FLAG (cắm cờ).
      */
     public boolean placeFlag(int r, int c) {
         if (!isValidCoordinate(r, c)) return false;
@@ -175,7 +175,7 @@ public class Board {
     }
 
     /**
-     * Executes REMOVE_FLAG action.
+     * Thực hiện thao tác REMOVE_FLAG (gỡ cờ).
      */
     public boolean removeFlag(int r, int c) {
         if (!isValidCoordinate(r, c)) return false;
@@ -198,9 +198,9 @@ public class Board {
     }
 
     /**
-     * Converts this board to BoardState model.
+     * Chuyển bàn cờ này sang model BoardState.
      *
-     * @param maskMines if true, hides mine positions of unopened cells (opponent view)
+     * @param maskMines nếu true thì ẩn vị trí mìn của các ô chưa mở (góc nhìn của đối thủ)
      */
     public BoardState toBoardState(boolean maskMines) {
         BoardState state = new BoardState();

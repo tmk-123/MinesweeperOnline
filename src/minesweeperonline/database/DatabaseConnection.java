@@ -7,7 +7,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Manages JDBC Database Connection using settings centralized in ServerConfig.
+ * Quản lý JDBC connection tới database, dùng cấu hình tập trung trong ServerConfig.
  */
 public class DatabaseConnection {
 
@@ -20,10 +20,10 @@ public class DatabaseConnection {
     }
 
     /**
-     * Obtains a new JDBC Connection to MySQL.
+     * Lấy một JDBC connection mới tới MySQL.
      *
-     * @return active java.sql.Connection
-     * @throws SQLException if connection fails
+     * @return java.sql.Connection đang hoạt động
+     * @throws SQLException nếu kết nối thất bại
      */
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(
@@ -34,7 +34,7 @@ public class DatabaseConnection {
     }
 
     /**
-     * Tests whether the MySQL database is currently reachable.
+     * Kiểm tra hiện tại có kết nối được tới database MySQL hay không.
      */
     public static boolean testConnection() {
         try (Connection conn = getConnection()) {
@@ -47,7 +47,7 @@ public class DatabaseConnection {
     }
 
     /**
-     * Safely closes resources (Connection, Statement, ResultSet).
+     * Đóng an toàn các tài nguyên (Connection, Statement, ResultSet).
      */
     public static void close(AutoCloseable... closeables) {
         if (closeables == null) return;

@@ -3,8 +3,8 @@ package minesweeperonline.common.model;
 import java.io.Serializable;
 
 /**
- * Represents an active player in the system (lobby or active match).
- * Tracks both profile info and in-game statistics for a match.
+ * Đại diện cho một người chơi đang hoạt động trong hệ thống (ở sảnh chờ hoặc đang trong trận).
+ * Lưu cả thông tin hồ sơ lẫn thống kê trong một trận đấu.
  */
 public class Player implements Serializable {
 
@@ -19,7 +19,7 @@ public class Player implements Serializable {
     private int totalScore;
     private String status;
 
-    // Match-specific statistics
+    // Thống kê riêng cho từng trận
     private int openedSafeCells;
     private int currentFlags;
     private int flagsPlaced;

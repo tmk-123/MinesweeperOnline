@@ -7,9 +7,9 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Result Dialog displayed when the game concludes.
- * Shows outcome, statistics, score delta, and Play Again / Exit buttons.
- * Supports interactive rematch voting without freezing GUI updates.
+ * Dialog kết quả hiển thị khi ván chơi kết thúc.
+ * Hiển thị kết quả, thống kê, điểm cộng/trừ và các nút Chơi lại / Thoát.
+ * Hỗ trợ bình chọn chơi lại (rematch) mà không làm đơ việc cập nhật giao diện.
  */
 public class ResultDialog extends JDialog {
 
@@ -30,7 +30,7 @@ public class ResultDialog extends JDialog {
                         String titleOutcome, String reason, int scoreDelta,
                         int openedSafe, int totalActions, int flagsPlaced,
                         ResultActionListener listener) {
-        super(owner, "Kết Quả Trận Đấu", false); // Non-modal so network events can update dialog
+        super(owner, "Kết Quả Trận Đấu", false); // Non-modal để các sự kiện mạng vẫn cập nhật được dialog
         this.connection = connection;
         this.gameId = gameId;
         this.listener = listener;
@@ -48,7 +48,7 @@ public class ResultDialog extends JDialog {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
 
-        // Outcome Header
+        // Tiêu đề kết quả
         JLabel lblOutcome = new JLabel(titleOutcome, SwingConstants.CENTER);
         lblOutcome.setFont(new Font("Arial", Font.BOLD, 22));
 
@@ -61,7 +61,7 @@ public class ResultDialog extends JDialog {
         }
         mainPanel.add(lblOutcome, BorderLayout.NORTH);
 
-        // Stats details
+        // Chi tiết thống kê
         JPanel statsPanel = new JPanel(new GridLayout(5, 1, 6, 6));
         statsPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createTitledBorder("Thống kê trận đấu"),
@@ -84,7 +84,7 @@ public class ResultDialog extends JDialog {
         statsPanel.add(lblFlags);
         mainPanel.add(statsPanel, BorderLayout.CENTER);
 
-        // Footer Actions & Status
+        // Phần chân: nút thao tác & trạng thái
         JPanel southPanel = new JPanel(new BorderLayout(5, 5));
 
         lblStatusRematch = new JLabel(" ", SwingConstants.CENTER);

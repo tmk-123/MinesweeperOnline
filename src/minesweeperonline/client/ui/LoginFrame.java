@@ -10,7 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Login window for MinesweeperOnline.
+ * Cửa sổ đăng nhập của MinesweeperOnline.
  */
 public class LoginFrame extends JFrame {
 
@@ -20,6 +20,7 @@ public class LoginFrame extends JFrame {
     private JButton btnLogin;
     private JButton btnRegister;
     private RegisterFrame registerFrame;
+    private ServerConnection.MessageListener loginListener;
 
     public LoginFrame(ServerConnection connection) {
         this.connection = connection;
@@ -37,13 +38,13 @@ public class LoginFrame extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
 
-        // Title
+        // Tiêu đề
         JLabel lblTitle = new JLabel("ĐĂNG NHẬP HỆ THỐNG", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
         lblTitle.setForeground(new Color(30, 80, 150));
         mainPanel.add(lblTitle, BorderLayout.NORTH);
 
-        // Form fields
+        // Các ô nhập liệu
         JPanel formPanel = new JPanel(new GridLayout(2, 2, 10, 10));
         formPanel.add(new JLabel("Tên đăng nhập:"));
         txtUsername = new JTextField();
@@ -55,7 +56,7 @@ public class LoginFrame extends JFrame {
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
-        // Buttons
+        // Các nút bấm
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
         btnLogin = new JButton("Đăng nhập");
         btnLogin.setFont(new Font("Arial", Font.BOLD, 12));
@@ -67,12 +68,12 @@ public class LoginFrame extends JFrame {
 
         add(mainPanel);
 
-        // Action listeners
+        // Gắn các action listener
         btnLogin.addActionListener(e -> performLogin());
         txtPassword.addActionListener(e -> performLogin());
 
         btnRegister.addActionListener(e -> {
-            if (registerFrame == null) {
+            if (registerFrame == null || !registerFrame.isDisplayable()) {
                 registerFrame = new RegisterFrame(connection, this);
             }
             registerFrame.setVisible(true);
@@ -98,8 +99,15 @@ public class LoginFrame extends JFrame {
         connection.sendMessage(loginMsg);
     }
 
+    @Override
+    public void dispose() {
+        // Nếu không gỡ listener, frame đã dispose vẫn tiếp tục phản hồi LOGIN_SUCCESS sau khi đăng xuất
+        connection.removeMessageListener(loginListener);
+        super.dispose();
+    }
+
     private void setupNetworkListener() {
-        connection.addMessageListener(message -> {
+        loginListener = message -> {
             SwingUtilities.invokeLater(() -> {
                 if (message.getType() == MessageType.LOGIN_SUCCESS) {
                     int userId = message.getPayload().get("userId").getAsInt();
@@ -108,7 +116,7 @@ public class LoginFrame extends JFrame {
 
                     User loggedUser = new User(userId, username, totalScore);
 
-                    // Open MainMenuFrame and close LoginFrame
+                    // Mở MainMenuFrame và đóng LoginFrame
                     MainMenuFrame mainMenu = new MainMenuFrame(connection, loggedUser);
                     mainMenu.setVisible(true);
                     this.dispose();
@@ -122,6 +130,7 @@ public class LoginFrame extends JFrame {
                     JOptionPane.showMessageDialog(this, reason, "Lỗi đăng nhập", JOptionPane.ERROR_MESSAGE);
                 }
             });
-        });
+        };
+        connection.addMessageListener(loginListener);
     }
 }

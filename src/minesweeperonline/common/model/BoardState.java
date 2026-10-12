@@ -3,7 +3,7 @@ package minesweeperonline.common.model;
 import java.io.Serializable;
 
 /**
- * Represents the full observable state of a 12x12 Minesweeper board.
+ * Đại diện cho toàn bộ trạng thái hiển thị được của bàn cờ Minesweeper 12x12.
  */
 public class BoardState implements Serializable {
 
@@ -76,8 +76,8 @@ public class BoardState implements Serializable {
     }
 
     /**
-     * Produces a masked BoardState for the opponent.
-     * All unrevealed cells have their mine and adjacent count hidden.
+     * Tạo một BoardState đã che thông tin để gửi cho đối thủ.
+     * Mọi ô chưa mở đều bị ẩn thông tin mìn và số mìn lân cận.
      */
     public BoardState toOpponentView() {
         BoardState view = new BoardState();

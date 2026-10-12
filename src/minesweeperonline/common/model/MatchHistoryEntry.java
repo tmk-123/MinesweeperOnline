@@ -3,7 +3,7 @@ package minesweeperonline.common.model;
 import java.io.Serializable;
 
 /**
- * Data Transfer Object representing a single completed match record for a player.
+ * DTO (Data Transfer Object) đại diện cho một bản ghi trận đấu đã kết thúc của người chơi.
  */
 public class MatchHistoryEntry implements Serializable {
 
@@ -12,13 +12,13 @@ public class MatchHistoryEntry implements Serializable {
     private String matchId;
     private String opponentName;
     private String result;            // VICTORY, DEFEAT, DRAW, FORFEIT
-    private int scoreDelta;           // e.g. +5, -3, -5, +1
-    private int openedSafeCells;      // e.g. 42 / 121
-    private int flagsPlaced;          // e.g. 15
-    private int totalActions;         // e.g. 57
-    private int durationSeconds;      // match duration in seconds
-    private String playedAt;          // formatted date/time string e.g. "05/10/2026 23:45:00"
-    private String outcomeReason;     // e.g. "Đối thủ mở trúng mìn", "Hết giờ", etc.
+    private int scoreDelta;           // vd: +5, -3, -5, +1
+    private int openedSafeCells;      // vd: 42 / 121
+    private int flagsPlaced;          // vd: 15
+    private int totalActions;         // vd: 57
+    private int durationSeconds;      // thời lượng trận tính bằng giây
+    private String playedAt;          // chuỗi ngày/giờ đã định dạng, vd: "05/10/2026 23:45:00"
+    private String outcomeReason;     // vd: "Đối thủ mở trúng mìn", "Hết giờ", v.v.
 
     public MatchHistoryEntry() {
     }
@@ -119,7 +119,7 @@ public class MatchHistoryEntry implements Serializable {
     }
 
     /**
-     * Helper to return formatted duration e.g. "1m 45s" or "32s".
+     * Hàm tiện ích trả về thời lượng đã định dạng, vd: "1m 45s" hoặc "32s".
      */
     public String getFormattedDuration() {
         if (durationSeconds < 60) {

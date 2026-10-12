@@ -7,8 +7,8 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Dialog prompt displayed when another player challenges this user.
- * Features a 30-second countdown timer before automatic rejection.
+ * Dialog hiện ra khi có người chơi khác thách đấu người dùng này.
+ * Có timer đếm ngược 30 giây, hết giờ sẽ tự động từ chối.
  */
 public class ChallengeDialog extends JDialog {
 

@@ -16,11 +16,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Verification test for Phase 11: Match History (Lịch sử trận đấu):
- * 1. Direct DAO Match History query & recording verification.
- * 2. Full match play -> Forfeit outcome -> Match saved to DB/Fallback.
- * 3. Both players query GET_MATCH_HISTORY via TCP Socket.
- * 4. Verify opponent names, outcomes, score deltas, flags, actions, and timestamps.
+ * Test kiểm chứng cho Phase 11: Lịch sử trận đấu (Match History):
+ * 1. Kiểm tra trực tiếp DAO: ghi và truy vấn lịch sử trận đấu.
+ * 2. Chơi trọn một trận -> Kết quả bỏ cuộc -> Trận được lưu vào DB/Fallback.
+ * 3. Cả hai người chơi truy vấn GET_MATCH_HISTORY qua TCP Socket.
+ * 4. Kiểm tra tên đối thủ, kết quả, điểm thay đổi, số cờ, số thao tác và thời gian.
  */
 public class TestMatchHistory {
 
@@ -31,7 +31,7 @@ public class TestMatchHistory {
         System.out.println("      RUNNING PHASE 11: MATCH HISTORY TEST        ");
         System.out.println("==================================================");
 
-        // 1. Direct DAO Verification
+        // 1. Kiểm tra trực tiếp DAO
         MatchPlayerDAO dao = new MatchPlayerDAO();
         long now = System.currentTimeMillis();
         dao.saveFullMatchTransaction(
@@ -62,7 +62,7 @@ public class TestMatchHistory {
         System.out.println("   Opponent: " + e2.getOpponentName() + " | Result: " + e2.getResult() +
                 " | ScoreDelta: " + e2.getScoreDelta());
 
-        // 2. Client-Server TCP Protocol Integration Verification
+        // 2. Kiểm tra tích hợp protocol TCP giữa Client và Server
         MainServer server = new MainServer(TEST_PORT);
         new Thread(server::start, "TestServer-MatchHistory").start();
         Thread.sleep(500);
@@ -101,7 +101,7 @@ public class TestMatchHistory {
         client2.sendMessage(JsonProtocol.createLogin(p2Name, "pass123"));
         assert loginLatch.await(3, TimeUnit.SECONDS) : "Login failed";
 
-        // Challenge & Start Match
+        // Thách đấu và bắt đầu trận
         CountDownLatch matchCreatedLatch = new CountDownLatch(2);
         AtomicReference<String> gameIdRef = new AtomicReference<>();
 
@@ -123,17 +123,17 @@ public class TestMatchHistory {
         assert matchCreatedLatch.await(3, TimeUnit.SECONDS) : "Match creation failed";
         String gameId = gameIdRef.get();
 
-        // Wait for READY countdown -> GAME_START
+        // Chờ đếm ngược READY -> GAME_START
         CountDownLatch startLatch = new CountDownLatch(2);
         client1.addMessageListener(msg -> { if (msg.getType() == MessageType.GAME_START) startLatch.countDown(); });
         client2.addMessageListener(msg -> { if (msg.getType() == MessageType.GAME_START) startLatch.countDown(); });
         assert startLatch.await(7, TimeUnit.SECONDS) : "Game start countdown timed out";
 
-        // Client 1 places flag
+        // Client 1 cắm cờ
         client1.sendMessage(JsonProtocol.createPlaceFlag(gameId, 1, 1));
         Thread.sleep(100);
 
-        // Client 2 forfeits
+        // Client 2 bỏ cuộc
         CountDownLatch finishLatch = new CountDownLatch(2);
         client1.addMessageListener(msg -> { if (msg.getType() == MessageType.GAME_WIN) finishLatch.countDown(); });
         client2.addMessageListener(msg -> { if (msg.getType() == MessageType.GAME_LOSE) finishLatch.countDown(); });
@@ -141,7 +141,7 @@ public class TestMatchHistory {
         client2.sendMessage(JsonProtocol.createForfeit(gameId));
         assert finishLatch.await(3, TimeUnit.SECONDS) : "Match finish timed out";
 
-        // 3. Client 1 queries GET_MATCH_HISTORY over TCP
+        // 3. Client 1 truy vấn GET_MATCH_HISTORY qua TCP
         CountDownLatch hist1Latch = new CountDownLatch(1);
         AtomicReference<JsonArray> hist1ArrayRef = new AtomicReference<>();
 
@@ -170,7 +170,7 @@ public class TestMatchHistory {
                 " | Result: " + firstEntry1.get("result").getAsString() +
                 " | Delta: +" + firstEntry1.get("scoreDelta").getAsInt());
 
-        // 4. Client 2 queries GET_MATCH_HISTORY over TCP
+        // 4. Client 2 truy vấn GET_MATCH_HISTORY qua TCP
         CountDownLatch hist2Latch = new CountDownLatch(1);
         AtomicReference<JsonArray> hist2ArrayRef = new AtomicReference<>();
 

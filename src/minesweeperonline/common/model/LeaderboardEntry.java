@@ -1,7 +1,7 @@
 package minesweeperonline.common.model;
 
 /**
- * Represents a single ranking entry in the Leaderboard.
+ * Đại diện cho một dòng xếp hạng trong bảng xếp hạng (Leaderboard).
  */
 public class LeaderboardEntry {
 

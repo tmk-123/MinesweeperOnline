@@ -3,7 +3,7 @@ package minesweeperonline.game;
 import minesweeperonline.server.ServerConfig;
 
 /**
- * Outcome states and corresponding score adjustments for matches.
+ * Các kết quả trận đấu và mức điểm cộng/trừ tương ứng.
  */
 public enum GameResult {
     VICTORY(ServerConfig.SCORE_VICTORY),

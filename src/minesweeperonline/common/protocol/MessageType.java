@@ -1,33 +1,34 @@
 package minesweeperonline.common.protocol;
 
 /**
- * Message types for client-server communication in MinesweeperOnline.
+ * Các loại message dùng cho giao tiếp client-server trong MinesweeperOnline.
  */
 public enum MessageType {
-    // --- Authentication ---
+    // --- Xác thực ---
     REGISTER,
     REGISTER_SUCCESS,
     REGISTER_FAILED,
     LOGIN,
     LOGIN_SUCCESS,
     LOGIN_FAILED,
+    LOGOUT,
 
-    // --- Lobby & Online Users ---
+    // --- Sảnh chờ & người chơi online ---
     GET_ONLINE_PLAYERS,
     ONLINE_PLAYERS,
 
-    // --- Matchmaking & Challenge ---
+    // --- Ghép trận & thách đấu ---
     CHALLENGE,
     CHALLENGE_REQUEST,
     ACCEPT,
     REJECT,
     MATCH_CREATED,
 
-    // --- Game Lifecycle ---
+    // --- Vòng đời ván chơi ---
     GAME_READY,
     GAME_START,
 
-    // --- Game Actions ---
+    // --- Thao tác trong game ---
     OPEN_CELL,
     CELL_OPENED,
     PLACE_FLAG,
@@ -35,28 +36,28 @@ public enum MessageType {
     REMOVE_FLAG,
     FLAG_REMOVED,
 
-    // --- State Synchronization ---
+    // --- Đồng bộ trạng thái ---
     GAME_UPDATE,
 
-    // --- Game Outcomes ---
+    // --- Kết quả ván chơi ---
     GAME_WIN,
     GAME_LOSE,
     GAME_DRAW,
     FORFEIT,
     OPPONENT_DISCONNECTED,
 
-    // --- Post Game ---
+    // --- Sau ván chơi ---
     PLAY_AGAIN,
     EXIT,
 
-    // --- Leaderboard & Ranking ---
+    // --- Bảng xếp hạng ---
     GET_LEADERBOARD,
     LEADERBOARD,
 
-    // --- Match History ---
+    // --- Lịch sử trận đấu ---
     GET_MATCH_HISTORY,
     MATCH_HISTORY,
 
-    // --- Generic Error ---
+    // --- Lỗi chung ---
     ERROR
 }

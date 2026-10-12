@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
- * Standard protocol envelope for all network messages exchanged between Client and Server.
- * Format:
+ * Khung message chuẩn của protocol cho mọi message trao đổi qua mạng giữa Client và Server.
+ * Định dạng:
  * {
  *   "type": "...",
  *   "requestId": "...",
@@ -80,7 +80,7 @@ public class Message {
     }
 
     /**
-     * Helper to convert an arbitrary POJO into JsonObject payload.
+     * Hàm tiện ích chuyển một POJO bất kỳ thành payload dạng JsonObject.
      */
     public void setPayloadObject(Object object) {
         if (object == null) {
@@ -99,7 +99,7 @@ public class Message {
     }
 
     /**
-     * Helper to deserialize the payload into a specific class.
+     * Hàm tiện ích      payload thành một class cụ thể.
      */
     public <T> T getPayloadAs(Class<T> clazz) {
         if (payload == null) {

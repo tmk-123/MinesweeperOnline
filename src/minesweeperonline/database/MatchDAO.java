@@ -7,12 +7,12 @@ import java.sql.Timestamp;
 import java.sql.Types;
 
 /**
- * Data Access Object for Match entity.
+ * DAO (Data Access Object) cho entity Match.
  */
 public class MatchDAO {
 
     /**
-     * Inserts a completed Match record into the database within an existing Connection/Transaction.
+     * Thêm bản ghi Match đã kết thúc vào database, dùng Connection/transaction có sẵn.
      */
     public boolean insertMatch(Connection conn, String matchId, String status, long startedAt, long endedAt,
                                Integer winnerId, String result) throws SQLException {

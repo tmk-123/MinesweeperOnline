@@ -10,7 +10,7 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Panel displaying the list of active online players and challenge actions.
+ * Panel hiển thị danh sách người chơi đang online và các thao tác thách đấu.
  */
 public class OnlinePlayersPanel extends JPanel {
 

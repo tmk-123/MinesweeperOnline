@@ -3,7 +3,7 @@ package minesweeperonline.common.model;
 import java.io.Serializable;
 
 /**
- * Represents the observable state of a single cell in the 12x12 board.
+ * Đại diện cho trạng thái hiển thị được của một ô trên bàn cờ 12x12.
  */
 public class CellState implements Serializable {
 
@@ -13,9 +13,9 @@ public class CellState implements Serializable {
     private int col;
     private boolean opened;
     private boolean flagged;
-    private int adjacentMines; // 0-8 when opened, or -1 when hidden
-    private boolean mine;      // true if cell is a mine (hidden until revealed/game end)
-    private boolean exploded;  // true if this cell was opened and blew up
+    private int adjacentMines; // 0-8 khi đã mở, -1 khi còn ẩn
+    private boolean mine;      // true nếu ô là mìn (ẩn cho đến khi lộ ra/kết thúc game)
+    private boolean exploded;  // true nếu ô này bị mở và phát nổ
 
     public CellState() {
         this.opened = false;
@@ -92,8 +92,8 @@ public class CellState implements Serializable {
     }
 
     /**
-     * Creates a copy of this cell suitable for transmission to the opponent.
-     * Hides whether a hidden cell has a mine.
+     * Tạo bản sao của ô này phù hợp để gửi cho đối thủ.
+     * Ẩn thông tin ô chưa mở có phải là mìn hay không.
      */
     public CellState toOpponentView() {
         CellState copy = new CellState(row, col);
@@ -104,7 +104,7 @@ public class CellState implements Serializable {
             copy.setMine(this.mine);
             copy.setExploded(this.exploded);
         } else {
-            // Conceal mine info and adjacent count for hidden cells
+            // Che thông tin mìn và số mìn lân cận của các ô chưa mở
             copy.setAdjacentMines(-1);
             copy.setMine(false);
             copy.setExploded(false);

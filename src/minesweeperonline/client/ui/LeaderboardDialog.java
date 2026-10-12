@@ -11,7 +11,7 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Leaderboard Dialog displaying top players ranked by total score and victories.
+ * Dialog bảng xếp hạng, hiển thị các người chơi hàng đầu xếp theo tổng điểm và số trận thắng.
  */
 public class LeaderboardDialog extends JDialog {
 
@@ -36,7 +36,7 @@ public class LeaderboardDialog extends JDialog {
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(8, 8));
 
-        // Top Header
+        // Phần tiêu đề phía trên
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
         headerPanel.setBackground(new Color(245, 248, 255));
@@ -48,7 +48,7 @@ public class LeaderboardDialog extends JDialog {
 
         add(headerPanel, BorderLayout.NORTH);
 
-        // Center Table
+        // Bảng ở giữa
         String[] columns = {"Hạng", "Tên người chơi", "Điểm số", "Số trận thắng", "Tổng trận", "Tỉ lệ thắng"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -64,7 +64,7 @@ public class LeaderboardDialog extends JDialog {
         table.getTableHeader().setBackground(new Color(230, 238, 248));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Column widths
+        // Độ rộng các cột
         table.getColumnModel().getColumn(0).setPreferredWidth(65);
         table.getColumnModel().getColumn(1).setPreferredWidth(140);
         table.getColumnModel().getColumn(2).setPreferredWidth(80);
@@ -72,7 +72,7 @@ public class LeaderboardDialog extends JDialog {
         table.getColumnModel().getColumn(4).setPreferredWidth(80);
         table.getColumnModel().getColumn(5).setPreferredWidth(90);
 
-        // Custom cell renderer for rankings & highlighting
+        // Cell renderer tùy chỉnh để tô màu thứ hạng và làm nổi bật dòng
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
@@ -87,11 +87,11 @@ public class LeaderboardDialog extends JDialog {
                         c.setBackground(new Color(230, 245, 230));
                         setFont(getFont().deriveFont(Font.BOLD));
                     } else if (row == 0) {
-                        c.setBackground(new Color(255, 250, 230)); // Top 1 Gold tint
+                        c.setBackground(new Color(255, 250, 230)); // Top 1 tô màu vàng
                     } else if (row == 1) {
-                        c.setBackground(new Color(245, 245, 250)); // Top 2 Silver tint
+                        c.setBackground(new Color(245, 245, 250)); // Top 2 tô màu bạc
                     } else if (row == 2) {
-                        c.setBackground(new Color(253, 245, 238)); // Top 3 Bronze tint
+                        c.setBackground(new Color(253, 245, 238)); // Top 3 tô màu đồng
                     } else if (row % 2 == 1) {
                         c.setBackground(new Color(248, 249, 251));
                     } else {
@@ -110,7 +110,7 @@ public class LeaderboardDialog extends JDialog {
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         add(scrollPane, BorderLayout.CENTER);
 
-        // Bottom Panel
+        // Panel phía dưới
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 5));
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 12, 16));
 

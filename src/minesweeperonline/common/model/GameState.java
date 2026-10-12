@@ -1,18 +1,18 @@
 package minesweeperonline.common.model;
 
 /**
- * Lifecycle states of a GameSession.
+ * Các trạng thái trong vòng đời của một GameSession.
  */
 public enum GameState {
-    /** 5-second preparation and countdown phase before active gameplay. */
+    /** Giai đoạn chuẩn bị và đếm ngược 5 giây trước khi bắt đầu chơi. */
     READY,
 
-    /** Active playing state with 5-minute countdown timer. */
+    /** Đang chơi, có timer đếm ngược 5 phút. */
     PLAYING,
 
-    /** Timer expired at 00:00; game actions locked and arbitration starts. */
+    /** Timer về 00:00; khóa mọi thao tác trong game và bắt đầu phân xử kết quả. */
     TIMEOUT,
 
-    /** Final state after victory, defeat, draw, forfeit, or timeout settlement. */
+    /** Trạng thái cuối sau khi thắng, thua, hòa, đầu hàng hoặc phân xử hết giờ. */
     FINISHED
 }

@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages all active GameSessions on the server.
+ * Quản lý tất cả GameSession đang hoạt động trên server.
  */
 public class GameManager {
 
@@ -14,7 +14,7 @@ public class GameManager {
     private final ConcurrentHashMap<Integer, String> userToGameMap = new ConcurrentHashMap<>();
 
     /**
-     * Creates and registers a new GameSession for two players.
+     * Tạo và đăng ký một GameSession mới cho hai người chơi.
      */
     public GameSession createSession(Player p1, ClientHandler h1, Player p2, ClientHandler h2) {
         GameSession session = new GameSession(p1, h1, p2, h2);
@@ -42,15 +42,15 @@ public class GameManager {
     }
 
     /**
-     * Concludes a game session and marks it finished.
+     * Kết thúc một game session và đánh dấu là đã xong.
      */
     public boolean endSession(String gameId, int winnerUserId, String reason) {
         GameSession session = sessions.get(gameId);
         if (session != null) {
             boolean ended = session.finishGame(winnerUserId, reason);
             if (ended) {
-                userToGameMap.remove(session.getPlayer1().getUserId());
-                userToGameMap.remove(session.getPlayer2().getUserId());
+                userToGameMap.remove(session.getPlayer1().getUserId(), gameId);
+                userToGameMap.remove(session.getPlayer2().getUserId(), gameId);
                 System.out.println("[GameManager] Ended GameSession: " + gameId + " | reason=" + reason);
             }
             return ended;
@@ -59,13 +59,14 @@ public class GameManager {
     }
 
     /**
-     * Removes session from memory.
+     * Xóa session khỏi bộ nhớ.
      */
     public void removeSession(String gameId) {
         GameSession session = sessions.remove(gameId);
         if (session != null) {
-            userToGameMap.remove(session.getPlayer1().getUserId());
-            userToGameMap.remove(session.getPlayer2().getUserId());
+            // Chỉ bỏ map những người chơi còn trỏ tới CHÍNH session này (họ có thể đã ở session mới hơn)
+            userToGameMap.remove(session.getPlayer1().getUserId(), gameId);
+            userToGameMap.remove(session.getPlayer2().getUserId(), gameId);
             System.out.println("[GameManager] Removed GameSession: " + gameId);
         }
     }

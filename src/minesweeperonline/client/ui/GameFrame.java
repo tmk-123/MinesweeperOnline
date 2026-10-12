@@ -13,8 +13,8 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Main gameplay window for active 12x12 matches.
- * Displays player's board, opponent's mini-board, match stats, and real-time game clock.
+ * Cửa sổ chơi chính cho các trận đấu 12x12 đang diễn ra.
+ * Hiển thị bàn cờ của người chơi, bàn cờ thu nhỏ của đối thủ, thống kê trận và đồng hồ thời gian thực.
  */
 public class GameFrame extends JFrame {
 
@@ -66,11 +66,11 @@ public class GameFrame extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 8));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 
-        // 1. North: Player stats
+        // 1. Phía trên (North): thống kê người chơi
         infoPanel = new PlayerInfoPanel(currentUser.getUsername(), opponentName);
         mainPanel.add(infoPanel, BorderLayout.NORTH);
 
-        // 2. Center: Player 12x12 Board + Opponent Mini-board
+        // 2. Ở giữa (Center): bàn cờ 12x12 của người chơi + bàn cờ thu nhỏ của đối thủ
         JPanel boardsContainer = new JPanel(new BorderLayout(12, 0));
         boardPanel = new GameBoardPanel(connection, gameId);
         miniBoardPanel = new OpponentMiniBoardPanel();
@@ -79,7 +79,7 @@ public class GameFrame extends JFrame {
         boardsContainer.add(miniBoardPanel, BorderLayout.EAST);
         mainPanel.add(boardsContainer, BorderLayout.CENTER);
 
-        // 3. South: Status & Timer & Forfeit
+        // 3. Phía dưới (South): trạng thái, đồng hồ và nút đầu hàng
         JPanel southPanel = new JPanel(new BorderLayout(10, 5));
         southPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(210, 215, 220)),
@@ -285,7 +285,7 @@ public class GameFrame extends JFrame {
         }
         infoPanel.updateOpponentStats(oppSafeCells, oppFlags, oppActions);
 
-        // Update opponent mini-board
+        // Cập nhật bàn cờ thu nhỏ của đối thủ
         if (p.has("openedCoords") && p.get("openedCoords").isJsonArray()) {
             JsonArray coords = p.getAsJsonArray("openedCoords");
             for (JsonElement el : coords) {
@@ -314,7 +314,7 @@ public class GameFrame extends JFrame {
                 new ResultDialog.ResultActionListener() {
                     @Override
                     public void onPlayAgain() {
-                        // User clicked play again, dialog remains open showing waiting status
+                        // Người dùng đã bấm chơi lại, dialog vẫn mở và hiển thị trạng thái chờ
                     }
 
                     @Override

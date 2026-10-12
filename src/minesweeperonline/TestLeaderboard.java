@@ -16,9 +16,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Verification test for Leaderboard feature:
- * 1. UserDAO getLeaderboard ranking verification.
- * 2. Client-Server TCP query and response verification.
+ * Test kiểm chứng cho chức năng Bảng xếp hạng (Leaderboard):
+ * 1. Kiểm tra thứ hạng trả về từ UserDAO.getLeaderboard.
+ * 2. Kiểm tra truy vấn và phản hồi Client-Server qua TCP.
  */
 public class TestLeaderboard {
 
@@ -29,7 +29,7 @@ public class TestLeaderboard {
         System.out.println("       RUNNING LEADERBOARD INTEGRATION TEST       ");
         System.out.println("==================================================");
 
-        // 1. Direct DAO Verification
+        // 1. Kiểm tra trực tiếp DAO
         UserDAO userDAO = new UserDAO();
         List<LeaderboardEntry> list = userDAO.getLeaderboard(10);
         assert list != null && !list.isEmpty() : "Leaderboard list should not be empty!";
@@ -38,7 +38,7 @@ public class TestLeaderboard {
             System.out.println("   " + e);
         }
 
-        // Verify ordering: score of item i >= score of item i+1
+        // Kiểm tra thứ tự: điểm của phần tử i >= điểm của phần tử i+1
         for (int i = 0; i < list.size() - 1; i++) {
             assert list.get(i).getTotalScore() >= list.get(i + 1).getTotalScore() :
                     "Leaderboard sorting violation at index " + i;
@@ -46,7 +46,7 @@ public class TestLeaderboard {
         }
         System.out.println("[PASS] Leaderboard score ordering and rank numbering verified.");
 
-        // 2. Client-Server TCP Protocol Verification
+        // 2. Kiểm tra protocol TCP giữa Client và Server
         MainServer server = new MainServer(TEST_PORT);
         new Thread(server::start, "TestServer-Leaderboard").start();
         Thread.sleep(500);
@@ -69,7 +69,7 @@ public class TestLeaderboard {
         boolean loggedIn = loginLatch.await(3, TimeUnit.SECONDS);
         assert loggedIn : "Login failed!";
 
-        // Send GET_LEADERBOARD
+        // Gửi GET_LEADERBOARD
         CountDownLatch lbLatch = new CountDownLatch(1);
         AtomicReference<JsonArray> lbArrayRef = new AtomicReference<>();
 

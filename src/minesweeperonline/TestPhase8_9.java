@@ -12,11 +12,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Verification test for Phase 8 (Disconnect + Result + Score) & Phase 9 (Play Again):
- * 1. Match creation & real-time move synchronization.
- * 2. Mid-match Forfeit -> Verify WIN/LOSE score deltas (+5 / -5).
- * 3. Mutual Play Again -> Verify new match session creation (rematch).
- * 4. Mid-match Disconnection -> Verify opponent receives OPPONENT_DISCONNECTED victory.
+ * Test kiểm chứng cho Phase 8 (Ngắt kết nối + Kết quả + Điểm) và Phase 9 (Chơi lại):
+ * 1. Tạo trận và đồng bộ nước đi theo thời gian thực.
+ * 2. Bỏ cuộc giữa trận -> Kiểm tra điểm thay đổi khi WIN/LOSE (+5 / -5).
+ * 3. Cả hai cùng Chơi lại -> Kiểm tra tạo phiên trận mới (rematch).
+ * 4. Ngắt kết nối giữa trận -> Kiểm tra đối thủ nhận OPPONENT_DISCONNECTED và được xử thắng.
  */
 public class TestPhase8_9 {
 
@@ -27,7 +27,7 @@ public class TestPhase8_9 {
         System.out.println("       RUNNING PHASE 8 & 9 INTEGRATION TEST       ");
         System.out.println("==================================================");
 
-        // 1. Start Server
+        // 1. Khởi động Server
         MainServer server = new MainServer(TEST_PORT);
         new Thread(server::start, "TestServer-Phase89").start();
         Thread.sleep(500);
@@ -42,7 +42,7 @@ public class TestPhase8_9 {
         String user1 = "alpha_" + System.currentTimeMillis() % 10000;
         String user2 = "beta_" + System.currentTimeMillis() % 10000;
 
-        // Register & Login both
+        // Đăng ký và đăng nhập cả hai người chơi
         client1.sendMessage(JsonProtocol.createRegister(user1, "p123"));
         client2.sendMessage(JsonProtocol.createRegister(user2, "p123"));
         Thread.sleep(300);
@@ -71,7 +71,7 @@ public class TestPhase8_9 {
         assert loggedIn : "Login timed out!";
         System.out.println("[PASS] Both test players authenticated: " + user1 + "(id=" + user1Id.get() + "), " + user2 + "(id=" + user2Id.get() + ")");
 
-        // 2. Challenge & Match Creation
+        // 2. Thách đấu và tạo trận
         CountDownLatch matchCreatedLatch = new CountDownLatch(2);
         AtomicReference<String> gameIdRef = new AtomicReference<>();
 
@@ -83,7 +83,7 @@ public class TestPhase8_9 {
         });
         client2.addMessageListener(msg -> {
             if (msg.getType() == MessageType.CHALLENGE_REQUEST) {
-                // Accept challenge
+                // Chấp nhận thách đấu
                 int challengerId = msg.getPayload().get("fromUserId").getAsInt();
                 client2.sendMessage(JsonProtocol.createAccept(challengerId));
             } else if (msg.getType() == MessageType.MATCH_CREATED) {
@@ -97,7 +97,7 @@ public class TestPhase8_9 {
         String gameId = gameIdRef.get();
         System.out.println("[PASS] Match created with ID: " + gameId);
 
-        // Wait for READY 5s countdown -> GAME_START
+        // Chờ đếm ngược READY 5 giây -> GAME_START
         CountDownLatch startLatch = new CountDownLatch(2);
         client1.addMessageListener(msg -> {
             if (msg.getType() == MessageType.GAME_START) startLatch.countDown();
@@ -110,7 +110,7 @@ public class TestPhase8_9 {
         assert started : "Game start countdown timed out!";
         System.out.println("[PASS] GAME_START received by both players, entering PLAYING state.");
 
-        // 3. Test In-Game Move & Opponent Sync
+        // 3. Test nước đi trong trận và đồng bộ sang đối thủ
         CountDownLatch updateLatch = new CountDownLatch(1);
         client2.addMessageListener(msg -> {
             if (msg.getType() == MessageType.GAME_UPDATE) {
@@ -121,13 +121,13 @@ public class TestPhase8_9 {
             }
         });
 
-        // Player 1 places flag
+        // Người chơi 1 cắm cờ
         client1.sendMessage(JsonProtocol.createPlaceFlag(gameId, 2, 3));
         boolean updateReceived = updateLatch.await(2, TimeUnit.SECONDS);
         assert updateReceived : "Opponent did not receive real-time flag update!";
         System.out.println("[PASS] Real-time move sync verified: Client 2 received flag update from Client 1.");
 
-        // 4. Test Phase 8: Forfeit outcome & score arbitration
+        // 4. Test Phase 8: Kết quả bỏ cuộc và phân xử điểm
         CountDownLatch forfeitLatch = new CountDownLatch(2);
         AtomicReference<Integer> p1Delta = new AtomicReference<>();
         AtomicReference<Integer> p2Delta = new AtomicReference<>();
@@ -145,7 +145,7 @@ public class TestPhase8_9 {
             }
         });
 
-        // Player 1 forfeits
+        // Người chơi 1 bỏ cuộc
         client1.sendMessage(JsonProtocol.createForfeit(gameId));
         boolean forfeitHandled = forfeitLatch.await(3, TimeUnit.SECONDS);
         assert forfeitHandled : "Forfeit handling timed out!";
@@ -153,7 +153,7 @@ public class TestPhase8_9 {
         assert p2Delta.get() == 5 : "Winner scoreDelta must be +5!";
         System.out.println("[PASS] Phase 8 Forfeit verified: Loser delta=" + p1Delta.get() + ", Winner delta=" + p2Delta.get());
 
-        // 5. Test Phase 9: Play Again Rematch flow
+        // 5. Test Phase 9: Luồng Chơi lại (rematch)
         CountDownLatch rematchLatch = new CountDownLatch(2);
         AtomicReference<String> newGameIdRef = new AtomicReference<>();
 
@@ -169,7 +169,7 @@ public class TestPhase8_9 {
             }
         });
 
-        // Both players request Play Again
+        // Cả hai người chơi đều yêu cầu Chơi lại
         client1.sendMessage(JsonProtocol.createPlayAgain(gameId));
         Thread.sleep(100);
         client2.sendMessage(JsonProtocol.createPlayAgain(gameId));
@@ -180,7 +180,7 @@ public class TestPhase8_9 {
         assert !newGameId.equals(gameId) : "Rematch should generate a brand new game ID!";
         System.out.println("[PASS] Phase 9 Rematch verified: Brand new game session created with ID: " + newGameId);
 
-        // Wait for rematch GAME_START
+        // Chờ GAME_START của trận rematch
         CountDownLatch rematchStartLatch = new CountDownLatch(1);
         client2.addMessageListener(msg -> {
             if (msg.getType() == MessageType.GAME_START) {
@@ -191,7 +191,7 @@ public class TestPhase8_9 {
         assert rematchPlaying : "Rematch GAME_START timed out!";
         System.out.println("[PASS] Rematch entered PLAYING state.");
 
-        // 6. Test Disconnect Mid-Match (Phase 8)
+        // 6. Test ngắt kết nối giữa trận (Phase 8)
         CountDownLatch dcLatch = new CountDownLatch(1);
         AtomicReference<Integer> dcDelta = new AtomicReference<>();
 
@@ -202,7 +202,7 @@ public class TestPhase8_9 {
             }
         });
 
-        // Client 1 disconnects mid-game
+        // Client 1 ngắt kết nối giữa trận
         client1.disconnect("Simulated disconnect test");
         boolean dcHandled = dcLatch.await(3, TimeUnit.SECONDS);
         assert dcHandled : "Opponent disconnect notification timed out!";

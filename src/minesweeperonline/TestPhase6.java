@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Verification test for Phase 6:
- * 1. Board & MineGenerator validation (12x12, exactly 23 mines, 121 safe cells).
- * 2. BFS flood-fill opening validation.
- * 3. Flagging actions and limits (max 23 flags).
- * 4. GameRules timeout arbitration criteria.
+ * Test kiểm chứng cho Phase 6:
+ * 1. Kiểm tra Board và MineGenerator (12x12, đúng 23 mìn, 121 ô an toàn).
+ * 2. Kiểm tra mở ô loang (flood-fill) bằng BFS.
+ * 3. Thao tác cắm cờ và giới hạn (tối đa 23 cờ).
+ * 4. Các tiêu chí phân xử khi hết giờ của GameRules.
  */
 public class TestPhase6 {
 
@@ -22,7 +22,7 @@ public class TestPhase6 {
         System.out.println("       RUNNING PHASE 6 GAME LOGIC VERIFICATION    ");
         System.out.println("==================================================");
 
-        // 1. Validate Initial Board state (No mines generated yet)
+        // 1. Kiểm tra trạng thái ban đầu của Board (chưa sinh mìn)
         Board board = new Board();
         assert !board.isMinesGenerated() : "Mines must NOT be generated when game starts!";
         int initialMines = 0;
@@ -37,7 +37,7 @@ public class TestPhase6 {
         assert initialMines == 0 : "Board must have 0 mines before first click!";
         System.out.println("[PASS] Board initially created: 144 clean cells, no mines generated yet.");
 
-        // 2. Validate Flagging logic & limits before first click
+        // 2. Kiểm tra logic cắm cờ và giới hạn trước lần click đầu tiên
         int testFlagR = 0, testFlagC = 0;
         boolean flagPlaced = board.placeFlag(testFlagR, testFlagC);
         assert flagPlaced : "Failed to place flag!";
@@ -53,14 +53,14 @@ public class TestPhase6 {
         assert board.getTotalActions() == 2 : "totalActions should be 2!";
         System.out.println("[PASS] Flag removed successfully.");
 
-        // 3. Validate First Click (Lazy Mine Generation & Guaranteed 0-cell)
+        // 3. Kiểm tra lần click đầu tiên (sinh mìn trễ và đảm bảo ô số 0)
         int firstR = 5, firstC = 5;
         List<Cell> openedList = new ArrayList<>();
         Board.OpenResult openRes = board.openCell(firstR, firstC, openedList);
         assert openRes == Board.OpenResult.SAFE : "First click must always be SAFE!";
         assert board.isMinesGenerated() : "Mines must be generated after first click!";
 
-        // 3a. Validate Mine count (exactly 23 mines, 121 safe cells)
+        // 3a. Kiểm tra số lượng mìn (đúng 23 mìn, 121 ô an toàn)
         int mineCount = 0;
         int safeCount = 0;
         for (int r = 0; r < Board.ROWS; r++) {
@@ -77,7 +77,7 @@ public class TestPhase6 {
         assert safeCount == Board.TOTAL_SAFE_CELLS : "Safe count mismatch! Expected 121, got " + safeCount;
         System.out.println("[PASS] 23 mines placed on first click (121 safe cells total).");
 
-        // 3b. Validate that first cell has 0 adjacent mines and 3x3 surrounding zone has no mines
+        // 3b. Kiểm tra ô đầu tiên có 0 mìn kề và vùng 3x3 xung quanh không có mìn
         Cell firstCell = board.getCell(firstR, firstC);
         assert !firstCell.isMine() : "First clicked cell must NOT be a mine!";
         assert firstCell.getAdjacentMines() == 0 : "First clicked cell must have 0 adjacent mines! Got: " + firstCell.getAdjacentMines();
@@ -93,7 +93,7 @@ public class TestPhase6 {
         }
         System.out.println("[PASS] First clicked cell (5,5) is guaranteed 0, and entire 3x3 zone is free of mines.");
 
-        // 3c. Validate neighbor calculations across the entire board
+        // 3c. Kiểm tra việc tính số mìn kề trên toàn bộ bàn chơi
         for (int r = 0; r < Board.ROWS; r++) {
             for (int c = 0; c < Board.COLS; c++) {
                 Cell cell = board.getCell(r, c);
@@ -116,7 +116,7 @@ public class TestPhase6 {
         }
         System.out.println("[PASS] Neighbor mine calculations verified for all cells.");
 
-        // 3d. Validate BFS Flood-fill opening
+        // 3d. Kiểm tra mở ô loang (flood-fill) bằng BFS
         assert openedList.size() >= 9 : "BFS on interior 0-cell must open at least the 3x3 area (9 cells)! Opened: " + openedList.size();
         assert board.getOpenedSafeCells() == openedList.size() : "openedSafeCells count mismatch!";
         assert board.getTotalActions() == 3 : "totalActions must only increment by 1 for the click!";
@@ -128,14 +128,14 @@ public class TestPhase6 {
                 " cells | openedSafeCells=" + board.getOpenedSafeCells() +
                 " | totalActions=" + board.getTotalActions() + " (actions not inflated).");
 
-        // 3e. Validate that subsequent clicks do NOT regenerate mines
+        // 3e. Kiểm tra các lần click sau KHÔNG sinh lại mìn
         boolean[][] mineMapBefore = new boolean[Board.ROWS][Board.COLS];
         for (int r = 0; r < Board.ROWS; r++) {
             for (int c = 0; c < Board.COLS; c++) {
                 mineMapBefore[r][c] = board.getCell(r, c).isMine();
             }
         }
-        // Find an unopened safe cell to click
+        // Tìm một ô an toàn chưa mở để click
         for (int r = 0; r < Board.ROWS; r++) {
             for (int c = 0; c < Board.COLS; c++) {
                 Cell cCell = board.getCell(r, c);
@@ -153,28 +153,28 @@ public class TestPhase6 {
         }
         System.out.println("[PASS] Mine positions remain strictly fixed on subsequent clicks.");
 
-        // 5. Validate GameRules.arbitrateTimeout rules
+        // 5. Kiểm tra các quy tắc của GameRules.arbitrateTimeout
         Player p1 = new Player(10, "P1", 0);
         Player p2 = new Player(20, "P2", 0);
 
-        // Rule 1: More opened safe cells wins
+        // Quy tắc 1: Mở được nhiều ô an toàn hơn thì thắng
         p1.setOpenedSafeCells(50);
         p2.setOpenedSafeCells(40);
         assert GameRules.arbitrateTimeout(p1, p2) == 10 : "Rule 1 timeout arbitration failed!";
 
-        // Rule 2: Equal safe cells -> fewer total actions wins
+        // Quy tắc 2: Bằng số ô an toàn -> ít tổng thao tác hơn thì thắng
         p2.setOpenedSafeCells(50);
         p1.setTotalActions(20);
         p2.setTotalActions(25);
         assert GameRules.arbitrateTimeout(p1, p2) == 10 : "Rule 2 timeout arbitration failed!";
 
-        // Rule 3: Equal safe cells & actions -> more flags placed wins
+        // Quy tắc 3: Bằng số ô an toàn và thao tác -> cắm nhiều cờ hơn thì thắng
         p2.setTotalActions(20);
         p1.setFlagsPlaced(15);
         p2.setFlagsPlaced(10);
         assert GameRules.arbitrateTimeout(p1, p2) == 10 : "Rule 3 timeout arbitration failed!";
 
-        // Rule 4: Everything equal -> DRAW (0)
+        // Quy tắc 4: Mọi chỉ số bằng nhau -> HÒA (0)
         p2.setFlagsPlaced(15);
         assert GameRules.arbitrateTimeout(p1, p2) == 0 : "Rule 4 timeout arbitration failed!";
         System.out.println("[PASS] GameRules.arbitrateTimeout verified against all 4 ranking rules.");

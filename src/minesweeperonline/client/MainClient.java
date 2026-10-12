@@ -7,14 +7,18 @@ import minesweeperonline.server.ServerConfig;
 import javax.swing.*;
 
 /**
- * Main entry point for the Minesweeper Swing Client application.
+ * Điểm khởi chạy chính của ứng dụng Client Minesweeper (Swing).
  */
 public class MainClient {
 
     private final ServerConnection connection;
+    private final String host;
+    private final int port;
 
-    public MainClient() {
+    public MainClient(String host, int port) {
         this.connection = new ServerConnection();
+        this.host = host;
+        this.port = port;
     }
 
     public void launch() {
@@ -29,13 +33,13 @@ public class MainClient {
     }
 
     private void connectAndOpenLogin() {
-        boolean connected = connection.connect(ServerConfig.DEFAULT_HOST, ServerConfig.DEFAULT_PORT);
+        boolean connected = connection.connect(host, port);
         if (connected) {
             LoginFrame loginFrame = new LoginFrame(connection);
             loginFrame.setVisible(true);
         } else {
             int option = JOptionPane.showConfirmDialog(null,
-                    "Không thể kết nối đến Máy chủ (127.0.0.1:" + ServerConfig.DEFAULT_PORT + ")!\n" +
+                    "Không thể kết nối đến Máy chủ (" + host + ":" + port + ")!\n" +
                     "Vui lòng đảm bảo MainServer đã được khởi động.\n\nBạn có muốn thử kết nối lại không?",
                     "Lỗi kết nối Server",
                     JOptionPane.YES_NO_OPTION,
@@ -49,8 +53,24 @@ public class MainClient {
         }
     }
 
+    /**
+     * Cách dùng: MainClient [host] [port]  (mặc định 127.0.0.1 2209).
+     * Truyền IP LAN của máy chạy server để chơi từ máy tính khác.
+     */
     public static void main(String[] args) {
-        MainClient app = new MainClient();
+        String host = ServerConfig.DEFAULT_HOST;
+        int port = ServerConfig.DEFAULT_PORT;
+        if (args.length > 0) {
+            host = args[0];
+        }
+        if (args.length > 1) {
+            try {
+                port = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid port parameter, using default: " + port);
+            }
+        }
+        MainClient app = new MainClient(host, port);
         app.launch();
     }
 }

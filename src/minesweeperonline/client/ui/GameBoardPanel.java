@@ -9,9 +9,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * 12x12 Minesweeper Interactive Game Board.
- * Left-click to OPEN_CELL, Right-click to PLACE_FLAG / REMOVE_FLAG.
- * Uses high-quality vector icons for flags and mines, avoiding OS font glyph issues.
+ * Bàn cờ Minesweeper 12x12 có thể tương tác.
+ * Click trái để OPEN_CELL, click phải để PLACE_FLAG / REMOVE_FLAG.
+ * Dùng icon vector chất lượng cao cho cờ và mìn, tránh lỗi hiển thị ký tự font của hệ điều hành.
  */
 public class GameBoardPanel extends JPanel {
 
@@ -26,17 +26,17 @@ public class GameBoardPanel extends JPanel {
 
     private boolean interactive = false;
 
-    // Classic number colors
+    // Màu số kiểu cổ điển
     private static final Color[] NUMBER_COLORS = {
             Color.BLACK,
-            new Color(0, 0, 255),       // 1: Blue
-            new Color(0, 128, 0),       // 2: Green
-            new Color(255, 0, 0),       // 3: Red
-            new Color(0, 0, 128),       // 4: Navy
-            new Color(128, 0, 0),       // 5: Dark Red
-            new Color(0, 128, 128),     // 6: Teal
-            Color.BLACK,                // 7: Black
-            Color.GRAY                  // 8: Gray
+            new Color(0, 0, 255),       // 1: Xanh dương
+            new Color(0, 128, 0),       // 2: Xanh lá
+            new Color(255, 0, 0),       // 3: Đỏ
+            new Color(0, 0, 128),       // 4: Xanh navy
+            new Color(128, 0, 0),       // 5: Đỏ sẫm
+            new Color(0, 128, 128),     // 6: Xanh mòng két
+            Color.BLACK,                // 7: Đen
+            Color.GRAY                  // 8: Xám
     };
 
     private static final Icon FLAG_ICON = new FlagIcon();
@@ -79,12 +79,12 @@ public class GameBoardPanel extends JPanel {
                         if (!interactive || opened[row][col]) return;
 
                         if (SwingUtilities.isLeftMouseButton(e)) {
-                            // Left click -> Open Cell
+                            // Click trái -> mở ô
                             if (!flagged[row][col]) {
                                 connection.sendMessage(JsonProtocol.createOpenCell(gameId, row, col));
                             }
                         } else if (SwingUtilities.isRightMouseButton(e)) {
-                            // Right click -> Toggle Flag
+                            // Click phải -> bật/tắt cờ
                             if (flagged[row][col]) {
                                 connection.sendMessage(JsonProtocol.createRemoveFlag(gameId, row, col));
                             } else {
@@ -101,7 +101,7 @@ public class GameBoardPanel extends JPanel {
     }
 
     /**
-     * Updates and reveals a cell after receiving confirmation from Server.
+     * Cập nhật và hiển thị một ô sau khi nhận xác nhận từ Server.
      */
     public void revealCell(int r, int c, int adjacentMines, boolean isMine, boolean isExploded) {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
@@ -154,7 +154,7 @@ public class GameBoardPanel extends JPanel {
     }
 
     /**
-     * Vector icon for rendering crisp red flag with dark flagpole and base stand.
+     * Icon vector vẽ lá cờ đỏ sắc nét với cán cờ màu tối và đế cờ.
      */
     private static class FlagIcon implements Icon {
         private final int width = 20;
@@ -165,21 +165,21 @@ public class GameBoardPanel extends JPanel {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // Flag pole
+            // Cán cờ
             g2.setColor(new Color(50, 50, 50));
             g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.drawLine(x + 5, y + 2, x + 5, y + 17);
 
-            // Gold finial ball on top of pole
+            // Quả cầu vàng trên đỉnh cán cờ
             g2.setColor(new Color(220, 180, 30));
             g2.fillOval(x + 4, y + 1, 3, 3);
 
-            // Pole base stand
+            // Đế cán cờ
             g2.setColor(new Color(50, 50, 50));
             g2.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.drawLine(x + 2, y + 17, x + 10, y + 17);
 
-            // Red flag triangle (pennant pointing right)
+            // Lá cờ tam giác màu đỏ (đuôi nheo hướng sang phải)
             Polygon flag = new Polygon();
             flag.addPoint(x + 6, y + 2);
             flag.addPoint(x + 17, y + 6);
@@ -202,7 +202,7 @@ public class GameBoardPanel extends JPanel {
     }
 
     /**
-     * Vector icon for rendering classic Minesweeper naval mine.
+     * Icon vector vẽ quả mìn kiểu Minesweeper cổ điển.
      */
     private static class MineIcon implements Icon {
         private final int width = 20;
@@ -222,7 +222,7 @@ public class GameBoardPanel extends JPanel {
             int cy = y + height / 2;
             int r = 6;
 
-            // Spikes (cross & diagonals)
+            // Các gai mìn (chữ thập & đường chéo)
             g2.setColor(exploded ? new Color(140, 20, 20) : new Color(40, 40, 40));
             g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.drawLine(cx - r - 3, cy, cx + r + 3, cy);
@@ -231,11 +231,11 @@ public class GameBoardPanel extends JPanel {
             g2.drawLine(cx - diag, cy - diag, cx + diag, cy + diag);
             g2.drawLine(cx - diag, cy + diag, cx + diag, cy - diag);
 
-            // Mine body
+            // Thân quả mìn
             g2.setColor(exploded ? new Color(220, 30, 30) : new Color(30, 30, 30));
             g2.fillOval(cx - r, cy - r, r * 2, r * 2);
 
-            // Specular light highlight
+            // Điểm phản quang
             g2.setColor(Color.WHITE);
             g2.fillOval(cx - 3, cy - 3, 2, 2);
 

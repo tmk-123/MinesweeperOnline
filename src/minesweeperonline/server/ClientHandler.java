@@ -20,12 +20,25 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Handles communication with an individual TCP Client.
- * Runs on a dedicated Thread per client connection.
+ * Xử lý giao tiếp với một TCP client.
+ * Mỗi kết nối client chạy trên một Thread riêng.
  */
 public class ClientHandler implements Runnable {
+
+    // Hủy các lời mời không được trả lời sau CHALLENGE_TIMEOUT_SECONDS
+    private static final ScheduledExecutorService CHALLENGE_TIMER =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "Challenge-Timer");
+                t.setDaemon(true);
+                return t;
+            });
+    private static final AtomicLong CHALLENGE_SEQ = new AtomicLong();
 
     private final Socket socket;
     private final ClientManager clientManager;
@@ -34,9 +47,15 @@ public class ClientHandler implements Runnable {
     private BufferedReader reader;
     private PrintWriter writer;
 
-    private User user;
-    private Player player;
+    // Được thread khác đọc (sảnh, game session); khi logout thì ghi trong synchronized (clientManager)
+    private volatile User user;
+    private volatile Player player;
     private volatile boolean running = true;
+
+    // Trạng thái lời mời thách đấu đang chờ (-1 = không có). Được bảo vệ bởi synchronized (clientManager).
+    private int pendingTargetId = -1;      // user mà client này đã thách đấu
+    private int pendingChallengerId = -1;  // user đã thách đấu client này
+    private long pendingChallengeToken;    // định danh lời mời mà client này đã gửi
 
     private final UserDAO userDAO = new UserDAO();
 
@@ -67,7 +86,13 @@ public class ClientHandler implements Runnable {
 
                 Message message = JsonProtocol.deserialize(line);
                 if (message != null) {
-                    handleMessage(message);
+                    // Payload sai định dạng (vd: thiếu "row") không được làm chết kết nối
+                    try {
+                        handleMessage(message);
+                    } catch (RuntimeException e) {
+                        System.err.println("[ClientHandler] Error handling " + message.getType() + ": " + e);
+                        sendMessage(JsonProtocol.createError(message.getRequestId(), "Yeu cau khong hop le!"));
+                    }
                 } else {
                     sendMessage(JsonProtocol.createError("", "Invalid JSON message format"));
                 }
@@ -81,7 +106,7 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Dispatches and processes an incoming protocol message.
+     * Phân loại và xử lý một message protocol nhận được.
      */
     public void handleMessage(Message message) {
         if (message == null || message.getType() == null) {
@@ -97,6 +122,10 @@ public class ClientHandler implements Runnable {
 
             case REGISTER:
                 handleRegister(message);
+                break;
+
+            case LOGOUT:
+                handleLogout(message);
                 break;
 
             case GET_ONLINE_PLAYERS:
@@ -203,9 +232,19 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        if (clientManager.isUserOnline(dbUser.getId())) {
+        ClientHandler existing = clientManager.getClientByUserId(dbUser.getId());
+        if (existing != null && existing != this) {
             sendMessage(JsonProtocol.createLoginFailed("Tai khoan dang duoc dang nhap o mot thiet bi khac!"));
             return;
+        }
+
+        // Client đăng xuất không gửi LOGOUT: cùng một kết nối đăng nhập lại,
+        // nên phải giải phóng tài khoản cũ đang gắn với kết nối này.
+        if (this.user != null) {
+            cancelPendingChallenge();
+            if (this.user.getId() != dbUser.getId()) {
+                clientManager.unregisterUser(this.user.getId());
+            }
         }
 
         this.user = dbUser;
@@ -297,6 +336,7 @@ public class ClientHandler implements Runnable {
         if (message.getPayload() != null && message.getPayload().has("limit")) {
             limit = message.getPayload().get("limit").getAsInt();
         }
+        limit = Math.max(1, Math.min(limit, 100));
         MatchPlayerDAO matchPlayerDAO = new MatchPlayerDAO();
         List<MatchHistoryEntry> list = matchPlayerDAO.getMatchHistory(user.getId(), limit);
 
@@ -322,24 +362,71 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        ClientHandler targetHandler = clientManager.getClientByUserId(targetUserId);
-        if (targetHandler == null || targetHandler.getPlayer() == null) {
-            sendMessage(JsonProtocol.createError(message.getRequestId(), "Nguoi choi khong online!"));
-            return;
+        ClientHandler targetHandler;
+        // Kiểm tra rồi cập nhật trạng thái của hai người chơi phải là atomic: hai người
+        // cùng lúc thách đấu một người thì không được cả hai cùng thành công.
+        synchronized (clientManager) {
+            if (!Player.STATUS_IDLE.equals(player.getStatus())) {
+                sendMessage(JsonProtocol.createError(message.getRequestId(), "Ban dang ban, khong the thach dau!"));
+                return;
+            }
+
+            targetHandler = clientManager.getClientByUserId(targetUserId);
+            if (targetHandler == null || targetHandler.getPlayer() == null) {
+                sendMessage(JsonProtocol.createError(message.getRequestId(), "Nguoi choi khong online!"));
+                return;
+            }
+
+            if (!Player.STATUS_IDLE.equals(targetHandler.getPlayer().getStatus())) {
+                sendMessage(JsonProtocol.createError(message.getRequestId(), "Nguoi choi dang ban hoac dang thi dau!"));
+                return;
+            }
+
+            // Cả hai người chơi chuyển sang CHALLENGING trong lúc lời mời đang PENDING
+            player.setStatus(Player.STATUS_CHALLENGING);
+            targetHandler.getPlayer().setStatus(Player.STATUS_CHALLENGING);
+            this.pendingTargetId = targetUserId;
+            targetHandler.pendingChallengerId = user.getId();
+            this.pendingChallengeToken = CHALLENGE_SEQ.incrementAndGet();
         }
 
-        if (!Player.STATUS_IDLE.equals(targetHandler.getPlayer().getStatus())) {
-            sendMessage(JsonProtocol.createError(message.getRequestId(), "Nguoi choi dang ban hoac dang thi dau!"));
-            return;
-        }
+        // Hạn chót phía server: lời mời tự hết hạn kể cả khi người được mời không trả lời
+        long token = pendingChallengeToken;
+        CHALLENGE_TIMER.schedule(() -> expireChallenge(token),
+                ServerConfig.CHALLENGE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-        // Mark challenger as challenging
-        player.setStatus(Player.STATUS_CHALLENGING);
-        targetHandler.getPlayer().setStatus(Player.STATUS_CHALLENGING);
-
-        // Forward CHALLENGE_REQUEST to target
+        // Chuyển tiếp CHALLENGE_REQUEST tới người được mời
         Message challengeReq = JsonProtocol.createChallengeRequest(user.getId(), user.getUsername());
         targetHandler.sendMessage(challengeReq);
+    }
+
+    /**
+     * Chạy trên thread Challenge-Timer: nếu lời mời ứng với token vẫn còn
+     * PENDING thì hủy nó, giống như người được mời gửi REJECT.
+     */
+    private void expireChallenge(long token) {
+        Message rejMsg;
+        synchronized (clientManager) {
+            if (pendingTargetId < 0 || pendingChallengeToken != token) {
+                return; // đã được chấp nhận / từ chối / hủy
+            }
+            ClientHandler target = clientManager.getClientByUserId(pendingTargetId);
+            if (target != null && target.pendingChallengerId == user.getId()) {
+                target.pendingChallengerId = -1;
+                target.getPlayer().setStatus(Player.STATUS_IDLE);
+            }
+            rejMsg = new Message(MessageType.REJECT);
+            JsonObject p = new JsonObject();
+            p.addProperty("rejectedByUserId", pendingTargetId);
+            p.addProperty("rejectedByUsername", target != null ? target.getUser().getUsername() : "Nguoi choi");
+            rejMsg.setPayload(p);
+
+            pendingTargetId = -1;
+            player.setStatus(Player.STATUS_IDLE);
+            System.out.println("[ClientHandler] Challenge expired after " +
+                    ServerConfig.CHALLENGE_TIMEOUT_SECONDS + "s: " + user.getUsername());
+        }
+        sendMessage(rejMsg);
     }
 
     private void handleAccept(Message message) {
@@ -348,20 +435,33 @@ public class ClientHandler implements Runnable {
         JsonObject payload = message.getPayload();
         int challengerUserId = payload.has("challengerUserId") ? payload.get("challengerUserId").getAsInt() : -1;
 
-        ClientHandler challengerHandler = clientManager.getClientByUserId(challengerUserId);
-        if (challengerHandler == null || challengerHandler.getPlayer() == null) {
-            sendMessage(JsonProtocol.createError(message.getRequestId(), "Nguoi thach dau da roi mang!"));
-            player.setStatus(Player.STATUS_IDLE);
-            return;
+        ClientHandler challengerHandler;
+        GameSession session;
+        synchronized (clientManager) {
+            // Chỉ chấp nhận lời mời thực sự đang chờ user này
+            if (challengerUserId < 0 || pendingChallengerId != challengerUserId) {
+                sendMessage(JsonProtocol.createError(message.getRequestId(), "Loi moi thach dau khong con hieu luc!"));
+                return;
+            }
+            pendingChallengerId = -1;
+
+            challengerHandler = clientManager.getClientByUserId(challengerUserId);
+            if (challengerHandler == null || challengerHandler.getPlayer() == null
+                    || challengerHandler.pendingTargetId != user.getId()) {
+                sendMessage(JsonProtocol.createError(message.getRequestId(), "Nguoi thach dau da roi mang!"));
+                player.setStatus(Player.STATUS_IDLE);
+                return;
+            }
+            challengerHandler.pendingTargetId = -1;
+
+            // Tạo GameSession mới (chuyển cả hai người chơi sang PLAYING)
+            session = gameManager.createSession(
+                    challengerHandler.getPlayer(), challengerHandler,
+                    this.player, this
+            );
         }
 
-        // Create new GameSession
-        GameSession session = gameManager.createSession(
-                challengerHandler.getPlayer(), challengerHandler,
-                this.player, this
-        );
-
-        // Notify both players: MATCH_CREATED
+        // Báo cho cả hai người chơi: MATCH_CREATED
         Message matchCreatedP1 = new Message(MessageType.MATCH_CREATED);
         JsonObject p1Data = new JsonObject();
         p1Data.addProperty("gameId", session.getGameId());
@@ -373,8 +473,8 @@ public class ClientHandler implements Runnable {
         Message matchCreatedP2 = new Message(MessageType.MATCH_CREATED);
         JsonObject p2Data = new JsonObject();
         p2Data.addProperty("gameId", session.getGameId());
-        p2Data.addProperty("opponentId", challengerHandler.getUser().getId());
-        p2Data.addProperty("opponentUsername", challengerHandler.getUser().getUsername());
+        p2Data.addProperty("opponentId", session.getPlayer1().getUserId());
+        p2Data.addProperty("opponentUsername", session.getPlayer1().getUsername());
         matchCreatedP2.setPayload(p2Data);
         this.sendMessage(matchCreatedP2);
     }
@@ -384,11 +484,25 @@ public class ClientHandler implements Runnable {
         JsonObject payload = message.getPayload();
         int challengerUserId = payload.has("challengerUserId") ? payload.get("challengerUserId").getAsInt() : -1;
 
-        player.setStatus(Player.STATUS_IDLE);
+        ClientHandler challengerHandler;
+        synchronized (clientManager) {
+            // Bỏ qua REJECT cũ (lời mời đã được chấp nhận/hủy)
+            if (challengerUserId < 0 || pendingChallengerId != challengerUserId) {
+                return;
+            }
+            pendingChallengerId = -1;
+            player.setStatus(Player.STATUS_IDLE);
 
-        ClientHandler challengerHandler = clientManager.getClientByUserId(challengerUserId);
-        if (challengerHandler != null && challengerHandler.getPlayer() != null) {
-            challengerHandler.getPlayer().setStatus(Player.STATUS_IDLE);
+            challengerHandler = clientManager.getClientByUserId(challengerUserId);
+            if (challengerHandler != null && challengerHandler.pendingTargetId == user.getId()) {
+                challengerHandler.pendingTargetId = -1;
+                challengerHandler.getPlayer().setStatus(Player.STATUS_IDLE);
+            } else {
+                challengerHandler = null;
+            }
+        }
+
+        if (challengerHandler != null) {
             Message rejMsg = new Message(MessageType.REJECT);
             JsonObject p = new JsonObject();
             p.addProperty("rejectedByUserId", user.getId());
@@ -436,6 +550,10 @@ public class ClientHandler implements Runnable {
         if (user != null) {
             GameSession session = gameManager.getSessionByUserId(user.getId());
             if (session != null) {
+                // Rời phòng trước khi trận kết thúc thì tính là FORFEIT
+                if (!session.isFinished()) {
+                    handleForfeit(message);
+                }
                 session.handleExit(user.getId(), gameManager);
             }
             if (player != null) {
@@ -445,7 +563,25 @@ public class ClientHandler implements Runnable {
     }
 
     /**
-     * Sends a protocol message to this client in thread-safe manner.
+     * LOGOUT: kết nối vẫn giữ (quay về màn hình đăng nhập) nhưng tài khoản chuyển
+     * sang offline. Hủy lời mời đang chờ (nếu có) và rời trận giống như EXIT.
+     */
+    private void handleLogout(Message message) {
+        if (user == null) return;
+        cancelPendingChallenge();
+        handleExit(message);
+
+        // Giữ lock của sảnh để không thread nào thấy handler này online mà player lại null
+        synchronized (clientManager) {
+            clientManager.unregisterUser(user.getId());
+            System.out.println("[ClientHandler] Logout: " + user.getUsername());
+            user = null;
+            player = null;
+        }
+    }
+
+    /**
+     * Gửi một message protocol tới client này theo cách thread-safe.
      */
     public synchronized void sendMessage(Message message) {
         if (writer != null && !socket.isClosed()) {
@@ -462,36 +598,78 @@ public class ClientHandler implements Runnable {
                 socket.close();
             }
         } catch (IOException e) {
-            // Ignored on close
+            // Bỏ qua lỗi khi đóng
         }
     }
 
     /**
-     * Cleanly disposes of client state upon disconnection.
+     * Hủy lời mời PENDING mà client này tham gia (đã gửi hoặc đã nhận)
+     * và đưa phía bên kia về IDLE. Người thách đấu đang chờ sẽ được thông báo.
+     */
+    private void cancelPendingChallenge() {
+        if (user == null) return;
+        ClientHandler waitingChallenger = null;
+
+        synchronized (clientManager) {
+            if (pendingTargetId >= 0) {
+                ClientHandler target = clientManager.getClientByUserId(pendingTargetId);
+                if (target != null && target.pendingChallengerId == user.getId()) {
+                    target.pendingChallengerId = -1;
+                    target.getPlayer().setStatus(Player.STATUS_IDLE);
+                }
+                pendingTargetId = -1;
+            }
+            if (pendingChallengerId >= 0) {
+                ClientHandler challenger = clientManager.getClientByUserId(pendingChallengerId);
+                if (challenger != null && challenger.pendingTargetId == user.getId()) {
+                    challenger.pendingTargetId = -1;
+                    challenger.getPlayer().setStatus(Player.STATUS_IDLE);
+                    waitingChallenger = challenger;
+                }
+                pendingChallengerId = -1;
+            }
+            if (player != null && Player.STATUS_CHALLENGING.equals(player.getStatus())) {
+                player.setStatus(Player.STATUS_IDLE);
+            }
+        }
+
+        if (waitingChallenger != null) {
+            waitingChallenger.sendMessage(JsonProtocol.createError(null,
+                    "Nguoi choi [" + user.getUsername() + "] da roi di, loi moi thach dau bi huy!"));
+        }
+    }
+
+    /**
+     * Dọn dẹp sạch trạng thái của client khi mất kết nối.
      */
     private void cleanup() {
         running = false;
         clientManager.removeClient(this);
 
-        // If in game, notify opponent of disconnect (FORFEIT)
         if (user != null) {
+            cancelPendingChallenge();
+
             GameSession session = gameManager.getSessionByUserId(user.getId());
-            if (session != null && !session.isFinished()) {
-                Player opponent = session.getOpponent(user.getId());
-                int winnerId = (opponent != null) ? opponent.getUserId() : 0;
-                boolean ended = session.finishGame(winnerId, "FORFEIT_DISCONNECT");
-                if (ended) {
-                    ClientHandler oppHandler = session.getOpponentHandler(user.getId());
-                    if (oppHandler != null) {
-                        Message dcMsg = new Message(MessageType.OPPONENT_DISCONNECTED);
-                        JsonObject p = new JsonObject();
-                        p.addProperty("reason", "Doi thu mat ket noi!");
-                        p.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
-                        dcMsg.setPayload(p);
-                        oppHandler.sendMessage(dcMsg);
+            if (session != null) {
+                // Mất kết nối giữa trận = FORFEIT
+                if (!session.isFinished()) {
+                    Player opponent = session.getOpponent(user.getId());
+                    int winnerId = (opponent != null) ? opponent.getUserId() : 0;
+                    if (session.finishGame(winnerId, "FORFEIT_DISCONNECT")) {
+                        ClientHandler oppHandler = session.getOpponentHandler(user.getId());
+                        if (oppHandler != null) {
+                            Message dcMsg = new Message(MessageType.OPPONENT_DISCONNECTED);
+                            JsonObject p = new JsonObject();
+                            p.addProperty("reason", "Doi thu mat ket noi!");
+                            p.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
+                            dcMsg.setPayload(p);
+                            oppHandler.sendMessage(dcMsg);
+                        }
                     }
-                    gameManager.removeSession(session.getGameId());
                 }
+                // Rời phòng: báo cho đối thủ (vô hiệu nút PLAY AGAIN),
+                // đưa cả hai người chơi về IDLE và hủy session
+                session.handleExit(user.getId(), gameManager);
             }
         }
 
@@ -500,7 +678,7 @@ public class ClientHandler implements Runnable {
                 socket.close();
             }
         } catch (IOException e) {
-            // Ignored
+            // Bỏ qua
         }
         System.out.println("[ClientHandler] Cleanup complete for: " +
                 (user != null ? user.getUsername() : socket.getRemoteSocketAddress()));

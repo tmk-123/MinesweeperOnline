@@ -12,14 +12,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * End-to-end integration test for Phase 2:
- * 1. Starts Server on test port 2210.
- * 2. Connects Client 1 and Client 2.
- * 3. Client 1 & 2 authenticate (LOGIN).
- * 4. Client 1 requests online players.
- * 5. Client 1 challenges Client 2.
- * 6. Client 2 accepts challenge -> GameSession created.
- * 7. Disconnection test -> Opponent receives forfeit victory.
+ * Test tích hợp end-to-end cho Phase 2:
+ * 1. Khởi động Server trên cổng test 2210.
+ * 2. Kết nối Client 1 và Client 2.
+ * 3. Client 1 và 2 xác thực (LOGIN).
+ * 4. Client 1 yêu cầu danh sách người chơi online.
+ * 5. Client 1 thách đấu Client 2.
+ * 6. Client 2 chấp nhận thách đấu -> GameSession được tạo.
+ * 7. Test ngắt kết nối -> Đối thủ được xử thắng do bỏ cuộc.
  */
 public class TestPhase2 {
 
@@ -30,16 +30,16 @@ public class TestPhase2 {
         System.out.println("       RUNNING PHASE 2 INTEGRATION TEST           ");
         System.out.println("==================================================");
 
-        // Step 1: Start Server on test port
+        // Bước 1: Khởi động Server trên cổng test
         MainServer server = new MainServer(TEST_PORT);
         Thread serverThread = new Thread(server::start, "TestServer-Thread");
         serverThread.setDaemon(true);
         serverThread.start();
-        Thread.sleep(300); // Allow server socket to bind
+        Thread.sleep(300); // Chờ server socket bind xong
 
         System.out.println("[PASS] Server started on port " + TEST_PORT);
 
-        // Step 2: Connect Client 1 (Alice)
+        // Bước 2: Kết nối Client 1 (Alice)
         ServerConnection client1 = new ServerConnection();
         CountDownLatch loginLatch1 = new CountDownLatch(1);
         AtomicReference<Integer> aliceId = new AtomicReference<>(-1);
@@ -58,7 +58,7 @@ public class TestPhase2 {
         assert aliceOk : "Alice login timed out!";
         System.out.println("[PASS] Client 1 (Alice) logged in with ID: " + aliceId.get());
 
-        // Step 3: Connect Client 2 (Bob)
+        // Bước 3: Kết nối Client 2 (Bob)
         ServerConnection client2 = new ServerConnection();
         CountDownLatch loginLatch2 = new CountDownLatch(1);
         AtomicReference<Integer> bobId = new AtomicReference<>(-1);
@@ -86,7 +86,7 @@ public class TestPhase2 {
         assert bobOk : "Bob login timed out!";
         System.out.println("[PASS] Client 2 (Bob) logged in with ID: " + bobId.get());
 
-        // Step 4: Alice requests online players
+        // Bước 4: Alice yêu cầu danh sách người chơi online
         CountDownLatch onlinePlayersLatch = new CountDownLatch(1);
         AtomicBoolean foundBob = new AtomicBoolean(false);
 
@@ -104,7 +104,7 @@ public class TestPhase2 {
         assert onlineOk && foundBob.get() : "Online players list did not contain Bob!";
         System.out.println("[PASS] Online players query returned active players.");
 
-        // Step 5: Alice challenges Bob
+        // Bước 5: Alice thách đấu Bob
         CountDownLatch matchCreatedLatch1 = new CountDownLatch(1);
         AtomicReference<String> gameIdRef = new AtomicReference<>("");
 
@@ -120,20 +120,20 @@ public class TestPhase2 {
         assert gotChallenge : "Bob did not receive challenge request!";
         System.out.println("[PASS] Bob received CHALLENGE_REQUEST from Alice.");
 
-        // Step 6: Bob accepts challenge
+        // Bước 6: Bob chấp nhận thách đấu
         client2.sendMessage(JsonProtocol.createAccept(aliceId.get()));
         boolean m1 = matchCreatedLatch1.await(3, TimeUnit.SECONDS);
         boolean m2 = matchCreatedLatch2.await(3, TimeUnit.SECONDS);
         assert m1 && m2 : "Both players did not receive MATCH_CREATED!";
         System.out.println("[PASS] GameSession created successfully! Game ID: " + gameIdRef.get());
 
-        // Step 7: Disconnect handling - Alice disconnects during game
+        // Bước 7: Xử lý ngắt kết nối - Alice ngắt kết nối khi đang chơi
         client1.disconnect("User closed application");
         boolean oppNotified = oppDisconnectedLatch.await(3, TimeUnit.SECONDS);
         assert oppNotified : "Bob was not notified of Alice's disconnection!";
         System.out.println("[PASS] Bob received OPPONENT_DISCONNECTED (forfeit victory credited).");
 
-        // Clean up
+        // Dọn dẹp tài nguyên
         client2.disconnect("Test completed");
         server.stop();
 

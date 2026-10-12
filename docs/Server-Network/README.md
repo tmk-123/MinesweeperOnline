@@ -1,35 +1,61 @@
-# Tài Liệu Server & Network - Minesweeper Online
+# Tài liệu Server & Network — Minesweeper Online
 
-Chào mừng bạn đến với bộ tài liệu kỹ thuật chi tiết về tầng **Server & Mạng (Networking)** của dự án Game Dò Mìn Thi Đấu Đối Kháng Trực Tuyến (*Minesweeper Online*).
+Bộ tài liệu này giải thích phần **Server** và **Network** của dự án: từ bức tranh tổng thể, đến từng class, rồi từng chức năng chạy qua những dòng code nào.
 
-Bộ tài liệu này được biên soạn dành riêng cho người mới học Lập trình Mạng, giải thích trực quan từ những khái niệm nền tảng nhất cho đến cách code thực tế trong từng file Java của dự án.
-
----
-
-## Danh Sách Bài Học / Mục Lục
-
-| STT | Tên Tài Liệu | Nội Dung Chính |
-| :---: | :--- | :--- |
-| **00** | [00. Tổng quan mạng](00-overview.md) | Khái niệm Server, Client, Network, Socket, TCP/UDP, mô hình dự án |
-| **01** | [01. Kiến trúc hệ thống](01-architecture.md) | Sơ đồ kiến trúc tổng thể, mô hình Server-Authoritative, kết nối DB |
-| **02** | [02. Phân tích Server](02-server.md) | Phân tích sâu `MainServer`, `ClientHandler`, `ClientManager`, `GameSession` |
-| **03** | [03. Phân tích Client](03-client.md) | Phân tích `MainClient`, `ServerConnection`, luồng lắng nghe bất đồng bộ |
-| **04** | [04. Bản chất Network trong Code](04-network.md) | Giải thích `ServerSocket`, `Socket`, `InputStream`, `BufferedReader`, `PrintWriter` |
-| **05** | [05. Giao thức Protocol & Message](05-protocol.md) | Cấu trúc gói tin JSON, cơ chế Newline-delimited (`\n`), danh mục `MessageType` |
-| **06** | [06. Giải thích chi tiết từng File](06-files.md) | Bảng tổng hợp vai trò, ai gọi, gọi ai, dữ liệu đi qua cho từng file |
-| **07** | [07. Luồng dữ liệu (Data Flow)](07-data-flow.md) | Truy vết luồng dữ liệu 7 kịch bản: Đăng nhập, Thách đấu, Đánh cờ, Kết thúc |
-| **08** | [08. Xử lý lỗi & Ngoại lệ](08-error-handling.md) | Xử lý đứt mạng, đối thủ bỏ cuộc, timeout 5 phút, MySQL offline fallback |
-| **09** | [09. Hướng dẫn chạy chương trình](09-how-to-run.md) | Cách build và chạy Server cùng 2 Client để chơi đối kháng thực tế |
+> Mọi mô tả ở đây được đối chiếu trực tiếp với mã nguồn hiện tại. Nếu sửa code làm thay đổi hành vi, hãy sửa lại tài liệu tương ứng.
 
 ---
 
-## Kim Chỉ Nam Khi Đọc Tài Liệu
+## Lộ trình đọc (từ khái quát → cụ thể)
 
-Khi tiếp cận một project Lập trình Mạng viết bằng Java, hãy luôn tự đặt ra 5 câu hỏi cốt lõi:
-1. **Chương trình bắt đầu chạy từ đâu?** (Hàm `main` ở đâu?)
-2. **Ai là người chủ động mở kết nối? Ai là người chờ lắng nghe?** (`Socket` vs `ServerSocket`)
-3. **Hai bên nói chuyện với nhau bằng ngôn ngữ gì?** (Giao thức JSON kết thúc bằng `\n`)
-4. **Khi một Client gửi tin nhắn, Server nhận và phân phát như thế nào?** (`ClientHandler` -> `GameSession` -> đối thủ)
-5. **Điều gì xảy ra nếu mạng bị đứt hoặc lỗi phát sinh?** (Cơ chế Forfeit & In-memory Fallback)
+| # | Tài liệu | Trả lời câu hỏi |
+|---|---|---|
+| 1 | [Tổng quan hệ thống](01-tong-quan-he-thong.md) | Hệ thống gồm những khối nào, ai nói chuyện với ai, package nào làm gì? |
+| 2 | [Kiến thức mạng nền tảng](02-kien-thuc-mang-nen-tang.md) | TCP, Socket, stream, blocking, framing được dùng trong code như thế nào? |
+| 3 | [Giao thức (Protocol)](03-giao-thuc.md) | Hai bên gửi cho nhau cái gì? Danh sách đầy đủ message + payload thật. |
+| 4 | [Kiến trúc Server](04-kien-truc-server.md) | Từng class phía server làm gì, sống bao lâu, giữ dữ liệu gì? |
+| 5 | [Luồng từng chức năng](05-luong-chuc-nang.md) | Đăng nhập, thách đấu, mở ô, kết thúc trận, chơi lại… chạy qua hàm nào? |
+| 6 | [Trạng thái & đa luồng](06-trang-thai-va-da-luong.md) | Có những thread nào? Trạng thái người chơi/trận đấu chuyển ra sao? Khóa ở đâu? |
+| 7 | [Xử lý lỗi & ngắt kết nối](07-xu-ly-loi-va-ngat-ket-noi.md) | Rớt mạng, gửi rác, MySQL tắt… thì hệ thống phản ứng thế nào? |
+| 8 | [Tầng mạng phía Client](08-tang-mang-client.md) | Client kết nối, nhận tin, cập nhật giao diện ra sao? |
+| 9 | [Chạy & kiểm thử](09-chay-va-kiem-thu.md) | Build, chạy server + 2 client (cùng máy hoặc qua LAN), chạy test. |
+| 10 | [Ôn tập vấn đáp](10-on-tap-van-dap.md) | Câu hỏi thường gặp khi bảo vệ + các giới hạn còn tồn tại. |
 
-Toàn bộ 10 chương tài liệu tiếp theo sẽ lần lượt giải đáp cặn kẽ 5 câu hỏi trên!
+---
+
+## Bản đồ một trang
+
+```text
+ ┌──────────── CLIENT (mỗi người chơi 1 tiến trình) ────────────┐
+ │  Swing UI (LoginFrame, MainMenuFrame, GameFrame, ...)         │
+ │        │ gọi sendMessage()          ▲ listener + invokeLater   │
+ │        ▼                            │                          │
+ │  ServerConnection  ── 1 Socket ── thread "Client-Network-Listener"
+ └────────────────────────────┬─────────────────────────────────┘
+                              │ TCP, cổng 2209
+                              │ mỗi message = 1 dòng JSON + '\n'
+ ┌────────────────────────────▼─────────────────────────────────┐
+ │ SERVER                                                        │
+ │  MainServer  ── accept() ──► new Thread(ClientHandler) / client│
+ │                                                               │
+ │  ClientHandler  (đọc dòng → Message → switch theo type)       │
+ │     ├─ ClientManager : ai đang online (userId → handler)      │
+ │     ├─ GameManager   : ai đang ở trận nào (userId → gameId)   │
+ │     └─ GameSession   : 1 trận = 2 Board + đồng hồ + luật       │
+ │                           └─ game/ (Board, MineGenerator, GameRules)
+ │  database/ (UserDAO, MatchPlayerDAO) ── JDBC ──► MySQL         │
+ └───────────────────────────────────────────────────────────────┘
+```
+
+**Ba ý quan trọng nhất cần nhớ:**
+
+1. **Server-authoritative**: mìn, kết quả mở ô, thời gian, thắng/thua, điểm đều do server quyết định. Client chỉ gửi yêu cầu và vẽ lại.
+2. **Thread-per-client**: mỗi client có một `ClientHandler` chạy trên thread riêng, chặn ở `readLine()`.
+3. **Framing bằng `\n`**: TCP là dòng byte liên tục, nên mỗi message là đúng một dòng JSON và bên nhận đọc bằng `readLine()`.
+
+---
+
+## Tài liệu khác trong thư mục `docs/`
+
+- `mo_ta.txt` / `mo_ta.docx`: đặc tả yêu cầu của đề bài (luật chơi, điểm, trạng thái). Khi phân vân "đúng hay sai", hãy đối chiếu với file này.
+- `kien_truc.txt` / `kien_truc.docx`: tài liệu kiến trúc chung của nhóm.

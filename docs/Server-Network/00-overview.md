@@ -7,17 +7,21 @@ Tài liệu này giải thích những khái niệm căn bản nhất của môn
 ## 1. Những Khái Niệm Cơ Bản
 
 ### 1.1. Server (Máy chủ) là gì?
+
 * **Khái niệm đời thường**: Hãy tưởng tượng Server giống như **người trọng tài** hoặc **chủ quán cờ**. Quán mở cửa sẵn ở một địa chỉ cố định, ngồi đợi các đấu thủ đến chơi, ghi nhận bảng điểm, xáo cờ và phân xử thắng thua công minh.
 * **Trong project này**: Server là chương trình [MainServer.java](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/server/MainServer.java). Nó chạy liên tục, mở sẵn một cổng mạng (`port 2209`), nắm giữ bản đồ mìn bí mật mà không người chơi nào được biết trước.
 
 ### 1.2. Client (Máy khách) là gì?
+
 * **Khái niệm đời thường**: Client giống như **người chơi cờ**. Người chơi bước vào quán, xin đăng ký tên, nhìn quanh xem ai đang rảnh để mời thi đấu, khi vào bàn thì bấm mở ô cờ trên màn hình của mình.
 * **Trong project này**: Client là ứng dụng giao diện đồ họa [MainClient.java](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/client/MainClient.java). Khi người dùng nhấn chuột mở ô cờ hoặc cắm cờ, Client sẽ gói yêu cầu đó lại và gửi tới Server.
 
 ### 1.3. Network (Mạng máy tính) là gì?
+
 * Network là cầu nối vật lý hoặc không dây (dây mạng LAN, Wi-Fi, Internet) giúp các máy tính có thể truyền các chuỗi tín hiệu số (dãy byte 0 và 1) qua lại với nhau.
 
 ### 1.4. Socket là gì?
+
 * **Khái niệm**: Socket là "ổ cắm điện" hoặc "đầu dây cáp mạng ảo" mà hệ điều hành cung cấp cho lập trình viên.
 * Muốn gửi dữ liệu từ chương trình Java sang một máy tính khác:
   1. Bạn cắm một đầu dây (`Socket` ở Client).
@@ -39,15 +43,17 @@ Tài liệu này giải thích những khái niệm căn bản nhất của môn
 
 Trong lập trình mạng, hai giao thức truyền tải tầng vận chuyển phổ biến nhất là **TCP** và **UDP**.
 
-| Tiêu chí | TCP (Transmission Control Protocol) | UDP (User Datagram Protocol) |
-| :--- | :--- | :--- |
-| **Bản chất** | Hướng kết nối (Connection-oriented) | Phi kết nối (Connectionless) |
-| **Độ tin cậy** | **100% tin cậy**. Đảm bảo dữ liệu không bị mất gói, không đảo lộn thứ tự. | Có thể bị mất gói dữ liệu trên đường truyền mà không báo lại. |
-| **Kiểm tra lỗi** | Tự động truyền lại gói tin nếu bị lỗi/mất. | Không tự động truyền lại. |
-| **Ứng dụng** | Game chiến thuật, web, ngân hàng, chat. | Video call trực tiếp, game bắn súng FPS tốc độ cao. |
+| Tiêu chí               | TCP (Transmission Control Protocol)                                                             | UDP (User Datagram Protocol)                                                  |
+| :----------------------- | :---------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
+| **Bản chất**     | Hướng kết nối (Connection-oriented)                                                         | Phi kết nối (Connectionless)                                                |
+| **Độ tin cậy**  | **100% tin cậy**. Đảm bảo dữ liệu không bị mất gói, không đảo lộn thứ tự. | Có thể bị mất gói dữ liệu trên đường truyền mà không báo lại. |
+| **Kiểm tra lỗi** | Tự động truyền lại gói tin nếu bị lỗi/mất.                                            | Không tự động truyền lại.                                               |
+| **Ứng dụng**     | Game chiến thuật, web, ngân hàng, chat.                                                     | Video call trực tiếp, game bắn súng FPS tốc độ cao.                    |
 
 ### Tại sao Minesweeper Online chọn TCP?
+
 Game Dò mìn là game đối kháng theo lượt/thời gian thực mang tính logic tuyệt đối:
+
 * Nếu người chơi mở phải ô mìn, gói tin thông báo kết quả **bắt buộc phải đến đích chính xác**.
 * Nếu dùng UDP và bị rơi mất gói tin thông báo thua cuộc, ván đấu sẽ bị sai lệch trạng thái vĩnh viễn.
 * Do đó, project sử dụng **Java TCP Socket** thuần túy: lớp `java.net.ServerSocket` cho máy chủ và `java.net.Socket` cho máy khách.
@@ -82,6 +88,7 @@ Project này xây dựng theo mô hình **Client – Server Authoritative** (Ser
 ```
 
 ### Điểm đặc biệt của Server-Authoritative:
+
 1. **Chống gian lận (Anti-cheat)**: Client **hoàn toàn không biết vị trí 23 quả mìn**. Khi bắt đầu trận đấu, Server không hề gửi mìn xuống máy Client. Chỉ khi người chơi click vào một ô, Client gửi tọa độ lên Server, Server kiểm tra ô đó an toàn hay có mìn rồi mới phản hồi kết quả về!
 2. **Minh bạch**: Cả hai người chơi đều bình đẳng, máy chủ làm trọng tài độc lập kiểm soát thời gian đếm ngược.
 

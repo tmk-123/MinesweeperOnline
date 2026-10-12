@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Verification test for Phase 3:
- * 1. Test DatabaseConnection & UserDAO registration & authentication.
- * 2. Test Client network REGISTER (success & duplicate prevention).
- * 3. Test Client network LOGIN (wrong password & correct password).
+ * Test kiểm chứng cho Phase 3:
+ * 1. Kiểm tra DatabaseConnection, đăng ký và xác thực qua UserDAO.
+ * 2. Kiểm tra REGISTER qua mạng từ client (thành công và chặn trùng tên).
+ * 3. Kiểm tra LOGIN qua mạng từ client (sai mật khẩu và đúng mật khẩu).
  */
 public class TestPhase3 {
 
@@ -27,7 +27,7 @@ public class TestPhase3 {
         System.out.println("       RUNNING PHASE 3 INTEGRATION TEST           ");
         System.out.println("==================================================");
 
-        // 1. Direct DAO verification
+        // 1. Kiểm tra trực tiếp DAO
         UserDAO userDAO = new UserDAO();
         String testUser = "testuser_" + System.currentTimeMillis() % 10000;
         boolean regOk = userDAO.register(testUser, "secretPass");
@@ -46,14 +46,14 @@ public class TestPhase3 {
         assert authOk != null && authOk.getUsername().equals(testUser) : "UserDAO authenticate failed!";
         System.out.println("[PASS] UserDAO authenticated successfully: " + authOk);
 
-        // 2. Start TCP Server on test port
+        // 2. Khởi động TCP Server trên cổng test
         MainServer server = new MainServer(TEST_PORT);
         Thread serverThread = new Thread(server::start, "Phase3-Server");
         serverThread.setDaemon(true);
         serverThread.start();
         Thread.sleep(300);
 
-        // 3. Client network connection test for REGISTER & LOGIN
+        // 3. Test kết nối mạng từ client cho REGISTER và LOGIN
         ServerConnection client = new ServerConnection();
         boolean connected = client.connect("127.0.0.1", TEST_PORT);
         assert connected : "Client failed to connect to server!";
@@ -78,25 +78,25 @@ public class TestPhase3 {
             }
         });
 
-        // Test REGISTER via Network
+        // Test REGISTER qua mạng
         client.sendMessage(JsonProtocol.createRegister(netUser, "pass123"));
         boolean regNetOk = regLatch.await(3, TimeUnit.SECONDS);
         assert regNetOk : "Client REGISTER request timed out!";
         System.out.println("[PASS] Client received REGISTER_SUCCESS for " + netUser);
 
-        // Test Duplicate REGISTER via Network
+        // Test REGISTER trùng tên qua mạng
         client.sendMessage(JsonProtocol.createRegister(netUser, "pass123"));
         boolean regNetDup = regDupLatch.await(3, TimeUnit.SECONDS);
         assert regNetDup : "Client duplicate REGISTER did not receive REGISTER_FAILED!";
         System.out.println("[PASS] Client received REGISTER_FAILED on duplicate: " + errorReason.get());
 
-        // Test LOGIN with wrong password via Network
+        // Test LOGIN sai mật khẩu qua mạng
         client.sendMessage(JsonProtocol.createLogin(netUser, "wrongPassword"));
         boolean loginFailOk = loginFailLatch.await(3, TimeUnit.SECONDS);
         assert loginFailOk : "Client did not receive LOGIN_FAILED for wrong password!";
         System.out.println("[PASS] Client received LOGIN_FAILED for incorrect credentials.");
 
-        // Test LOGIN with correct password via Network
+        // Test LOGIN đúng mật khẩu qua mạng
         client.sendMessage(JsonProtocol.createLogin(netUser, "pass123"));
         boolean loginSuccessOk = loginSuccessLatch.await(3, TimeUnit.SECONDS);
         assert loginSuccessOk : "Client did not receive LOGIN_SUCCESS!";
