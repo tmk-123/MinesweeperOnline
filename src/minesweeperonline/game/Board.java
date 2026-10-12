@@ -77,6 +77,23 @@ public class Board {
     }
 
     /**
+     * Trả về tất cả ô có mìn (dùng để hiện hết bom khi trận kết thúc).
+     * Danh sách rỗng nếu người chơi chưa click lần nào (mìn chưa được sinh).
+     */
+    public List<Cell> getMineCells() {
+        List<Cell> mines = new ArrayList<>();
+        if (!minesGenerated) return mines;
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                if (grid[r][c].isMine()) {
+                    mines.add(grid[r][c]);
+                }
+            }
+        }
+        return mines;
+    }
+
+    /**
      * Thực hiện thao tác OPEN_CELL.
      * Nếu đây là lần mở ô đầu tiên thì sinh 23 mìn, đảm bảo ô đầu tiên
      * có 0 mìn xung quanh (vùng 3x3 an toàn) rồi mở lan bằng BFS.

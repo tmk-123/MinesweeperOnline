@@ -11,6 +11,8 @@ import minesweeperonline.common.protocol.MessageType;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Cửa sổ chơi chính cho các trận đấu 12x12 đang diễn ra.
@@ -305,6 +307,16 @@ public class GameFrame extends JFrame {
         boardPanel.setInteractive(false);
         btnForfeit.setEnabled(false);
         lblStatus.setText("Trạng thái: KẾT THÚC");
+
+        // Hiện hết bom trên bàn của mình (server chỉ gửi danh sách mìn khi trận đã kết thúc)
+        if (p.has("mines") && p.get("mines").isJsonArray()) {
+            List<int[]> mines = new ArrayList<>();
+            for (JsonElement el : p.getAsJsonArray("mines")) {
+                JsonObject o = el.getAsJsonObject();
+                mines.add(new int[]{o.get("r").getAsInt(), o.get("c").getAsInt()});
+            }
+            boardPanel.revealAllMines(mines);
+        }
 
         String reason = p.has("reason") ? p.get("reason").getAsString() : "Trận đấu kết thúc.";
         int delta = p.has("scoreDelta") ? p.get("scoreDelta").getAsInt() : 0;

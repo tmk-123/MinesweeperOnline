@@ -1,11 +1,12 @@
 # GAME DÒ MÌN THI ĐẤU ĐỐI KHÁNG ONLINE (MINESWEEPER ONLINE)
 
-Bài tập lớn môn: **Lập trình Mạng**  
+Bài tập lớn môn: **Lập trình Mạng**
 Nhóm sinh viên thực hiện: **Nhóm 7**
 
 ---
 
 ## 1. Công nghệ sử dụng
+
 - **Ngôn ngữ**: Java JDK 26 (tương thích hoàn toàn JDK 21+).
 - **Môi trường phát triển**: Apache NetBeans 31 / Apache Ant.
 - **Mạng**: TCP Socket (`ServerSocket`, `Socket`, đa luồng `Thread` độc lập cho từng Client).
@@ -20,6 +21,7 @@ Nhóm sinh viên thực hiện: **Nhóm 7**
 ---
 
 ## 2. Cấu trúc Project
+
 ```text
 MinesweeperOnline/
 │
@@ -93,7 +95,9 @@ MinesweeperOnline/
 ---
 
 ## 3. Cách thêm thư viện vào dự án
+
 Thư mục `lib/` đã chứa đầy đủ:
+
 - `lib/gson.jar`
 - `lib/mysql-connector-j.jar`
 
@@ -102,7 +106,9 @@ Các file cấu hình `build.xml`, `nbproject/project.properties`, `.classpath` 
 ---
 
 ## 4. Cấu hình MySQL
+
 Thông số kết nối database được cấu hình tập trung tại file [ServerConfig.java](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/server/ServerConfig.java):
+
 ```java
 public static final String DB_HOST = "localhost";
 public static final int DB_PORT = 3306;
@@ -110,16 +116,21 @@ public static final String DB_NAME = "minesweeper_online";
 public static final String DB_USER = "root";
 public static final String DB_PASSWORD = ""; // Điền mật khẩu root của bạn tại đây
 ```
+
 > **Ghi chú**: Nếu MySQL chưa bật hoặc sai mật khẩu, hệ thống sẽ tự động kích hoạt chế độ **Bộ nhớ dự phòng (In-Memory Fallback)** giúp máy chủ và ứng dụng vẫn hoạt động bình thường mà không bị crash.
 
 ---
 
 ## 5. Chạy file `schema.sql`
+
 Mở MySQL Command Line hoặc MySQL Workbench và chạy file [database/schema.sql](file:///d:/Ki1_4/LTM/MinesweeperOnline/database/schema.sql):
+
 ```bash
 mysql -u root -p < database/schema.sql
 ```
+
 Lệnh trên sẽ tạo cơ sở dữ liệu `minesweeper_online` cùng 3 bảng: `User`, `Match`, `MatchPlayer` và chèn sẵn 3 tài khoản mẫu:
+
 - `alice` / `123456`
 - `bob` / `123456`
 - `charlie` / `123456`
@@ -127,7 +138,9 @@ Lệnh trên sẽ tạo cơ sở dữ liệu `minesweeper_online` cùng 3 bảng
 ---
 
 ## 6. Build bằng Apache Ant
+
 Mở Terminal tại thư mục gốc của project:
+
 - Dọn dẹp thư mục build:
   ```powershell
   .\tools\apache-ant-1.10.14\bin\ant.bat clean
@@ -144,11 +157,15 @@ Mở Terminal tại thư mục gốc của project:
 ---
 
 ## 7. Khởi chạy Server
+
 Chạy lệnh Ant:
+
 ```powershell
 .\tools\apache-ant-1.10.14\bin\ant.bat run-server
 ```
+
 Hoặc bằng lệnh `java`:
+
 ```powershell
 java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonline.server.MainServer
 ```
@@ -156,19 +173,25 @@ java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonlin
 ---
 
 ## 8. Khởi chạy Client
+
 Chạy lệnh Ant:
+
 ```powershell
 .\tools\apache-ant-1.10.14\bin\ant.bat run-client
 ```
+
 Hoặc bằng lệnh `java`:
+
 ```powershell
 java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonline.client.MainClient
 ```
+
 Kết nối tới server ở máy khác trong mạng LAN: thêm `<host> <port>`, ví dụ `... minesweeperonline.client.MainClient 192.168.1.10 2209` (hướng dẫn đầy đủ: [mục 9.1](#91-chơi-trên-2-máy-trong-cùng-một-mạng-lan--wi-fi)).
 
 ---
 
 ## 9. Chạy nhiều Client để thi đấu đối kháng
+
 1. Mở Terminal 1: Chạy `run-server`.
 2. Mở Terminal 2: Chạy `run-client` -> Đăng nhập tài khoản `alice` / `123456`.
 3. Mở Terminal 3: Chạy `run-client` -> Đăng nhập tài khoản `bob` / `123456`.
@@ -209,11 +232,13 @@ Không cần sửa code: client nhận địa chỉ server qua tham số `MainCl
    cd <thư mục MinesweeperOnline>
    .\tools\apache-ant-1.10.14\bin\ant.bat run-server
    ```
+
    Phải thấy `Server started successfully on port: 2209`.
 7. Máy B: kiểm tra đường mạng tới server (lệnh của **PowerShell**; nếu đang ở cmd thì thêm `powershell -Command "..."`):
    ```powershell
    Test-NetConnection 192.168.1.10 -Port 2209
    ```
+
    Cần thấy `TcpTestSucceeded : True`.
 8. Máy B: chạy client, truyền IP của máy A (lệnh này dùng được ở cả cmd và PowerShell):
    ```powershell
@@ -226,19 +251,20 @@ Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -D
 
 **Xử lý lỗi thường gặp**
 
-| Hiện tượng | Nguyên nhân / cách xử lý |
-|---|---|
-| `ant.bat is not recognized` | Terminal không đứng ở thư mục project → `cd` vào thư mục `MinesweeperOnline` trước |
-| `Address already in use: bind` khi bật server | Đã có một server khác đang chạy. Tìm bằng `netstat -ano \| findstr :2209` rồi tắt tiến trình đó (`Stop-Process -Id <PID>`) hoặc dùng luôn server đang chạy |
-| `Test-NetConnection is not recognized` | Đang ở cmd → chạy trong PowerShell hoặc `powershell -Command "Test-NetConnection ..."` |
-| Máy B báo lỗi kết nối ngay lập tức | Server trên máy A chưa chạy hoặc sai port |
-| Máy B treo khoảng 5 giây rồi báo lỗi | Sai IP, firewall máy A đang chặn, mạng đang để Public, hoặc hai máy khác mạng |
-| `UnsupportedClassVersionError` trên máy B | Máy B chưa có Java 26 |
-| "Tài khoản đang được đăng nhập ở thiết bị khác" | Hai máy đang dùng cùng một tài khoản |
+| Hiện tượng                                                | Nguyên nhân / cách xử lý                                                                                                                                                    |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ant.bat is not recognized`                                | Terminal không đứng ở thư mục project →`cd` vào thư mục `MinesweeperOnline` trước                                                                                |
+| `Address already in use: bind` khi bật server             | Đã có một server khác đang chạy. Tìm bằng`netstat -ano \| findstr :2209` rồi tắt tiến trình đó (`Stop-Process -Id <PID>`) hoặc dùng luôn server đang chạy |
+| `Test-NetConnection is not recognized`                     | Đang ở cmd → chạy trong PowerShell hoặc`powershell -Command "Test-NetConnection ..."`                                                                                     |
+| Máy B báo lỗi kết nối ngay lập tức                    | Server trên máy A chưa chạy hoặc sai port                                                                                                                                   |
+| Máy B treo khoảng 5 giây rồi báo lỗi                   | Sai IP, firewall máy A đang chặn, mạng đang để Public, hoặc hai máy khác mạng                                                                                         |
+| `UnsupportedClassVersionError` trên máy B                | Máy B chưa có Java 26                                                                                                                                                         |
+| "Tài khoản đang được đăng nhập ở thiết bị khác" | Hai máy đang dùng cùng một tài khoản                                                                                                                                      |
 
 ---
 
 ## 10. Giao thức Protocol (TCP Framing & JSON)
+
 - Mỗi gói tin được gửi dưới dạng chuỗi JSON trên 1 dòng, kết thúc bằng ký tự xuống dòng `\n`.
 - Phía nhận sử dụng `BufferedReader.readLine()` để bảo đảm đọc trọn vẹn đúng 1 message, tránh hiện tượng dính/gộp gói tin TCP.
 - Cấu trúc tin nhắn:
@@ -257,6 +283,7 @@ Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -D
 ---
 
 ## 11. Luồng hoạt động của trò chơi
+
 1. **Đăng nhập / Đăng ký**: Client xác thực với Server qua `UserDAO`.
 2. **Sảnh chờ**: Sau khi vào sảnh, Client định kỳ nhận danh sách người chơi online (`GET_ONLINE_PLAYERS`).
 3. **Thách đấu**: Người chơi gửi lời mời (`CHALLENGE`). Đối thủ có 30 giây để chấp nhận hoặc từ chối (`ACCEPT`/`REJECT`).
@@ -281,6 +308,7 @@ Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -D
 ---
 
 ## 12. Bàn cờ đối thủ thu nhỏ (Mini-board)
+
 - Bên cạnh bàn chơi chính 12×12, mỗi người chơi được quan sát thêm 1 bàn cờ thu nhỏ hiển thị tiến trình của đối thủ theo thời gian thực ([OpponentMiniBoardPanel](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/client/ui/OpponentMiniBoardPanel.java)):
   - Màu xám/chấm xanh: các ô an toàn đối thủ đã mở.
   - Biểu tượng lá cờ đỏ: các vị trí đối thủ đã cắm cờ.
@@ -290,6 +318,7 @@ Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -D
 ---
 
 ## 13. Bảng xếp hạng người chơi (Leaderboard)
+
 - Nhấn nút **"🏆 Bảng xếp hạng"** trên thanh tiêu đề của Sảnh chính ([MainMenuFrame](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/client/ui/MainMenuFrame.java)).
 - Bảng xếp hạng [LeaderboardDialog](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/client/ui/LeaderboardDialog.java) hiển thị:
   - **Hạng**: Biểu tượng huy chương vàng 🥇, bạc 🥈, đồng 🥉 cho Top 3 người chơi dẫn đầu.
@@ -302,6 +331,7 @@ Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -D
 ---
 
 ## 14. Lịch sử trận đấu (Match History)
+
 - Nhấn nút **"📜 Lịch sử đấu"** trên thanh tiêu đề của Sảnh chính ([MainMenuFrame](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/client/ui/MainMenuFrame.java)).
 - Hộp thoại [MatchHistoryDialog](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/client/ui/MatchHistoryDialog.java) hiển thị chi tiết các trận đấu đã tham gia:
   - **Thời gian**: Ngày và giờ diễn ra trận đấu (`dd/MM/yyyy HH:mm:ss`).
@@ -313,4 +343,3 @@ Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -D
   - **Ghi chú**: Lý do kết thúc trận (Mở trúng mìn, Hết 5 phút thi đấu, Đầu hàng giữa chừng, Mất kết nối, Mở sạch 121 ô an toàn).
   - **Thống kê tổng kết**: Tự động tính tổng số trận, số trận thắng/thua/hòa và phần trăm tỉ lệ thắng tổng thể.
   - Nút **Làm mới** truy vấn trực tiếp từ cơ sở dữ liệu MySQL (kèm fallback bộ nhớ RAM khi chạy thử nghiệm).
-

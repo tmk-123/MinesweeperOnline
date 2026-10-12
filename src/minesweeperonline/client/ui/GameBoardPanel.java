@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 
 /**
  * Bàn cờ Minesweeper 12x12 có thể tương tác.
@@ -47,6 +48,7 @@ public class GameBoardPanel extends JPanel {
     private static final Icon FLAG_ICON = new FlagIcon();
     private static final Icon MINE_NORMAL_ICON = new MineIcon(false);
     private static final Icon MINE_EXPLODED_ICON = new MineIcon(true);
+    private static final Icon WRONG_FLAG_ICON = new CrossedMineIcon();
 
     public GameBoardPanel(ServerConnection connection, String gameId) {
         this.connection = connection;
@@ -163,6 +165,41 @@ public class GameBoardPanel extends JPanel {
     }
 
     /**
+     * Khi trận kết thúc: hiện tất cả mìn trên bàn của mình theo danh sách server gửi kèm.
+     * - Ô mìn chưa mở, không cắm cờ   -> hiện quả mìn
+     * - Ô mìn có cắm cờ (cắm đúng)      -> giữ nguyên lá cờ
+     * - Ô cắm cờ nhưng không có mìn (sai) -> quả mìn có dấu X đỏ
+     * Ô đã mở (kể cả quả mìn vừa nổ) giữ nguyên.
+     *
+     * @param mines tọa độ {row, col} của các ô có mìn
+     */
+    public void revealAllMines(List<int[]> mines) {
+        boolean[][] isMine = new boolean[ROWS][COLS];
+        for (int[] m : mines) {
+            if (m[0] >= 0 && m[0] < ROWS && m[1] >= 0 && m[1] < COLS) {
+                isMine[m[0]][m[1]] = true;
+            }
+        }
+
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                if (opened[r][c]) continue;
+                Icon icon = null;
+                if (isMine[r][c] && !flagged[r][c]) {
+                    icon = MINE_NORMAL_ICON;
+                } else if (!isMine[r][c] && flagged[r][c]) {
+                    icon = WRONG_FLAG_ICON;
+                }
+                if (icon != null) {
+                    buttons[r][c].setIcon(icon);
+                    buttons[r][c].setDisabledIcon(icon);
+                    buttons[r][c].setText("");
+                }
+            }
+        }
+    }
+
+    /**
      * Icon vector vẽ lá cờ đỏ sắc nét với cán cờ màu tối và đế cờ.
      */
     private static class FlagIcon implements Icon {
@@ -256,5 +293,31 @@ public class GameBoardPanel extends JPanel {
 
         @Override
         public int getIconHeight() { return height; }
+    }
+
+    /**
+     * Icon cờ cắm sai khi kết thúc trận: quả mìn bị gạch chéo bằng dấu X đỏ.
+     */
+    private static class CrossedMineIcon implements Icon {
+        private final Icon mine = new MineIcon(false);
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            mine.paintIcon(c, g, x, y);
+
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(new Color(230, 40, 30));
+            g2.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine(x + 3, y + 3, x + getIconWidth() - 3, y + getIconHeight() - 3);
+            g2.drawLine(x + 3, y + getIconHeight() - 3, x + getIconWidth() - 3, y + 3);
+            g2.dispose();
+        }
+
+        @Override
+        public int getIconWidth() { return mine.getIconWidth(); }
+
+        @Override
+        public int getIconHeight() { return mine.getIconHeight(); }
     }
 }

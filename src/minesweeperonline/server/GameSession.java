@@ -173,6 +173,7 @@ public class GameSession {
                 JsonObject pLose = new JsonObject();
                 pLose.addProperty("reason", "Ban da mo phai min tai (" + row + ", " + col + ")!");
                 pLose.addProperty("scoreDelta", ServerConfig.SCORE_DEFEAT);
+                attachMines(pLose, actingPlayer.getUserId());
                 loseMsg.setPayload(pLose);
                 actingHandler.sendMessage(loseMsg);
 
@@ -182,6 +183,7 @@ public class GameSession {
                 JsonObject pWin = new JsonObject();
                 pWin.addProperty("reason", "Doi thu [" + actingPlayer.getUsername() + "] da mo phai min!");
                 pWin.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
+                attachMines(pWin, opponentPlayer.getUserId());
                 winMsg.setPayload(pWin);
                 opponentHandler.sendMessage(winMsg);
 
@@ -195,6 +197,7 @@ public class GameSession {
                     JsonObject pWin = new JsonObject();
                     pWin.addProperty("reason", "Ban da xuat sac mo het tat ca 121 o an toan!");
                     pWin.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
+                    attachMines(pWin, actingPlayer.getUserId());
                     winMsg.setPayload(pWin);
                     actingHandler.sendMessage(winMsg);
 
@@ -203,6 +206,7 @@ public class GameSession {
                     JsonObject pLose = new JsonObject();
                     pLose.addProperty("reason", "Doi thu da hoan thanh mo toan bo 121 o an toan truoc!");
                     pLose.addProperty("scoreDelta", ServerConfig.SCORE_DEFEAT);
+                    attachMines(pLose, opponentPlayer.getUserId());
                     loseMsg.setPayload(pLose);
                     opponentHandler.sendMessage(loseMsg);
 
@@ -337,24 +341,28 @@ public class GameSession {
         finishGame(winner, "TIMEOUT");
 
         if (winner == 0) {
-            // Hòa (DRAW)
-            Message drawMsg = new Message(MessageType.GAME_DRAW);
-            drawMsg.setGameId(gameId);
-            JsonObject p = new JsonObject();
-            p.addProperty("reason", "Het gio thi dau! Ket qua hoa.");
-            p.addProperty("scoreDelta", ServerConfig.SCORE_DRAW);
-            drawMsg.setPayload(p);
-            handler1.sendMessage(drawMsg);
-            handler2.sendMessage(drawMsg);
+            // Hòa (DRAW): mỗi người một message riêng vì danh sách mìn của hai bàn khác nhau
+            for (Player p : new Player[]{player1, player2}) {
+                Message drawMsg = new Message(MessageType.GAME_DRAW);
+                drawMsg.setGameId(gameId);
+                JsonObject pd = new JsonObject();
+                pd.addProperty("reason", "Het gio thi dau! Ket qua hoa.");
+                pd.addProperty("scoreDelta", ServerConfig.SCORE_DRAW);
+                attachMines(pd, p.getUserId());
+                drawMsg.setPayload(pd);
+                (p == player1 ? handler1 : handler2).sendMessage(drawMsg);
+            }
         } else {
             ClientHandler winHandler = (winner == player1.getUserId()) ? handler1 : handler2;
             ClientHandler loseHandler = (winner == player1.getUserId()) ? handler2 : handler1;
+            int loser = (winner == player1.getUserId()) ? player2.getUserId() : player1.getUserId();
 
             Message winMsg = new Message(MessageType.GAME_WIN);
             winMsg.setGameId(gameId);
             JsonObject pw = new JsonObject();
             pw.addProperty("reason", "Het gio! Ban thang nho chi so vuot troi.");
             pw.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
+            attachMines(pw, winner);
             winMsg.setPayload(pw);
             winHandler.sendMessage(winMsg);
 
@@ -363,6 +371,7 @@ public class GameSession {
             JsonObject pl = new JsonObject();
             pl.addProperty("reason", "Het gio! Doi thu thang nho chi so vuot troi.");
             pl.addProperty("scoreDelta", ServerConfig.SCORE_DEFEAT);
+            attachMines(pl, loser);
             loseMsg.setPayload(pl);
             loseHandler.sendMessage(loseMsg);
         }
@@ -486,6 +495,30 @@ public class GameSession {
                 player1.getUserId(), player1.getUsername(), res1, board1.getOpenedSafeCells(), board1.getTotalActions(), board1.getFlagsPlaced(), delta1,
                 player2.getUserId(), player2.getUsername(), res2, board2.getOpenedSafeCells(), board2.getTotalActions(), board2.getFlagsPlaced(), delta2
         );
+    }
+
+    /**
+     * Gắn danh sách mìn trên bàn cờ của userId vào payload của message kết thúc trận
+     * (GAME_WIN / GAME_LOSE / GAME_DRAW / OPPONENT_DISCONNECTED), dạng "mines": [{"r":..,"c":..}].
+     * Client dùng nó để hiện hết bom và đánh dấu X lên cờ cắm sai.
+     *
+     * CHỈ gọi khi trận đã kết thúc: trong lúc đang chơi, vị trí mìn không bao giờ được gửi
+     * cho client (nguyên tắc server-authoritative, chống gian lận).
+     * Nếu người chơi chưa click lần nào thì mìn chưa được sinh, không gắn gì.
+     */
+    public void attachMines(JsonObject payload, int userId) {
+        synchronized (gameLock) {
+            Board board = getBoardForPlayer(userId);
+            if (board == null || !board.isMinesGenerated()) return;
+            JsonArray mines = new JsonArray();
+            for (Cell c : board.getMineCells()) {
+                JsonObject coord = new JsonObject();
+                coord.addProperty("r", c.getRow());
+                coord.addProperty("c", c.getCol());
+                mines.add(coord);
+            }
+            payload.add("mines", mines);
+        }
     }
 
     private JsonArray serializeOpenedCells(List<Cell> cells) {

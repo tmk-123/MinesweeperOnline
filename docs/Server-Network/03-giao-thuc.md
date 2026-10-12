@@ -85,6 +85,8 @@ Yêu cầu không hợp lệ (ô đã mở, ô đang cắm cờ, ngoài bàn, ch
 
 Khi người chơi **mở trúng mìn** hoặc **mở ô an toàn cuối cùng**, server gửi thẳng `GAME_LOSE`/`GAME_WIN`, **không** gửi `CELL_OPENED` cho thao tác đó.
 
+Cả 4 message kết thúc trận còn có thêm field **`mines: [{r, c}]`**: vị trí toàn bộ mìn trên **bàn cờ của chính người nhận** (`GameSession.attachMines`). Client dùng nó để hiện hết bom, giữ nguyên cờ cắm đúng và hiện bom có dấu X đỏ ở cờ cắm sai. Field này chỉ được gửi **sau khi trận đã kết thúc**; trong lúc đang chơi, vị trí mìn không bao giờ rời khỏi server. Nếu người đó chưa click lần nào (mìn chưa được sinh) thì không có field này.
+
 ### Sau trận (phòng kết quả)
 
 | Yêu cầu (C→S) | Server gửi |

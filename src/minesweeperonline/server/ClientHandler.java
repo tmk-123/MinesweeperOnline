@@ -525,6 +525,7 @@ public class ClientHandler implements Runnable {
                     JsonObject p = new JsonObject();
                     p.addProperty("reason", "Doi thu da dau hang!");
                     p.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
+                    session.attachMines(p, winnerId);
                     winMsg.setPayload(p);
                     oppHandler.sendMessage(winMsg);
                 }
@@ -532,6 +533,7 @@ public class ClientHandler implements Runnable {
                 JsonObject p = new JsonObject();
                 p.addProperty("reason", "Ban da dau hang!");
                 p.addProperty("scoreDelta", ServerConfig.SCORE_FORFEIT);
+                session.attachMines(p, user.getId());
                 loseMsg.setPayload(p);
                 sendMessage(loseMsg);
             }
@@ -662,6 +664,7 @@ public class ClientHandler implements Runnable {
                             JsonObject p = new JsonObject();
                             p.addProperty("reason", "Doi thu mat ket noi!");
                             p.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
+                            session.attachMines(p, winnerId);
                             dcMsg.setPayload(p);
                             oppHandler.sendMessage(dcMsg);
                         }
