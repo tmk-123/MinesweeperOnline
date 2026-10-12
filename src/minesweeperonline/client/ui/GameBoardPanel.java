@@ -48,7 +48,7 @@ public class GameBoardPanel extends JPanel {
     private static final Icon FLAG_ICON = new FlagIcon();
     private static final Icon MINE_NORMAL_ICON = new MineIcon(false);
     private static final Icon MINE_EXPLODED_ICON = new MineIcon(true);
-    private static final Icon WRONG_FLAG_ICON = new CrossedMineIcon();
+    private static final Icon CROSSED_MINE_ICON = new CrossedMineIcon();
 
     public GameBoardPanel(ServerConnection connection, String gameId) {
         this.connection = connection;
@@ -166,9 +166,8 @@ public class GameBoardPanel extends JPanel {
 
     /**
      * Khi trận kết thúc: hiện tất cả mìn trên bàn của mình theo danh sách server gửi kèm.
-     * - Ô mìn chưa mở, không cắm cờ   -> hiện quả mìn
-     * - Ô mìn có cắm cờ (cắm đúng)      -> giữ nguyên lá cờ
-     * - Ô cắm cờ nhưng không có mìn (sai) -> quả mìn có dấu X đỏ
+     * - Ô mìn chưa mở, không cắm cờ -> hiện quả mìn
+     * - Mọi ô đang cắm cờ           -> chuyển sang nền "đã mở", hiện quả mìn có dấu X đỏ
      * Ô đã mở (kể cả quả mìn vừa nổ) giữ nguyên.
      *
      * @param mines tọa độ {row, col} của các ô có mìn
@@ -184,16 +183,19 @@ public class GameBoardPanel extends JPanel {
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 if (opened[r][c]) continue;
+                JButton btn = buttons[r][c];
                 Icon icon = null;
-                if (isMine[r][c] && !flagged[r][c]) {
+                if (flagged[r][c]) {
+                    icon = CROSSED_MINE_ICON;
+                    btn.setBackground(OPENED_BG);
+                    btn.setBorder(BorderFactory.createLineBorder(OPENED_BORDER, 1));
+                } else if (isMine[r][c]) {
                     icon = MINE_NORMAL_ICON;
-                } else if (!isMine[r][c] && flagged[r][c]) {
-                    icon = WRONG_FLAG_ICON;
                 }
                 if (icon != null) {
-                    buttons[r][c].setIcon(icon);
-                    buttons[r][c].setDisabledIcon(icon);
-                    buttons[r][c].setText("");
+                    btn.setIcon(icon);
+                    btn.setDisabledIcon(icon);
+                    btn.setText("");
                 }
             }
         }
@@ -296,7 +298,7 @@ public class GameBoardPanel extends JPanel {
     }
 
     /**
-     * Icon cờ cắm sai khi kết thúc trận: quả mìn bị gạch chéo bằng dấu X đỏ.
+     * Icon cho ô cắm cờ khi kết thúc trận: quả mìn bị gạch chéo bằng dấu X đỏ.
      */
     private static class CrossedMineIcon implements Icon {
         private final Icon mine = new MineIcon(false);
