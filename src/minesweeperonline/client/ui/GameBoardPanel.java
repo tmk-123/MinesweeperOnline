@@ -39,6 +39,11 @@ public class GameBoardPanel extends JPanel {
             Color.GRAY                  // 8: Xám
     };
 
+    // Ô chưa mở: xám xanh, nổi khối; ô đã mở: gần trắng, phẳng -> nhìn là phân biệt được
+    private static final Color HIDDEN_BG = new Color(178, 190, 204);
+    private static final Color OPENED_BG = new Color(250, 251, 252);
+    private static final Color OPENED_BORDER = new Color(205, 211, 218);
+
     private static final Icon FLAG_ICON = new FlagIcon();
     private static final Icon MINE_NORMAL_ICON = new MineIcon(false);
     private static final Icon MINE_EXPLODED_ICON = new MineIcon(true);
@@ -70,7 +75,11 @@ public class GameBoardPanel extends JPanel {
                 btn.setMargin(new Insets(0, 0, 0, 0));
                 btn.setFocusPainted(false);
                 btn.setFocusable(false);
-                btn.setBackground(new Color(230, 235, 240));
+                // Look&Feel của Windows tự vẽ nền nút và bỏ qua setBackground,
+                // nên tắt phần nền đó và để nút tự tô màu (opaque) theo trạng thái ô
+                btn.setContentAreaFilled(false);
+                btn.setOpaque(true);
+                btn.setBackground(HIDDEN_BG);
                 btn.setBorder(BorderFactory.createRaisedBevelBorder());
 
                 btn.addMouseListener(new MouseAdapter() {
@@ -111,7 +120,7 @@ public class GameBoardPanel extends JPanel {
         flagged[r][c] = false;
 
         btn.setRolloverEnabled(false);
-        btn.setBorder(BorderFactory.createLineBorder(new Color(210, 215, 220), 1));
+        btn.setBorder(BorderFactory.createLineBorder(OPENED_BORDER, 1));
 
         if (isMine) {
             Icon mIcon = isExploded ? MINE_EXPLODED_ICON : MINE_NORMAL_ICON;
@@ -122,7 +131,7 @@ public class GameBoardPanel extends JPanel {
         } else {
             btn.setIcon(null);
             btn.setDisabledIcon(null);
-            btn.setBackground(new Color(245, 245, 245));
+            btn.setBackground(OPENED_BG);
             if (adjacentMines > 0) {
                 btn.setText(String.valueOf(adjacentMines));
                 int colorIdx = Math.min(adjacentMines, NUMBER_COLORS.length - 1);

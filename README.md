@@ -164,7 +164,7 @@ Hoặc bằng lệnh `java`:
 ```powershell
 java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonline.client.MainClient
 ```
-Kết nối tới server ở máy khác trong mạng LAN: thêm `<host> <port>`, ví dụ `... minesweeperonline.client.MainClient 192.168.1.10 2209` (chi tiết: [docs/Server-Network/09-chay-va-kiem-thu.md](docs/Server-Network/09-chay-va-kiem-thu.md)).
+Kết nối tới server ở máy khác trong mạng LAN: thêm `<host> <port>`, ví dụ `... minesweeperonline.client.MainClient 192.168.1.10 2209` (hướng dẫn đầy đủ: [mục 9.1](#91-chơi-trên-2-máy-trong-cùng-một-mạng-lan--wi-fi)).
 
 ---
 
@@ -175,6 +175,66 @@ Kết nối tới server ở máy khác trong mạng LAN: thêm `<host> <port>`,
 4. Trên màn hình của `alice`, chọn `bob` và bấm **Thách đấu**.
 5. Trên màn hình của `bob`, bấm **Chấp nhận**.
 6. Cả 2 Client sẽ cùng được chuyển vào bàn đấu [GameFrame](file:///d:/Ki1_4/LTM/MinesweeperOnline/src/minesweeperonline/client/ui/GameFrame.java).
+
+### 9.1. Chơi trên 2 máy trong cùng một mạng (LAN / Wi-Fi)
+
+Không cần sửa code: client nhận địa chỉ server qua tham số `MainClient <IP> <port>`.
+
+```text
+ Máy A: Server + MySQL + Client 1 (kết nối 127.0.0.1)
+ Máy B: chỉ Client 2 ──── TCP 2209 ────► IP của máy A
+```
+
+- Chỉ **máy A** chạy server và cần MySQL. Client không bao giờ kết nối database, nên máy B **không cần** MySQL.
+- Cả hai người dùng chung database của máy A, nên tài khoản, bảng xếp hạng và lịch sử là một. **Không chạy server trên máy B.**
+
+**Chuẩn bị (làm một lần)**
+
+1. Máy B cài **JDK 26** (kiểm tra: `java -version`), chép cả thư mục project sang (hoặc `git clone`), rồi build:
+   ```powershell
+   .\tools\apache-ant-1.10.14\bin\ant.bat compile
+   ```
+2. Hai máy vào **cùng một Wi-Fi/router**. Wi-Fi trường hoặc nơi công cộng thường chặn các máy kết nối với nhau; khi đó dùng hotspot điện thoại cho cả hai máy.
+3. Trên máy A, đặt mạng Wi-Fi đang dùng là **Private** (Settings → Network & Internet → chọn Wi-Fi → Private network).
+4. Trên máy A, mở cổng 2209 trong firewall (PowerShell **Run as Administrator**):
+   ```powershell
+   New-NetFirewallRule -DisplayName "Minesweeper 2209" -Direction Inbound -Protocol TCP -LocalPort 2209 -Action Allow
+   ```
+
+**Mỗi lần chơi**
+
+5. Máy A: lấy IP bằng `ipconfig` (dòng **IPv4 Address** của card Wi-Fi, ví dụ `192.168.1.10`). IP này có thể đổi mỗi lần kết nối mạng lại.
+6. Máy A: bật server từ **thư mục project** và để cửa sổ đó mở:
+   ```powershell
+   cd <thư mục MinesweeperOnline>
+   .\tools\apache-ant-1.10.14\bin\ant.bat run-server
+   ```
+   Phải thấy `Server started successfully on port: 2209`.
+7. Máy B: kiểm tra đường mạng tới server (lệnh của **PowerShell**; nếu đang ở cmd thì thêm `powershell -Command "..."`):
+   ```powershell
+   Test-NetConnection 192.168.1.10 -Port 2209
+   ```
+   Cần thấy `TcpTestSucceeded : True`.
+8. Máy B: chạy client, truyền IP của máy A (lệnh này dùng được ở cả cmd và PowerShell):
+   ```powershell
+   java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonline.client.MainClient 192.168.1.10 2209
+   ```
+9. Máy A: mở **terminal khác** và chạy `.\tools\apache-ant-1.10.14\bin\ant.bat run-client`.
+10. Đăng nhập **hai tài khoản khác nhau** (ví dụ `alice` và `bob`), rồi thách đấu như bình thường. Log server sẽ in `Accepted new connection from: /<IP máy B>`.
+
+Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -DisplayName "Minesweeper 2209"`.
+
+**Xử lý lỗi thường gặp**
+
+| Hiện tượng | Nguyên nhân / cách xử lý |
+|---|---|
+| `ant.bat is not recognized` | Terminal không đứng ở thư mục project → `cd` vào thư mục `MinesweeperOnline` trước |
+| `Address already in use: bind` khi bật server | Đã có một server khác đang chạy. Tìm bằng `netstat -ano \| findstr :2209` rồi tắt tiến trình đó (`Stop-Process -Id <PID>`) hoặc dùng luôn server đang chạy |
+| `Test-NetConnection is not recognized` | Đang ở cmd → chạy trong PowerShell hoặc `powershell -Command "Test-NetConnection ..."` |
+| Máy B báo lỗi kết nối ngay lập tức | Server trên máy A chưa chạy hoặc sai port |
+| Máy B treo khoảng 5 giây rồi báo lỗi | Sai IP, firewall máy A đang chặn, mạng đang để Public, hoặc hai máy khác mạng |
+| `UnsupportedClassVersionError` trên máy B | Máy B chưa có Java 26 |
+| "Tài khoản đang được đăng nhập ở thiết bị khác" | Hai máy đang dùng cùng một tài khoản |
 
 ---
 
