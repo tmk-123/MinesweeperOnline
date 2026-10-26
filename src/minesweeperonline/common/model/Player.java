@@ -13,6 +13,7 @@ public class Player implements Serializable {
     public static final String STATUS_IDLE = "IDLE";
     public static final String STATUS_CHALLENGING = "CHALLENGING";
     public static final String STATUS_PLAYING = "PLAYING";
+    public static final String STATUS_QUEUED = "QUEUED";
 
     private int userId;
     private String username;

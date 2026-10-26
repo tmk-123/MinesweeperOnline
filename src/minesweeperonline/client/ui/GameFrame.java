@@ -11,6 +11,10 @@ import minesweeperonline.common.protocol.MessageType;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,23 +51,64 @@ public class GameFrame extends JFrame {
     private int oppFlags = 0;
     private int oppActions = 0;
 
+    private Rectangle normalBounds;
+
     public GameFrame(ServerConnection connection, User currentUser, String opponentName, String gameId, JFrame parentLobby) {
+        this(connection, currentUser, opponentName, gameId, parentLobby, Frame.MAXIMIZED_BOTH, null);
+    }
+
+    public GameFrame(ServerConnection connection, User currentUser, String opponentName, String gameId, JFrame parentLobby,
+                     int initialExtendedState, Rectangle initialNormalBounds) {
         this.connection = connection;
         this.currentUser = currentUser;
         this.opponentName = opponentName;
         this.gameId = gameId;
         this.parentLobby = parentLobby;
 
-        initComponents();
+        initComponents(initialExtendedState, initialNormalBounds);
         setupNetworkListener();
         startReadyCountdownVisual();
     }
 
-    private void initComponents() {
+    private void initComponents(int initialExtendedState, Rectangle initialNormalBounds) {
         setTitle("Minesweeper Online - Trận đấu [" + gameId + "] (" + currentUser.getUsername() + " vs " + opponentName + ")");
-        setSize(820, 740);
-        setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        if (initialNormalBounds != null && initialNormalBounds.width > 200 && initialNormalBounds.height > 200) {
+            setBounds(initialNormalBounds);
+            this.normalBounds = new Rectangle(initialNormalBounds);
+        } else {
+            setSize(820, 740);
+            setLocationRelativeTo(null);
+            this.normalBounds = getBounds();
+        }
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                updateNormalBounds();
+            }
+
+            @Override
+            public void componentMoved(ComponentEvent e) {
+                updateNormalBounds();
+            }
+        });
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (btnForfeit != null && btnForfeit.isEnabled()) {
+                    btnForfeit.doClick();
+                }
+            }
+        });
+
+        if ((initialExtendedState & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH) {
+            setExtendedState(Frame.MAXIMIZED_BOTH);
+        } else {
+            setExtendedState(Frame.NORMAL);
+        }
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 8));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
@@ -84,24 +129,27 @@ public class GameFrame extends JFrame {
         // 3. Phía dưới (South): trạng thái, đồng hồ và nút đầu hàng
         JPanel southPanel = new JPanel(new BorderLayout(10, 5));
         southPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(210, 215, 220)),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+                BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
+                BorderFactory.createEmptyBorder(10, 16, 10, 16)
         ));
+        southPanel.setBackground(UITheme.BG_CARD);
 
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 18, 0));
+        statusPanel.setOpaque(false);
+
         lblTimer = new JLabel("Thời gian: 05:00");
-        lblTimer.setFont(new Font("Arial", Font.BOLD, 14));
-        lblTimer.setForeground(new Color(180, 0, 0));
+        lblTimer.setFont(UITheme.FONT_TITLE);
+        lblTimer.setForeground(UITheme.COLOR_DANGER);
 
-        lblStatus = new JLabel("Trạng thái: CHUẨN BỊ (READY 5s)");
-        lblStatus.setFont(new Font("Arial", Font.BOLD, 12));
-        lblStatus.setForeground(new Color(20, 100, 180));
+        lblStatus = new JLabel("Trạng thái: CHUẨN BỊ (5s)");
+        lblStatus.setFont(UITheme.FONT_BOLD);
+        lblStatus.setForeground(UITheme.COLOR_PRIMARY);
 
         statusPanel.add(lblTimer);
         statusPanel.add(lblStatus);
 
         btnForfeit = new JButton("Đầu hàng");
-        btnForfeit.setBackground(new Color(255, 220, 220));
+        UITheme.styleButton(btnForfeit, new Color(254, 226, 226), new Color(254, 202, 202), UITheme.COLOR_DANGER);
         btnForfeit.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Bạn có chắc chắn muốn đầu hàng không?\n(Bạn sẽ bị xử thua và trừ 5 điểm)",
@@ -210,7 +258,7 @@ public class GameFrame extends JFrame {
             readyCountdownTimer.stop();
         }
         lblStatus.setText("Trạng thái: ĐANG THI ĐẤU");
-        lblStatus.setForeground(new Color(0, 150, 0));
+        lblStatus.setForeground(UITheme.COLOR_SUCCESS);
         boardPanel.setInteractive(true);
 
         remainingSeconds = 300;
@@ -331,6 +379,9 @@ public class GameFrame extends JFrame {
 
                     @Override
                     public void onExit() {
+                        if (parentLobby instanceof MainMenuFrame) {
+                            ((MainMenuFrame) parentLobby).saveGameWindowState(getCurrentExtendedState(), getNormalBounds());
+                        }
                         dispose();
                         if (parentLobby != null) {
                             parentLobby.setVisible(true);
@@ -338,6 +389,45 @@ public class GameFrame extends JFrame {
                     }
                 });
         activeResultDialog.setVisible(true);
+    }
+
+    @Override
+    public void setVisible(boolean b) {
+        super.setVisible(b);
+        if (b && (getCurrentExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH) {
+            setExtendedState(Frame.MAXIMIZED_BOTH);
+        }
+    }
+
+    private void updateNormalBounds() {
+        if (isVisible()) {
+            int state = getExtendedState();
+            if ((state & Frame.MAXIMIZED_BOTH) == 0 && (state & Frame.ICONIFIED) == 0) {
+                normalBounds = getBounds();
+            }
+        }
+    }
+
+    /**
+     * Lấy trạng thái cửa sổ hiện tại (bình thường hoặc phóng to toàn màn hình).
+     * Nếu cửa sổ đang bị thu nhỏ (iconified) xuống taskbar, trả về trạng thái hiển thị mong muốn (MAXIMIZED hoặc NORMAL).
+     */
+    public int getCurrentExtendedState() {
+        int state = getExtendedState();
+        if ((state & Frame.ICONIFIED) != 0) {
+            return (state & Frame.MAXIMIZED_BOTH) != 0 ? Frame.MAXIMIZED_BOTH : Frame.NORMAL;
+        }
+        return state;
+    }
+
+    /**
+     * Lấy kích thước và vị trí cửa sổ ở chế độ thường.
+     */
+    public Rectangle getNormalBounds() {
+        if (normalBounds != null && normalBounds.width > 200 && normalBounds.height > 200) {
+            return new Rectangle(normalBounds);
+        }
+        return getBounds();
     }
 
     @Override

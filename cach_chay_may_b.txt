@@ -1,3 +1,9 @@
 .\tools\apache-ant-1.10.14\bin\ant.bat compile
 Test-NetConnection 10.137.219.75 -Port 2209
 java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonline.client.MainClient 10.137.219.75 2209
+
+
+cửa sổ tự thu nhỏ
+nước chết
+có thể xem trận đấu
+chỉnh âm thanh

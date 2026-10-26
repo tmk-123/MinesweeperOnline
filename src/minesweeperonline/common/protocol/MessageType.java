@@ -23,6 +23,8 @@ public enum MessageType {
     ACCEPT,
     REJECT,
     MATCH_CREATED,
+    QUICK_MATCH,
+    CANCEL_QUICK_MATCH,
 
     // --- Vòng đời ván chơi ---
     GAME_READY,

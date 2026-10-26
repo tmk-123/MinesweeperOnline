@@ -44,16 +44,16 @@ public class MatchHistoryDialog extends JDialog {
 
         // Phần tiêu đề phía trên
         JPanel headerPanel = new JPanel(new BorderLayout(5, 5));
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 10, 16));
-        headerPanel.setBackground(new Color(245, 248, 255));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(14, 18, 12, 18));
+        headerPanel.setBackground(UITheme.BG_CARD);
 
-        JLabel lblTitle = new JLabel("📜 LỊCH SỬ THI ĐẤU", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitle.setForeground(new Color(20, 60, 140));
+        JLabel lblTitle = new JLabel("LỊCH SỬ THI ĐẤU", SwingConstants.CENTER);
+        lblTitle.setFont(UITheme.FONT_LARGE_TITLE);
+        lblTitle.setForeground(UITheme.COLOR_PRIMARY);
 
         JLabel lblSubtitle = new JLabel("Chi tiết kết quả, đối thủ và điểm số các trận gần nhất của bạn", SwingConstants.CENTER);
-        lblSubtitle.setFont(new Font("Arial", Font.PLAIN, 12));
-        lblSubtitle.setForeground(new Color(100, 110, 130));
+        lblSubtitle.setFont(UITheme.FONT_SMALL);
+        lblSubtitle.setForeground(UITheme.TEXT_MUTED);
 
         headerPanel.add(lblTitle, BorderLayout.NORTH);
         headerPanel.add(lblSubtitle, BorderLayout.SOUTH);
@@ -69,11 +69,7 @@ public class MatchHistoryDialog extends JDialog {
         };
 
         table = new JTable(tableModel);
-        table.setRowHeight(30);
-        table.setFont(new Font("Arial", Font.PLAIN, 12));
-        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
-        table.getTableHeader().setBackground(new Color(230, 238, 248));
-        table.getTableHeader().setReorderingAllowed(false);
+        UITheme.styleTable(table);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // Độ rộng các cột
@@ -149,27 +145,30 @@ public class MatchHistoryDialog extends JDialog {
         // Panel phía dưới: tổng kết & các nút
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 5));
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 12, 16));
+        bottomPanel.setBackground(UITheme.BG_CARD);
 
         JPanel statsPanel = new JPanel(new GridLayout(2, 1, 2, 2));
+        statsPanel.setOpaque(false);
         lblSummary = new JLabel("Tổng số trận: 0 | Thắng: 0 | Thua: 0 | Tỉ lệ thắng: 0%");
-        lblSummary.setFont(new Font("Arial", Font.BOLD, 12));
-        lblSummary.setForeground(new Color(30, 50, 90));
+        lblSummary.setFont(UITheme.FONT_BOLD);
+        lblSummary.setForeground(UITheme.TEXT_TITLE);
 
         lblStatus = new JLabel("Đang tải lịch sử đấu...");
-        lblStatus.setFont(new Font("Arial", Font.ITALIC, 11));
-        lblStatus.setForeground(Color.GRAY);
+        lblStatus.setFont(UITheme.FONT_SMALL);
+        lblStatus.setForeground(UITheme.TEXT_MUTED);
 
         statsPanel.add(lblSummary);
         statsPanel.add(lblStatus);
         bottomPanel.add(statsPanel, BorderLayout.CENTER);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        JButton btnRefresh = new JButton("🔄 Làm mới");
-        btnRefresh.setFont(new Font("Arial", Font.PLAIN, 12));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        btnPanel.setOpaque(false);
+        JButton btnRefresh = new JButton("Làm mới");
+        UITheme.styleOutlineButton(btnRefresh, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
         btnRefresh.addActionListener(e -> refresh());
 
         JButton btnClose = new JButton("Đóng");
-        btnClose.setFont(new Font("Arial", Font.PLAIN, 12));
+        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
         btnClose.addActionListener(e -> dispose());
 
         btnPanel.add(btnRefresh);
@@ -244,12 +243,12 @@ public class MatchHistoryDialog extends JDialog {
                 }
 
                 String scoreDisplay = (e.getScoreDelta() > 0 ? "+" : "") + e.getScoreDelta();
-                String flagsAndActions = "🚩 " + e.getFlagsPlaced() + " | ⚡ " + e.getTotalActions();
+                String flagsAndActions = "Cờ: " + e.getFlagsPlaced() + " | Thao tác: " + e.getTotalActions();
                 String safeCells = e.getOpenedSafeCells() + " / 121";
 
                 tableModel.addRow(new Object[]{
                         e.getPlayedAt(),
-                        "👤 " + e.getOpponentName(),
+                        e.getOpponentName(),
                         resultDisplay,
                         scoreDisplay,
                         e.getFormattedDuration(),

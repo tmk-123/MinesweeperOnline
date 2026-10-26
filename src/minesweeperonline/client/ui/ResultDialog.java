@@ -40,42 +40,59 @@ public class ResultDialog extends JDialog {
 
     private void initComponents(String titleOutcome, String reason, int scoreDelta,
                                 int openedSafe, int totalActions, int flagsPlaced) {
-        setSize(430, 370);
+        setSize(450, 390);
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(10, 10));
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        getContentPane().setBackground(UITheme.BG_MAIN);
 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        JPanel mainPanel = new JPanel(new BorderLayout(12, 12));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
+        mainPanel.setBackground(UITheme.BG_CARD);
 
         // Tiêu đề kết quả
         JLabel lblOutcome = new JLabel(titleOutcome, SwingConstants.CENTER);
-        lblOutcome.setFont(new Font("Arial", Font.BOLD, 22));
+        lblOutcome.setFont(UITheme.FONT_LARGE_TITLE);
 
         if (titleOutcome.contains("CHIẾN THẮNG") || titleOutcome.contains("WIN")) {
-            lblOutcome.setForeground(new Color(0, 150, 50));
+            lblOutcome.setForeground(UITheme.COLOR_SUCCESS);
         } else if (titleOutcome.contains("THẤT BẠI") || titleOutcome.contains("LOSE")) {
-            lblOutcome.setForeground(new Color(200, 30, 30));
+            lblOutcome.setForeground(UITheme.COLOR_DANGER);
         } else {
-            lblOutcome.setForeground(new Color(180, 120, 0));
+            lblOutcome.setForeground(UITheme.COLOR_WARNING);
         }
         mainPanel.add(lblOutcome, BorderLayout.NORTH);
 
         // Chi tiết thống kê
-        JPanel statsPanel = new JPanel(new GridLayout(5, 1, 6, 6));
+        JPanel statsPanel = new JPanel(new GridLayout(5, 1, 6, 8));
         statsPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("Thống kê trận đấu"),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
+                        "Thống kê trận đấu",
+                        javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
+                        javax.swing.border.TitledBorder.DEFAULT_POSITION,
+                        UITheme.FONT_BOLD,
+                        UITheme.COLOR_PRIMARY
+                ),
+                BorderFactory.createEmptyBorder(10, 16, 10, 16)
         ));
+        statsPanel.setBackground(Color.WHITE);
 
         JLabel lblReason = new JLabel("Nguyên nhân: " + reason);
-        JLabel lblScore = new JLabel("Điểm cộng/trừ: " + (scoreDelta >= 0 ? "+" : "") + scoreDelta);
-        lblScore.setFont(new Font("Arial", Font.BOLD, 12));
-        lblScore.setForeground(scoreDelta >= 0 ? new Color(0, 120, 0) : Color.RED);
+        lblReason.setFont(UITheme.FONT_REGULAR);
 
-        JLabel lblSafe = new JLabel("Số ô an toàn đã mở: " + openedSafe + " / 121");
-        JLabel lblActions = new JLabel("Tổng số thao tác hợp lệ: " + totalActions);
+        JLabel lblScore = new JLabel("Điểm biến động: " + (scoreDelta >= 0 ? "+" : "") + scoreDelta);
+        lblScore.setFont(UITheme.FONT_BOLD);
+        lblScore.setForeground(scoreDelta >= 0 ? UITheme.COLOR_SUCCESS : UITheme.COLOR_DANGER);
+
+        JLabel lblSafe = new JLabel("Ô an toàn đã mở: " + openedSafe + " / 121");
+        lblSafe.setFont(UITheme.FONT_REGULAR);
+
+        JLabel lblActions = new JLabel("Tổng số thao tác: " + totalActions);
+        lblActions.setFont(UITheme.FONT_REGULAR);
+
         JLabel lblFlags = new JLabel("Số cờ đã đặt: " + flagsPlaced);
+        lblFlags.setFont(UITheme.FONT_REGULAR);
 
         statsPanel.add(lblReason);
         statsPanel.add(lblScore);
@@ -85,19 +102,22 @@ public class ResultDialog extends JDialog {
         mainPanel.add(statsPanel, BorderLayout.CENTER);
 
         // Phần chân: nút thao tác & trạng thái
-        JPanel southPanel = new JPanel(new BorderLayout(5, 5));
+        JPanel southPanel = new JPanel(new BorderLayout(8, 8));
+        southPanel.setOpaque(false);
 
         lblStatusRematch = new JLabel(" ", SwingConstants.CENTER);
-        lblStatusRematch.setFont(new Font("Arial", Font.ITALIC, 12));
-        lblStatusRematch.setForeground(new Color(40, 100, 180));
+        lblStatusRematch.setFont(UITheme.FONT_SMALL);
+        lblStatusRematch.setForeground(UITheme.COLOR_PRIMARY);
         southPanel.add(lblStatusRematch, BorderLayout.NORTH);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 5));
-        btnPlayAgain = new JButton("Chơi lại");
-        btnPlayAgain.setFont(new Font("Arial", Font.BOLD, 12));
-        btnPlayAgain.setBackground(new Color(220, 245, 220));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 5));
+        btnPanel.setOpaque(false);
+
+        btnPlayAgain = new JButton("Chơi lại ván mới");
+        UITheme.styleButton(btnPlayAgain, UITheme.COLOR_SUCCESS, UITheme.COLOR_SUCCESS_HOVER, Color.WHITE);
 
         btnExit = new JButton("Thoát ra sảnh");
+        UITheme.styleOutlineButton(btnExit, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
 
         btnPanel.add(btnPlayAgain);
         btnPanel.add(btnExit);

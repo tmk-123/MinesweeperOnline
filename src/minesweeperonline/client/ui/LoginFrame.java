@@ -10,7 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Cửa sổ đăng nhập của MinesweeperOnline.
+ * Cửa sổ đăng nhập hiện đại của MinesweeperOnline.
  */
 public class LoginFrame extends JFrame {
 
@@ -30,47 +30,103 @@ public class LoginFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Đăng nhập");
-        setSize(380, 240);
+        setSize(420, 390);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
+        getContentPane().setBackground(UITheme.BG_MAIN);
 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(24, 32, 24, 32));
+        mainPanel.setBackground(UITheme.BG_CARD);
 
-        // Tiêu đề
-        JLabel lblTitle = new JLabel("ĐĂNG NHẬP HỆ THỐNG", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 16));
-        lblTitle.setForeground(new Color(30, 80, 150));
-        mainPanel.add(lblTitle, BorderLayout.NORTH);
+        // Card bao ngoài
+        JPanel cardWrapper = new JPanel(new BorderLayout());
+        cardWrapper.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        cardWrapper.setBackground(UITheme.BG_MAIN);
 
-        // Các ô nhập liệu
-        JPanel formPanel = new JPanel(new GridLayout(2, 2, 10, 10));
-        formPanel.add(new JLabel("Tên đăng nhập:"));
+        JPanel cardPanel = new JPanel();
+        cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
+                BorderFactory.createEmptyBorder(22, 24, 22, 24)
+        ));
+        cardPanel.setBackground(UITheme.BG_CARD);
+
+        // Header Tiêu đề
+        JLabel lblTitle = new JLabel("MINESWEEPER ONLINE", SwingConstants.CENTER);
+        lblTitle.setFont(UITheme.FONT_LARGE_TITLE);
+        lblTitle.setForeground(UITheme.COLOR_PRIMARY);
+        lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel lblSub = new JLabel("Đấu trí dò mìn đối kháng thời gian thực", SwingConstants.CENTER);
+        lblSub.setFont(UITheme.FONT_SMALL);
+        lblSub.setForeground(UITheme.TEXT_MUTED);
+        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        cardPanel.add(lblTitle);
+        cardPanel.add(Box.createVerticalStrut(4));
+        cardPanel.add(lblSub);
+        cardPanel.add(Box.createVerticalStrut(20));
+
+        // Form Fields
+        JLabel lblUser = new JLabel("Tên đăng nhập:");
+        lblUser.setFont(UITheme.FONT_BOLD);
+        lblUser.setForeground(UITheme.TEXT_TITLE);
+        lblUser.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         txtUsername = new JTextField();
-        formPanel.add(txtUsername);
+        UITheme.styleTextField(txtUsername);
+        txtUsername.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-        formPanel.add(new JLabel("Mật khẩu:"));
+        JLabel lblPass = new JLabel("Mật khẩu:");
+        lblPass.setFont(UITheme.FONT_BOLD);
+        lblPass.setForeground(UITheme.TEXT_TITLE);
+        lblPass.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         txtPassword = new JPasswordField();
-        formPanel.add(txtPassword);
+        UITheme.stylePasswordField(txtPassword);
+        txtPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-        mainPanel.add(formPanel, BorderLayout.CENTER);
+        JPanel formBox = new JPanel();
+        formBox.setLayout(new BoxLayout(formBox, BoxLayout.Y_AXIS));
+        formBox.setOpaque(false);
+        formBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        formBox.add(lblUser);
+        formBox.add(Box.createVerticalStrut(4));
+        formBox.add(txtUsername);
+        formBox.add(Box.createVerticalStrut(12));
+        formBox.add(lblPass);
+        formBox.add(Box.createVerticalStrut(4));
+        formBox.add(txtPassword);
+
+        cardPanel.add(formBox);
+        cardPanel.add(Box.createVerticalStrut(22));
 
         // Các nút bấm
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
         btnLogin = new JButton("Đăng nhập");
-        btnLogin.setFont(new Font("Arial", Font.BOLD, 12));
-        btnRegister = new JButton("Đăng ký mới");
+        UITheme.styleButton(btnLogin, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
+        btnLogin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        buttonPanel.add(btnLogin);
-        buttonPanel.add(btnRegister);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        btnRegister = new JButton("Chưa có tài khoản? Đăng ký ngay");
+        UITheme.styleOutlineButton(btnRegister, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.COLOR_PRIMARY);
+        btnRegister.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        btnRegister.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        add(mainPanel);
+        cardPanel.add(btnLogin);
+        cardPanel.add(Box.createVerticalStrut(10));
+        cardPanel.add(btnRegister);
+
+        cardWrapper.add(cardPanel, BorderLayout.CENTER);
+        add(cardWrapper);
 
         // Gắn các action listener
         btnLogin.addActionListener(e -> performLogin());
         txtPassword.addActionListener(e -> performLogin());
+        txtUsername.addActionListener(e -> txtPassword.requestFocusInWindow());
 
         btnRegister.addActionListener(e -> {
             if (registerFrame == null || !registerFrame.isDisplayable()) {
@@ -97,6 +153,23 @@ public class LoginFrame extends JFrame {
 
         Message loginMsg = JsonProtocol.createLogin(username, password);
         connection.sendMessage(loginMsg);
+    }
+
+    /**
+     * Điền sẵn thông tin đăng nhập (ví dụ sau khi đăng ký tài khoản thành công).
+     */
+    public void setCredentials(String username, String password) {
+        if (txtUsername != null) {
+            txtUsername.setText(username);
+        }
+        if (txtPassword != null) {
+            txtPassword.setText(password);
+        }
+        if (btnLogin != null) {
+            btnLogin.setEnabled(true);
+            btnLogin.setText("Đăng nhập");
+            btnLogin.requestFocusInWindow();
+        }
     }
 
     @Override

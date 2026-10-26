@@ -30,35 +30,41 @@ public class ChallengeDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(360, 200);
+        setSize(390, 220);
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(10, 10));
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        getContentPane().setBackground(UITheme.BG_MAIN);
 
-        JPanel content = new JPanel(new GridLayout(3, 1, 5, 5));
-        content.setBorder(BorderFactory.createEmptyBorder(15, 20, 10, 20));
+        JPanel content = new JPanel(new GridLayout(3, 1, 6, 8));
+        content.setBorder(BorderFactory.createEmptyBorder(18, 20, 10, 20));
+        content.setBackground(UITheme.BG_CARD);
 
         JLabel lblMsg = new JLabel("Người chơi [" + challengerUsername + "] thách đấu bạn!", SwingConstants.CENTER);
-        lblMsg.setFont(new Font("Arial", Font.BOLD, 14));
+        lblMsg.setFont(UITheme.FONT_TITLE);
+        lblMsg.setForeground(UITheme.COLOR_PRIMARY);
         content.add(lblMsg);
 
-        JLabel lblSub = new JLabel("Bạn có chấp nhận thi đấu đối kháng không?", SwingConstants.CENTER);
+        JLabel lblSub = new JLabel("Bạn có chấp nhận tham gia thi đấu đối kháng không?", SwingConstants.CENTER);
+        lblSub.setFont(UITheme.FONT_REGULAR);
+        lblSub.setForeground(UITheme.TEXT_BODY);
         content.add(lblSub);
 
         lblTimer = new JLabel("Thời gian phản hồi còn lại: " + remainingSeconds + "s", SwingConstants.CENTER);
-        lblTimer.setForeground(Color.RED);
-        lblTimer.setFont(new Font("Arial", Font.BOLD, 12));
+        lblTimer.setForeground(UITheme.COLOR_DANGER);
+        lblTimer.setFont(UITheme.FONT_SMALL_BOLD);
         content.add(lblTimer);
 
         add(content, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        JButton btnAccept = new JButton("Chấp nhận");
-        btnAccept.setFont(new Font("Arial", Font.BOLD, 12));
-        btnAccept.setBackground(new Color(200, 245, 200));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 12));
+        buttonPanel.setBackground(UITheme.BG_CARD);
+
+        JButton btnAccept = new JButton("Chấp nhận đấu");
+        UITheme.styleButton(btnAccept, UITheme.COLOR_SUCCESS, UITheme.COLOR_SUCCESS_HOVER, Color.WHITE);
 
         JButton btnReject = new JButton("Từ chối");
-        btnReject.setBackground(new Color(255, 220, 220));
+        UITheme.styleButton(btnReject, new Color(254, 226, 226), new Color(254, 202, 202), UITheme.COLOR_DANGER);
 
         buttonPanel.add(btnAccept);
         buttonPanel.add(btnReject);

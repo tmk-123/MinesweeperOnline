@@ -151,6 +151,14 @@ public class JsonProtocol {
         return msg;
     }
 
+    public static Message createQuickMatch() {
+        return new Message(MessageType.QUICK_MATCH);
+    }
+
+    public static Message createCancelQuickMatch() {
+        return new Message(MessageType.CANCEL_QUICK_MATCH);
+    }
+
     public static Message createOpenCell(String gameId, int row, int col) {
         Message msg = new Message(MessageType.OPEN_CELL);
         msg.setGameId(gameId);

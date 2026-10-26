@@ -11,7 +11,7 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Dialog bảng xếp hạng, hiển thị các người chơi hàng đầu xếp theo tổng điểm và số trận thắng.
+ * Dialog bảng xếp hạng cao thủ, hiển thị cố định thứ hạng theo điểm số và số trận thắng.
  */
 public class LeaderboardDialog extends JDialog {
 
@@ -32,7 +32,7 @@ public class LeaderboardDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(560, 480);
+        setSize(620, 480);
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(8, 8));
 
@@ -41,7 +41,7 @@ public class LeaderboardDialog extends JDialog {
         headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
         headerPanel.setBackground(new Color(245, 248, 255));
 
-        JLabel lblTitle = new JLabel("🏆 BẢNG XẾP HẠNG CAO THỦ", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("BẢNG XẾP HẠNG CAO THỦ", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Arial", Font.BOLD, 18));
         lblTitle.setForeground(new Color(20, 60, 140));
         headerPanel.add(lblTitle, BorderLayout.CENTER);
@@ -62,35 +62,47 @@ public class LeaderboardDialog extends JDialog {
         table.setFont(new Font("Arial", Font.PLAIN, 13));
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
         table.getTableHeader().setBackground(new Color(230, 238, 248));
+        table.getTableHeader().setReorderingAllowed(false);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Độ rộng các cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(65);
+        // Độ rộng các cột (đảm bảo không bị co chữ "Số trận thắng")
+        table.getColumnModel().getColumn(0).setPreferredWidth(70);
         table.getColumnModel().getColumn(1).setPreferredWidth(140);
         table.getColumnModel().getColumn(2).setPreferredWidth(80);
-        table.getColumnModel().getColumn(3).setPreferredWidth(95);
-        table.getColumnModel().getColumn(4).setPreferredWidth(80);
-        table.getColumnModel().getColumn(5).setPreferredWidth(90);
+        table.getColumnModel().getColumn(3).setPreferredWidth(115);
+        table.getColumnModel().getColumn(4).setPreferredWidth(85);
+        table.getColumnModel().getColumn(5).setPreferredWidth(95);
 
-        // Cell renderer tùy chỉnh để tô màu thứ hạng và làm nổi bật dòng
+        // Cell renderer cố định theo thứ hạng chuẩn
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
                 setHorizontalAlignment(col == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
 
-                String nameInRow = (String) t.getValueAt(row, 1);
+                String nameInRow = (String) tableModel.getValueAt(row, 1);
+                int rank = (int) tableModel.getValueAt(row, 0);
                 boolean isCurrentUser = currentUsername != null && currentUsername.equals(nameInRow);
+
+                // Định dạng hiển thị sạch đẹp
+                if (col == 0) {
+                    if (rank == 1) setText("Top 1");
+                    else if (rank == 2) setText("Top 2");
+                    else if (rank == 3) setText("Top 3");
+                    else setText("#" + rank);
+                } else if (col == 5 && val instanceof Number) {
+                    setText(String.format("%.1f%%", ((Number) val).doubleValue()));
+                }
 
                 if (!isSel) {
                     if (isCurrentUser) {
                         c.setBackground(new Color(230, 245, 230));
                         setFont(getFont().deriveFont(Font.BOLD));
-                    } else if (row == 0) {
-                        c.setBackground(new Color(255, 250, 230)); // Top 1 tô màu vàng
-                    } else if (row == 1) {
+                    } else if (rank == 1) {
+                        c.setBackground(new Color(255, 250, 230)); // Top 1 tô màu vàng kim
+                    } else if (rank == 2) {
                         c.setBackground(new Color(245, 245, 250)); // Top 2 tô màu bạc
-                    } else if (row == 2) {
+                    } else if (rank == 3) {
                         c.setBackground(new Color(253, 245, 238)); // Top 3 tô màu đồng
                     } else if (row % 2 == 1) {
                         c.setBackground(new Color(248, 249, 251));
@@ -142,27 +154,26 @@ public class LeaderboardDialog extends JDialog {
         SwingUtilities.invokeLater(() -> {
             tableModel.setRowCount(0);
             if (list == null || list.isEmpty()) {
-                lblStatus.setText("Chưa có dữ liệu xếp hạng.");
+                lblStatus.setText("Chưa có dữ liệu người chơi.");
                 return;
             }
 
             for (LeaderboardEntry e : list) {
-                String rankStr;
-                if (e.getRank() == 1) rankStr = "🥇 1";
-                else if (e.getRank() == 2) rankStr = "🥈 2";
-                else if (e.getRank() == 3) rankStr = "🥉 3";
-                else rankStr = String.valueOf(e.getRank());
-
                 tableModel.addRow(new Object[]{
-                        rankStr,
+                        e.getRank(),
                         e.getUsername(),
                         e.getTotalScore(),
                         e.getWins(),
                         e.getTotalMatches(),
-                        String.format("%.1f%%", e.getWinRate())
+                        e.getWinRate()
                 });
             }
-            lblStatus.setText("Cập nhật thành công: " + list.size() + " người chơi.");
+
+            if (list.size() < 10) {
+                lblStatus.setText("Cập nhật thành công: " + list.size() + " người chơi.");
+            } else {
+                lblStatus.setText("Cập nhật thành công: Top 10 cao thủ.");
+            }
         });
     }
 }

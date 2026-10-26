@@ -13,6 +13,7 @@ public class MainServer {
     private final int port;
     private final ClientManager clientManager;
     private final GameManager gameManager;
+    private final MatchmakingManager matchmakingManager;
     private volatile boolean running = true;
     private ServerSocket serverSocket;
 
@@ -20,6 +21,7 @@ public class MainServer {
         this.port = port;
         this.clientManager = new ClientManager();
         this.gameManager = new GameManager();
+        this.matchmakingManager = new MatchmakingManager(clientManager, gameManager);
     }
 
     public void start() {
@@ -41,7 +43,7 @@ public class MainServer {
                     System.out.println("[MainServer] Accepted new connection from: " +
                             clientSocket.getRemoteSocketAddress());
 
-                    ClientHandler handler = new ClientHandler(clientSocket, clientManager, gameManager);
+                    ClientHandler handler = new ClientHandler(clientSocket, clientManager, gameManager, matchmakingManager);
                     Thread clientThread = new Thread(handler, "Client-" + clientSocket.getPort());
                     clientThread.start();
 

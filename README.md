@@ -228,6 +228,7 @@ Không cần sửa code: client nhận địa chỉ server qua tham số `MainCl
 
 5. Máy A: lấy IP bằng `ipconfig` (dòng **IPv4 Address** của card Wi-Fi, ví dụ `192.168.1.10`). IP này có thể đổi mỗi lần kết nối mạng lại.
 6. Máy A: bật server từ **thư mục project** và để cửa sổ đó mở:
+
    ```powershell
    cd <thư mục MinesweeperOnline>
    .\tools\apache-ant-1.10.14\bin\ant.bat run-server
@@ -235,12 +236,14 @@ Không cần sửa code: client nhận địa chỉ server qua tham số `MainCl
 
    Phải thấy `Server started successfully on port: 2209`.
 7. Máy B: kiểm tra đường mạng tới server (lệnh của **PowerShell**; nếu đang ở cmd thì thêm `powershell -Command "..."`):
+
    ```powershell
    Test-NetConnection 192.168.1.10 -Port 2209
    ```
 
    Cần thấy `TcpTestSucceeded : True`.
 8. Máy B: chạy client, truyền IP của máy A (lệnh này dùng được ở cả cmd và PowerShell):
+
    ```powershell
    java -cp "build/classes;lib/gson.jar;lib/mysql-connector-j.jar" minesweeperonline.client.MainClient 192.168.1.10 2209
    ```

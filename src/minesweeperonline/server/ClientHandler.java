@@ -43,6 +43,7 @@ public class ClientHandler implements Runnable {
     private final Socket socket;
     private final ClientManager clientManager;
     private final GameManager gameManager;
+    private final MatchmakingManager matchmakingManager;
 
     private BufferedReader reader;
     private PrintWriter writer;
@@ -59,10 +60,19 @@ public class ClientHandler implements Runnable {
 
     private final UserDAO userDAO = new UserDAO();
 
-    public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager) {
+    public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager, MatchmakingManager matchmakingManager) {
         this.socket = socket;
         this.clientManager = clientManager;
         this.gameManager = gameManager;
+        this.matchmakingManager = matchmakingManager;
+    }
+
+    public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager) {
+        this(socket, clientManager, gameManager, null);
+    }
+
+    public boolean isRunning() {
+        return running && socket != null && !socket.isClosed();
     }
 
     @Override
@@ -174,6 +184,14 @@ public class ClientHandler implements Runnable {
 
             case EXIT:
                 handleExit(message);
+                break;
+
+            case QUICK_MATCH:
+                handleQuickMatch(message);
+                break;
+
+            case CANCEL_QUICK_MATCH:
+                handleCancelQuickMatch(message);
                 break;
 
             default:
@@ -307,7 +325,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleGetLeaderboard(Message message) {
-        List<LeaderboardEntry> list = userDAO.getLeaderboard(50);
+        List<LeaderboardEntry> list = userDAO.getLeaderboard(10);
         Message res = new Message(MessageType.LEADERBOARD);
         res.setRequestId(message.getRequestId());
         JsonObject payload = new JsonObject();
@@ -346,6 +364,22 @@ public class ClientHandler implements Runnable {
         payload.add("history", JsonProtocol.getGson().toJsonTree(list));
         res.setPayload(payload);
         sendMessage(res);
+    }
+
+    private void handleQuickMatch(Message message) {
+        if (user == null || player == null) {
+            sendMessage(JsonProtocol.createError(message.getRequestId(), "Vui lòng đăng nhập trước khi tìm trận!"));
+            return;
+        }
+        if (matchmakingManager != null) {
+            matchmakingManager.joinQueue(this);
+        }
+    }
+
+    private void handleCancelQuickMatch(Message message) {
+        if (matchmakingManager != null) {
+            matchmakingManager.leaveQueue(this);
+        }
     }
 
     private void handleChallenge(Message message) {
@@ -609,6 +643,9 @@ public class ClientHandler implements Runnable {
      * và đưa phía bên kia về IDLE. Người thách đấu đang chờ sẽ được thông báo.
      */
     private void cancelPendingChallenge() {
+        if (matchmakingManager != null) {
+            matchmakingManager.leaveQueue(this);
+        }
         if (user == null) return;
         ClientHandler waitingChallenger = null;
 
@@ -646,6 +683,9 @@ public class ClientHandler implements Runnable {
      */
     private void cleanup() {
         running = false;
+        if (matchmakingManager != null) {
+            matchmakingManager.leaveQueue(this);
+        }
         clientManager.removeClient(this);
 
         if (user != null) {
