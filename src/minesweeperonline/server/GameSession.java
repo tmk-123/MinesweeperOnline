@@ -32,11 +32,11 @@ public class GameSession {
     private final String gameId;
 
     private final Player player1;
-    private final ClientHandler handler1;
+    private volatile ClientHandler handler1;
     private final Board board1;
 
     private final Player player2;
-    private final ClientHandler handler2;
+    private volatile ClientHandler handler2;
     private final Board board2;
 
     private GameState state;
@@ -53,6 +53,8 @@ public class GameSession {
 
     private final ScheduledExecutorService timerScheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> matchTimerTask;
+    private ScheduledFuture<?> disconnectGraceTask;
+    private volatile int disconnectedUserId = -1;
 
     public GameSession(Player player1, ClientHandler handler1, Player player2, ClientHandler handler2) {
         this.gameId = UUID.randomUUID().toString().substring(0, 8);
@@ -119,6 +121,11 @@ public class GameSession {
                     return;
                 }
 
+                // Nếu đang tạm dừng chờ đối thủ kết nối lại thì không trừ thời gian ván đấu
+                if (disconnectedUserId >= 0) {
+                    return;
+                }
+
                 remainingSeconds--;
                 if (remainingSeconds <= 0) {
                     handleTimeout();
@@ -128,10 +135,11 @@ public class GameSession {
     }
 
     private void stopTimers() {
-        // Không interrupt: stopTimers() có thể chạy ngay trên thread của timer (TIMEOUT),
-        // và chính thread đó sau đó còn phải ghi kết quả vào database.
         if (matchTimerTask != null) {
             matchTimerTask.cancel(false);
+        }
+        if (disconnectGraceTask != null) {
+            disconnectGraceTask.cancel(false);
         }
         timerScheduler.shutdown();
     }
@@ -141,7 +149,7 @@ public class GameSession {
      */
     public void handleOpenCell(int userId, int row, int col) {
         synchronized (gameLock) {
-            if (finished.get() || state != GameState.PLAYING) {
+            if (finished.get() || state != GameState.PLAYING || disconnectedUserId >= 0) {
                 return;
             }
 
@@ -252,7 +260,7 @@ public class GameSession {
      */
     public void handlePlaceFlag(int userId, int row, int col) {
         synchronized (gameLock) {
-            if (finished.get() || state != GameState.PLAYING) return;
+            if (finished.get() || state != GameState.PLAYING || disconnectedUserId >= 0) return;
             Board targetBoard = getBoardForPlayer(userId);
             Player actingPlayer = getPlayer(userId);
             ClientHandler actingHandler = (userId == player1.getUserId()) ? handler1 : handler2;
@@ -295,7 +303,7 @@ public class GameSession {
      */
     public void handleRemoveFlag(int userId, int row, int col) {
         synchronized (gameLock) {
-            if (finished.get() || state != GameState.PLAYING) return;
+            if (finished.get() || state != GameState.PLAYING || disconnectedUserId >= 0) return;
             Board targetBoard = getBoardForPlayer(userId);
             Player actingPlayer = getPlayer(userId);
             ClientHandler actingHandler = (userId == player1.getUserId()) ? handler1 : handler2;
@@ -588,5 +596,179 @@ public class GameSession {
         if (player1.getUserId() == userId) return player1;
         if (player2.getUserId() == userId) return player2;
         return null;
+    }
+
+    public boolean isPlayerDisconnected(int userId) {
+        synchronized (gameLock) {
+            return disconnectedUserId == userId;
+        }
+    }
+
+    /**
+     * Xử lý khi một người chơi bị ngắt kết nối giữa trận:
+     * Tạm dừng ván đấu, thông báo cho đối thủ và cho phép kết nối lại trong vòng 15 giây.
+     */
+    public void handlePlayerDisconnect(int userId, GameManager gameManager) {
+        synchronized (gameLock) {
+            if (finished.get() || (state != GameState.READY && state != GameState.PLAYING)) return;
+            this.disconnectedUserId = userId;
+
+            System.out.println("[GameSession] Player " + userId + " disconnected. Pausing match " + gameId +
+                    " for 15s reconnection window...");
+
+            ClientHandler oppHandler = getOpponentHandler(userId);
+            if (oppHandler != null) {
+                Message msg = new Message(MessageType.OPPONENT_DISCONNECTED);
+                msg.setGameId(gameId);
+                JsonObject p = new JsonObject();
+                p.addProperty("status", "WAITING_RECONNECT");
+                p.addProperty("countdownSeconds", 15);
+                p.addProperty("disconnectedUsername", getPlayer(userId) != null ? getPlayer(userId).getUsername() : "Doi thu");
+                p.addProperty("message", "Đối thủ bị mất kết nối! Đang chờ kết nối lại (15s)...");
+                msg.setPayload(p);
+                oppHandler.sendMessage(msg);
+            }
+
+            if (disconnectGraceTask != null) {
+                disconnectGraceTask.cancel(false);
+            }
+
+            disconnectGraceTask = timerScheduler.schedule(() -> {
+                synchronized (gameLock) {
+                    if (finished.get() || disconnectedUserId != userId) return;
+
+                    System.out.println("[GameSession] 15s reconnection window expired for player " + userId + " in match " + gameId);
+                    Player opponent = getOpponent(userId);
+                    int winnerId = (opponent != null) ? opponent.getUserId() : 0;
+                    if (finishGame(winnerId, "FORFEIT_DISCONNECT_TIMEOUT")) {
+                        ClientHandler handler = getOpponentHandler(userId);
+                        if (handler != null) {
+                            Message forfeitMsg = new Message(MessageType.OPPONENT_DISCONNECTED);
+                            forfeitMsg.setGameId(gameId);
+                            JsonObject p = new JsonObject();
+                            p.addProperty("status", "FORFEIT");
+                            p.addProperty("reason", "Đối thủ không kết nối lại sau 15 giây!");
+                            p.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
+                            attachMines(p, winnerId);
+                            forfeitMsg.setPayload(p);
+                            handler.sendMessage(forfeitMsg);
+                        }
+                    }
+                    gameManager.removeSession(gameId);
+                }
+            }, 15, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Khôi phục kết nối cho người chơi quay lại trận đấu trong thời gian cho phép.
+     */
+    public boolean handlePlayerReconnect(int userId, ClientHandler newHandler, Player newPlayer) {
+        synchronized (gameLock) {
+            if (finished.get() || disconnectedUserId != userId) return false;
+
+            System.out.println("[GameSession] Player " + userId + " successfully reconnected to match " + gameId + "! Resuming match.");
+
+            if (disconnectGraceTask != null) {
+                disconnectGraceTask.cancel(false);
+                disconnectGraceTask = null;
+            }
+            this.disconnectedUserId = -1;
+
+            if (userId == player1.getUserId()) {
+                this.handler1 = newHandler;
+            } else {
+                this.handler2 = newHandler;
+            }
+
+            // Báo đối thủ là người chơi đã kết nối lại
+            ClientHandler oppHandler = getOpponentHandler(userId);
+            if (oppHandler != null) {
+                Message oppMsg = new Message(MessageType.OPPONENT_RECONNECTED);
+                oppMsg.setGameId(gameId);
+                JsonObject p = new JsonObject();
+                p.addProperty("reconnectedUsername", newPlayer.getUsername());
+                p.addProperty("message", "Đối thủ đã kết nối lại! Ván đấu tiếp tục.");
+                oppMsg.setPayload(p);
+                oppHandler.sendMessage(oppMsg);
+            }
+
+            // Gửi toàn bộ dữ liệu bàn cờ khôi phục cho người chơi vừa vào lại
+            Message recMsg = new Message(MessageType.GAME_RECONNECTED);
+            recMsg.setGameId(gameId);
+            JsonObject p = new JsonObject();
+            p.addProperty("gameId", gameId);
+
+            Player opp = getOpponent(userId);
+            p.addProperty("opponentId", opp != null ? opp.getUserId() : 0);
+            p.addProperty("opponentUsername", opp != null ? opp.getUsername() : "Doi thu");
+            p.addProperty("remainingSeconds", remainingSeconds);
+
+            Board myBoard = getBoardForPlayer(userId);
+            Board oppBoard = (myBoard == board1) ? board2 : board1;
+
+            p.addProperty("mySafeCells", myBoard.getOpenedSafeCells());
+            p.addProperty("myFlags", myBoard.getCurrentFlags());
+            p.addProperty("myActions", myBoard.getTotalActions());
+
+            p.addProperty("oppSafeCells", oppBoard.getOpenedSafeCells());
+            p.addProperty("oppFlags", oppBoard.getCurrentFlags());
+            p.addProperty("oppActions", oppBoard.getTotalActions());
+
+            JsonArray myOpenedArr = new JsonArray();
+            for (int r = 0; r < 12; r++) {
+                for (int c = 0; c < 12; c++) {
+                    Cell cell = myBoard.getCell(r, c);
+                    if (cell.isOpened()) {
+                        JsonObject o = new JsonObject();
+                        o.addProperty("row", r);
+                        o.addProperty("col", c);
+                        o.addProperty("adjacentMines", cell.getAdjacentMines());
+                        o.addProperty("isMine", cell.isMine());
+                        o.addProperty("isExploded", cell.isExploded());
+                        myOpenedArr.add(o);
+                    }
+                }
+            }
+            p.add("myOpenedCells", myOpenedArr);
+
+            JsonArray myFlaggedArr = new JsonArray();
+            for (int r = 0; r < 12; r++) {
+                for (int c = 0; c < 12; c++) {
+                    if (myBoard.getCell(r, c).isFlagged()) {
+                        JsonObject o = new JsonObject();
+                        o.addProperty("row", r);
+                        o.addProperty("col", c);
+                        myFlaggedArr.add(o);
+                    }
+                }
+            }
+            p.add("myFlaggedCells", myFlaggedArr);
+
+            JsonArray oppOpenedArr = new JsonArray();
+            JsonArray oppFlaggedArr = new JsonArray();
+            for (int r = 0; r < 12; r++) {
+                for (int c = 0; c < 12; c++) {
+                    Cell cell = oppBoard.getCell(r, c);
+                    if (cell.isOpened()) {
+                        JsonObject o = new JsonObject();
+                        o.addProperty("r", r);
+                        o.addProperty("c", c);
+                        oppOpenedArr.add(o);
+                    } else if (cell.isFlagged()) {
+                        JsonObject o = new JsonObject();
+                        o.addProperty("r", r);
+                        o.addProperty("c", c);
+                        oppFlaggedArr.add(o);
+                    }
+                }
+            }
+            p.add("oppOpenedCoords", oppOpenedArr);
+            p.add("oppFlaggedCoords", oppFlaggedArr);
+
+            recMsg.setPayload(p);
+            newHandler.sendMessage(recMsg);
+            return true;
+        }
     }
 }

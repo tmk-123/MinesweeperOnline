@@ -252,8 +252,12 @@ public class ClientHandler implements Runnable {
 
         ClientHandler existing = clientManager.getClientByUserId(dbUser.getId());
         if (existing != null && existing != this) {
-            sendMessage(JsonProtocol.createLoginFailed("Tai khoan dang duoc dang nhap o mot thiet bi khac!"));
-            return;
+            if (!existing.isRunning()) {
+                clientManager.unregisterUser(dbUser.getId());
+            } else {
+                sendMessage(JsonProtocol.createLoginFailed("Tai khoan dang duoc dang nhap o mot thiet bi khac!"));
+                return;
+            }
         }
 
         // Client đăng xuất không gửi LOGOUT: cùng một kết nối đăng nhập lại,
@@ -273,6 +277,12 @@ public class ClientHandler implements Runnable {
         res.setRequestId(message.getRequestId());
         sendMessage(res);
         System.out.println("[ClientHandler] Login successful: " + username + " (id=" + user.getId() + ")");
+
+        // Kiểm tra xem người dùng có trận đấu đang dở dang (bị rớt mạng) cần khôi phục không
+        GameSession activeSession = gameManager.getSessionByUserId(dbUser.getId());
+        if (activeSession != null && !activeSession.isFinished()) {
+            activeSession.handlePlayerReconnect(dbUser.getId(), this, this.player);
+        }
     }
 
     private void handleRegister(Message message) {
@@ -693,26 +703,13 @@ public class ClientHandler implements Runnable {
 
             GameSession session = gameManager.getSessionByUserId(user.getId());
             if (session != null) {
-                // Mất kết nối giữa trận = FORFEIT
                 if (!session.isFinished()) {
-                    Player opponent = session.getOpponent(user.getId());
-                    int winnerId = (opponent != null) ? opponent.getUserId() : 0;
-                    if (session.finishGame(winnerId, "FORFEIT_DISCONNECT")) {
-                        ClientHandler oppHandler = session.getOpponentHandler(user.getId());
-                        if (oppHandler != null) {
-                            Message dcMsg = new Message(MessageType.OPPONENT_DISCONNECTED);
-                            JsonObject p = new JsonObject();
-                            p.addProperty("reason", "Doi thu mat ket noi!");
-                            p.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
-                            session.attachMines(p, winnerId);
-                            dcMsg.setPayload(p);
-                            oppHandler.sendMessage(dcMsg);
-                        }
-                    }
+                    // Mất kết nối giữa trận: cho phép 15 giây kết nối lại trước khi xử FORFEIT
+                    session.handlePlayerDisconnect(user.getId(), gameManager);
+                } else {
+                    // Rời phòng khi trận đã kết thúc
+                    session.handleExit(user.getId(), gameManager);
                 }
-                // Rời phòng: báo cho đối thủ (vô hiệu nút PLAY AGAIN),
-                // đưa cả hai người chơi về IDLE và hủy session
-                session.handleExit(user.getId(), gameManager);
             }
         }
 

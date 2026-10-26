@@ -114,6 +114,14 @@ public class MainMenuFrame extends JFrame {
             }
         });
 
+        JButton btnHelp = new JButton("? Hướng dẫn");
+        UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
+        btnHelp.setToolTipText("Xem cẩm nang luật chơi 1v1, quy tắc xếp hạng và mẹo chơi");
+        btnHelp.addActionListener(e -> {
+            HelpDialog helpDialog = new HelpDialog(this, 0);
+            helpDialog.setVisible(true);
+        });
+
         JButton btnLogout = new JButton("Đăng xuất");
         UITheme.styleButton(btnLogout, new Color(254, 226, 226), new Color(254, 202, 202), UITheme.COLOR_DANGER);
         btnLogout.addActionListener(e -> {
@@ -137,6 +145,7 @@ public class MainMenuFrame extends JFrame {
         rightHeaderBtns.add(btnQuickMatch);
         rightHeaderBtns.add(btnRefreshAll);
         rightHeaderBtns.add(btnMatchHistory);
+        rightHeaderBtns.add(btnHelp);
         rightHeaderBtns.add(btnLogout);
         headerPanel.add(rightHeaderBtns, BorderLayout.EAST);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
@@ -204,6 +213,10 @@ public class MainMenuFrame extends JFrame {
 
             case MATCH_CREATED:
                 handleMatchCreated(message);
+                break;
+
+            case GAME_RECONNECTED:
+                handleGameReconnected(message);
                 break;
 
             case REJECT:
@@ -298,6 +311,36 @@ public class MainMenuFrame extends JFrame {
         }
 
         currentGameFrame = new GameFrame(connection, currentUser, opponentName, gameId, this, targetState, targetBounds);
+        currentGameFrame.setVisible(true);
+        this.setVisible(false);
+    }
+
+    private void handleGameReconnected(Message message) {
+        JsonObject payload = message.getPayload();
+        String gameId = payload.get("gameId").getAsString();
+        String opponentName = payload.has("opponentUsername") ?
+                payload.get("opponentUsername").getAsString() : "Đối thủ";
+
+        onlinePanel.resetChallengeState();
+        if (isSearchingMatch) {
+            isSearchingMatch = false;
+            btnQuickMatch.setText("Tìm trận nhanh");
+            btnQuickMatch.setBackground(UITheme.COLOR_PRIMARY);
+        }
+
+        int targetState = lastGameExtendedState;
+        Rectangle targetBounds = lastGameBounds;
+
+        if (currentGameFrame != null && currentGameFrame.isDisplayable()) {
+            targetState = currentGameFrame.getCurrentExtendedState();
+            targetBounds = currentGameFrame.getNormalBounds();
+            lastGameExtendedState = targetState;
+            lastGameBounds = targetBounds;
+            currentGameFrame.dispose();
+        }
+
+        currentGameFrame = new GameFrame(connection, currentUser, opponentName, gameId, this, targetState, targetBounds);
+        currentGameFrame.restoreGameState(payload);
         currentGameFrame.setVisible(true);
         this.setVisible(false);
     }

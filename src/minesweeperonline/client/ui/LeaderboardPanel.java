@@ -34,8 +34,8 @@ public class LeaderboardPanel extends JPanel {
         setBackground(UITheme.BG_CARD);
         setBorder(UITheme.createCardBorder("Bảng xếp hạng cao thủ (Top 10)"));
 
-        // Bảng dữ liệu
-        String[] columns = {"Hạng", "Tên người chơi", "Điểm số", "Số trận thắng", "Tổng trận", "Tỉ lệ thắng"};
+        // Bảng dữ liệu: Thêm cột "Cấp bậc" (Rank Tier)
+        String[] columns = {"Hạng", "Tên người chơi", "Cấp bậc", "Điểm số", "Trận thắng", "Tổng trận", "Tỉ lệ thắng"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -48,12 +48,13 @@ public class LeaderboardPanel extends JPanel {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // Độ rộng các cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(65);
-        table.getColumnModel().getColumn(1).setPreferredWidth(130);
-        table.getColumnModel().getColumn(2).setPreferredWidth(75);
-        table.getColumnModel().getColumn(3).setPreferredWidth(105);
-        table.getColumnModel().getColumn(4).setPreferredWidth(80);
-        table.getColumnModel().getColumn(5).setPreferredWidth(90);
+        table.getColumnModel().getColumn(0).setPreferredWidth(75);  // Hạng (🥇 Top 1, 🥈 Top 2, 🥉 Top 3, Top 4...)
+        table.getColumnModel().getColumn(1).setPreferredWidth(125); // Tên người chơi
+        table.getColumnModel().getColumn(2).setPreferredWidth(95);  // Cấp bậc
+        table.getColumnModel().getColumn(3).setPreferredWidth(65);  // Điểm số
+        table.getColumnModel().getColumn(4).setPreferredWidth(90);  // Trận thắng (không bị cắt chữ)
+        table.getColumnModel().getColumn(5).setPreferredWidth(75);  // Tổng trận
+        table.getColumnModel().getColumn(6).setPreferredWidth(85);  // Tỉ lệ thắng
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -66,36 +67,79 @@ public class LeaderboardPanel extends JPanel {
                 int rank = (int) tableModel.getValueAt(row, 0);
                 boolean isCurrentUser = currentUsername != null && currentUsername.equals(nameInRow);
 
+                // 1. Cột Hạng: Huy chương 🥇 🥈 🥉 cho Top 3
                 if (col == 0) {
                     setFont(UITheme.FONT_BOLD);
-                    if (rank == 1) setText("Top 1");
-                    else if (rank == 2) setText("Top 2");
-                    else if (rank == 3) setText("Top 3");
-                    else setText("#" + rank);
-                } else if (col == 5 && val instanceof Number) {
-                    setText(String.format("%.1f%%", ((Number) val).doubleValue()));
+                    if (rank == 1) {
+                        setText("🥇 Top 1");
+                        if (!isSel) c.setForeground(new Color(180, 83, 9));       // Vàng kim (Amber 700)
+                    } else if (rank == 2) {
+                        setText("🥈 Top 2");
+                        if (!isSel) c.setForeground(new Color(71, 85, 105));      // Bạc (Slate 600)
+                    } else if (rank == 3) {
+                        setText("🥉 Top 3");
+                        if (!isSel) c.setForeground(new Color(194, 65, 12));      // Đồng (Orange 700)
+                    } else {
+                        setText("Top " + rank);
+                        if (!isSel) c.setForeground(new Color(100, 116, 139));    // Top 4+: Xám Slate 500
+                    }
+                } else if (col == 1) {
+                    // Cột Tên: gắn thẻ "(Bạn)" nếu là người dùng hiện tại
+                    if (isCurrentUser) {
+                        setText(nameInRow + " (Bạn)");
+                        setFont(UITheme.FONT_BOLD);
+                    } else {
+                        setText(nameInRow);
+                    }
+                } else if (col == 2) {
+                    // Cột Cấp bậc (Rank Tier)
+                    setFont(UITheme.FONT_SMALL_BOLD);
+                    if (val instanceof String && !isSel) {
+                        int score = (int) tableModel.getValueAt(row, 3);
+                        c.setForeground(UITheme.getRankColor(score));
+                    }
+                } else if (col == 3) {
+                    // Cột Điểm số
+                    setFont(UITheme.FONT_BOLD);
+                    if (!isSel) c.setForeground(UITheme.COLOR_PRIMARY);
+                } else if (col == 6) {
+                    // Cột Tỉ lệ thắng: Hiện "-" nếu chưa đấu trận nào
+                    Object totalObj = tableModel.getValueAt(row, 5);
+                    int total = totalObj instanceof Number ? ((Number) totalObj).intValue() : 0;
+                    if (total == 0) {
+                        setText("-");
+                    } else if (val instanceof Number) {
+                        setText(String.format("%.1f%%", ((Number) val).doubleValue()));
+                    }
                 }
 
+                // 2. Màu nền: Chỉ giữ màu nền cho Top 1, 2, 3; các top sau để nền trắng
                 if (!isSel) {
-                    if (isCurrentUser) {
-                        c.setBackground(new Color(236, 253, 245)); // Soft Emerald
-                        c.setForeground(new Color(6, 95, 70));
-                        setFont(UITheme.FONT_BOLD);
-                    } else if (rank == 1) {
+                    if (rank == 1) {
                         c.setBackground(new Color(254, 249, 195)); // Gold light
-                        c.setForeground(new Color(133, 77, 14));
+                        if (col != 0 && col != 2 && col != 3) {
+                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(133, 77, 14));
+                        }
                     } else if (rank == 2) {
-                        c.setBackground(new Color(241, 245, 249)); // Silver light
-                        c.setForeground(new Color(51, 65, 85));
+                        c.setBackground(new Color(226, 232, 240)); // Silver light (màu bạc rõ ràng)
+                        if (col != 0 && col != 2 && col != 3) {
+                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(51, 65, 85));
+                        }
                     } else if (rank == 3) {
                         c.setBackground(new Color(255, 237, 213)); // Bronze light
-                        c.setForeground(new Color(154, 52, 18));
-                    } else if (row % 2 == 1) {
-                        c.setBackground(UITheme.BG_MAIN);
-                        c.setForeground(UITheme.TEXT_TITLE);
+                        if (col != 0 && col != 2 && col != 3) {
+                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(154, 52, 18));
+                        }
                     } else {
+                        // Top 4 trở đi: Bỏ màu nền, để nền trắng
                         c.setBackground(Color.WHITE);
-                        c.setForeground(UITheme.TEXT_TITLE);
+                        if (col != 0 && col != 2 && col != 3) {
+                            if (isCurrentUser && col == 1) {
+                                c.setForeground(new Color(6, 95, 70)); // Tên bạn vẫn nổi bật màu xanh lá
+                            } else {
+                                c.setForeground(UITheme.TEXT_TITLE);
+                            }
+                        }
                     }
                 }
                 return c;
@@ -111,13 +155,26 @@ public class LeaderboardPanel extends JPanel {
         scrollPane.getViewport().setBackground(Color.WHITE);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Panel chân bảng
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        // Panel chân bảng: Trạng thái bên trái, Nút ? Quy tắc xếp hạng bên phải
+        JPanel actionPanel = new JPanel(new BorderLayout(8, 0));
         actionPanel.setBackground(UITheme.BG_CARD);
+        actionPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+
         lblStatus = new JLabel("Đang tải dữ liệu bảng xếp hạng...");
         lblStatus.setFont(UITheme.FONT_SMALL);
         lblStatus.setForeground(UITheme.TEXT_MUTED);
-        actionPanel.add(lblStatus);
+        actionPanel.add(lblStatus, BorderLayout.WEST);
+
+        JButton btnHelp = new JButton("? Quy tắc xếp hạng");
+        UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
+        btnHelp.setFont(UITheme.FONT_SMALL);
+        btnHelp.setToolTipText("Xem các tiêu chí phân định thứ hạng trên bảng xếp hạng");
+        btnHelp.addActionListener(e -> {
+            Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+            LeaderboardRulesDialog dialog = new LeaderboardRulesDialog(parentFrame);
+            dialog.setVisible(true);
+        });
+        actionPanel.add(btnHelp, BorderLayout.EAST);
 
         add(actionPanel, BorderLayout.SOUTH);
     }
@@ -138,9 +195,11 @@ public class LeaderboardPanel extends JPanel {
             }
 
             for (LeaderboardEntry e : list) {
+                String rankTitle = UITheme.getRankTitle(e.getTotalScore());
                 tableModel.addRow(new Object[]{
                         e.getRank(),
                         e.getUsername(),
+                        rankTitle,
                         e.getTotalScore(),
                         e.getWins(),
                         e.getTotalMatches(),

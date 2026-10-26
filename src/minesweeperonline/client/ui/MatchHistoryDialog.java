@@ -38,7 +38,7 @@ public class MatchHistoryDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(780, 520);
+        setSize(860, 530);
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(8, 8));
 
@@ -72,15 +72,15 @@ public class MatchHistoryDialog extends JDialog {
         UITheme.styleTable(table);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Độ rộng các cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(125); // Thời gian
+        // Độ rộng các cột (đảm bảo hiển thị đầy đủ, không bị cắt chữ '...')
+        table.getColumnModel().getColumn(0).setPreferredWidth(140); // Thời gian (26/10/2026 18:07:15)
         table.getColumnModel().getColumn(1).setPreferredWidth(95);  // Đối thủ
-        table.getColumnModel().getColumn(2).setPreferredWidth(95);  // Kết quả
-        table.getColumnModel().getColumn(3).setPreferredWidth(70);  // Điểm
-        table.getColumnModel().getColumn(4).setPreferredWidth(75);  // Thời lượng
-        table.getColumnModel().getColumn(5).setPreferredWidth(80);  // Ô an toàn
-        table.getColumnModel().getColumn(6).setPreferredWidth(100); // Cờ / Thao tác
-        table.getColumnModel().getColumn(7).setPreferredWidth(140); // Ghi chú
+        table.getColumnModel().getColumn(2).setPreferredWidth(110); // Kết quả (CHIẾN THẮNG)
+        table.getColumnModel().getColumn(3).setPreferredWidth(65);  // Điểm số (+5, -3)
+        table.getColumnModel().getColumn(4).setPreferredWidth(85);  // Thời lượng
+        table.getColumnModel().getColumn(5).setPreferredWidth(85);  // Ô an toàn (64 / 121)
+        table.getColumnModel().getColumn(6).setPreferredWidth(95);  // Cờ / Thao tác (4 / 10)
+        table.getColumnModel().getColumn(7).setPreferredWidth(160); // Ghi chú
 
         // Cell renderer tùy chỉnh
         DefaultTableCellRenderer customRenderer = new DefaultTableCellRenderer() {
@@ -243,7 +243,7 @@ public class MatchHistoryDialog extends JDialog {
                 }
 
                 String scoreDisplay = (e.getScoreDelta() > 0 ? "+" : "") + e.getScoreDelta();
-                String flagsAndActions = "Cờ: " + e.getFlagsPlaced() + " | Thao tác: " + e.getTotalActions();
+                String flagsAndActions = e.getFlagsPlaced() + " / " + e.getTotalActions();
                 String safeCells = e.getOpenedSafeCells() + " / 121";
 
                 tableModel.addRow(new Object[]{
