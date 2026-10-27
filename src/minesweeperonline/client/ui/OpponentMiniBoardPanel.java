@@ -19,13 +19,23 @@ public class OpponentMiniBoardPanel extends JPanel {
 
     private final byte[][] cellStates = new byte[ROWS][COLS];
 
+    // Điểm nhấn trực quan nước đi gần nhất của đối thủ (Real-time Highlight)
+    private int highlightRow = -1;
+    private int highlightCol = -1;
+    private Timer highlightTimer;
+
     public OpponentMiniBoardPanel() {
         setPreferredSize(new Dimension(COLS * CELL_SIZE + 24, ROWS * CELL_SIZE + 45));
-        setBorder(BorderFactory.createTitledBorder("Bàn đối thủ"));
+        setBorder(BorderFactory.createTitledBorder("Bàn đối thủ (Trực tiếp)"));
         setBackground(new Color(245, 247, 250));
     }
 
     public void resetBoard() {
+        if (highlightTimer != null && highlightTimer.isRunning()) {
+            highlightTimer.stop();
+        }
+        highlightRow = -1;
+        highlightCol = -1;
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 cellStates[r][c] = STATE_HIDDEN;
@@ -37,6 +47,7 @@ public class OpponentMiniBoardPanel extends JPanel {
     public void revealCell(int r, int c) {
         if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
             cellStates[r][c] = STATE_OPENED;
+            highlightCell(r, c);
             repaint();
         }
     }
@@ -45,8 +56,29 @@ public class OpponentMiniBoardPanel extends JPanel {
         if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
             if (cellStates[r][c] != STATE_OPENED) {
                 cellStates[r][c] = flagged ? STATE_FLAGGED : STATE_HIDDEN;
+                highlightCell(r, c);
                 repaint();
             }
+        }
+    }
+
+    /**
+     * Kích hoạt hiệu ứng nhấp nháy/viền sáng tại ô đối thủ vừa thao tác (duy trì 1.2 giây).
+     */
+    public void highlightCell(int r, int c) {
+        if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+            this.highlightRow = r;
+            this.highlightCol = c;
+            if (highlightTimer != null && highlightTimer.isRunning()) {
+                highlightTimer.stop();
+            }
+            highlightTimer = new Timer(1200, e -> {
+                highlightRow = -1;
+                highlightCol = -1;
+                repaint();
+            });
+            highlightTimer.setRepeats(false);
+            highlightTimer.start();
         }
     }
 
@@ -100,6 +132,22 @@ public class OpponentMiniBoardPanel extends JPanel {
                 }
             }
         }
+
+        // Vẽ hiệu ứng viền sáng nổi bật (Highlight) lên ô nước đi gần nhất của đối thủ
+        if (highlightRow >= 0 && highlightRow < ROWS && highlightCol >= 0 && highlightCol < COLS) {
+            int hx = startX + highlightCol * CELL_SIZE;
+            int hy = startY + highlightRow * CELL_SIZE;
+
+            // Lớp phủ màu cam sáng bán trong suốt
+            g2.setColor(new Color(245, 158, 11, 90));
+            g2.fillRect(hx, hy, CELL_SIZE, CELL_SIZE);
+
+            // Viền vàng cam nổi bật 2px
+            g2.setColor(new Color(245, 158, 11));
+            g2.setStroke(new BasicStroke(2.0f));
+            g2.drawRect(hx, hy, CELL_SIZE - 1, CELL_SIZE - 1);
+        }
+
         g2.dispose();
     }
 }

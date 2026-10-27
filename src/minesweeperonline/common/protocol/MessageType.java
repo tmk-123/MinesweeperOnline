@@ -23,6 +23,8 @@ public enum MessageType {
     ACCEPT,
     REJECT,
     MATCH_CREATED,
+    QUICK_MATCH,
+    CANCEL_QUICK_MATCH,
 
     // --- Vòng đời ván chơi ---
     GAME_READY,
@@ -36,8 +38,10 @@ public enum MessageType {
     REMOVE_FLAG,
     FLAG_REMOVED,
 
-    // --- Đồng bộ trạng thái ---
+    // --- Đồng bộ trạng thái & Khôi phục kết nối (Reconnection) ---
     GAME_UPDATE,
+    GAME_RECONNECTED,
+    OPPONENT_RECONNECTED,
 
     // --- Kết quả ván chơi ---
     GAME_WIN,

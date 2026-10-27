@@ -43,6 +43,7 @@ public class ClientHandler implements Runnable {
     private final Socket socket;
     private final ClientManager clientManager;
     private final GameManager gameManager;
+    private final MatchmakingManager matchmakingManager;
 
     private BufferedReader reader;
     private PrintWriter writer;
@@ -59,10 +60,19 @@ public class ClientHandler implements Runnable {
 
     private final UserDAO userDAO = new UserDAO();
 
-    public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager) {
+    public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager, MatchmakingManager matchmakingManager) {
         this.socket = socket;
         this.clientManager = clientManager;
         this.gameManager = gameManager;
+        this.matchmakingManager = matchmakingManager;
+    }
+
+    public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager) {
+        this(socket, clientManager, gameManager, null);
+    }
+
+    public boolean isRunning() {
+        return running && socket != null && !socket.isClosed();
     }
 
     @Override
@@ -176,6 +186,14 @@ public class ClientHandler implements Runnable {
                 handleExit(message);
                 break;
 
+            case QUICK_MATCH:
+                handleQuickMatch(message);
+                break;
+
+            case CANCEL_QUICK_MATCH:
+                handleCancelQuickMatch(message);
+                break;
+
             default:
                 System.out.println("[ClientHandler] Received message type: " + type + " from " +
                         (user != null ? user.getUsername() : "unauthenticated"));
@@ -234,8 +252,12 @@ public class ClientHandler implements Runnable {
 
         ClientHandler existing = clientManager.getClientByUserId(dbUser.getId());
         if (existing != null && existing != this) {
-            sendMessage(JsonProtocol.createLoginFailed("Tai khoan dang duoc dang nhap o mot thiet bi khac!"));
-            return;
+            if (!existing.isRunning()) {
+                clientManager.unregisterUser(dbUser.getId());
+            } else {
+                sendMessage(JsonProtocol.createLoginFailed("Tai khoan dang duoc dang nhap o mot thiet bi khac!"));
+                return;
+            }
         }
 
         // Client đăng xuất không gửi LOGOUT: cùng một kết nối đăng nhập lại,
@@ -255,6 +277,12 @@ public class ClientHandler implements Runnable {
         res.setRequestId(message.getRequestId());
         sendMessage(res);
         System.out.println("[ClientHandler] Login successful: " + username + " (id=" + user.getId() + ")");
+
+        // Kiểm tra xem người dùng có trận đấu đang dở dang (bị rớt mạng) cần khôi phục không
+        GameSession activeSession = gameManager.getSessionByUserId(dbUser.getId());
+        if (activeSession != null && !activeSession.isFinished()) {
+            activeSession.handlePlayerReconnect(dbUser.getId(), this, this.player);
+        }
     }
 
     private void handleRegister(Message message) {
@@ -307,7 +335,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleGetLeaderboard(Message message) {
-        List<LeaderboardEntry> list = userDAO.getLeaderboard(50);
+        List<LeaderboardEntry> list = userDAO.getLeaderboard(10);
         Message res = new Message(MessageType.LEADERBOARD);
         res.setRequestId(message.getRequestId());
         JsonObject payload = new JsonObject();
@@ -346,6 +374,22 @@ public class ClientHandler implements Runnable {
         payload.add("history", JsonProtocol.getGson().toJsonTree(list));
         res.setPayload(payload);
         sendMessage(res);
+    }
+
+    private void handleQuickMatch(Message message) {
+        if (user == null || player == null) {
+            sendMessage(JsonProtocol.createError(message.getRequestId(), "Vui lòng đăng nhập trước khi tìm trận!"));
+            return;
+        }
+        if (matchmakingManager != null) {
+            matchmakingManager.joinQueue(this);
+        }
+    }
+
+    private void handleCancelQuickMatch(Message message) {
+        if (matchmakingManager != null) {
+            matchmakingManager.leaveQueue(this);
+        }
     }
 
     private void handleChallenge(Message message) {
@@ -609,6 +653,9 @@ public class ClientHandler implements Runnable {
      * và đưa phía bên kia về IDLE. Người thách đấu đang chờ sẽ được thông báo.
      */
     private void cancelPendingChallenge() {
+        if (matchmakingManager != null) {
+            matchmakingManager.leaveQueue(this);
+        }
         if (user == null) return;
         ClientHandler waitingChallenger = null;
 
@@ -646,6 +693,9 @@ public class ClientHandler implements Runnable {
      */
     private void cleanup() {
         running = false;
+        if (matchmakingManager != null) {
+            matchmakingManager.leaveQueue(this);
+        }
         clientManager.removeClient(this);
 
         if (user != null) {
@@ -653,26 +703,13 @@ public class ClientHandler implements Runnable {
 
             GameSession session = gameManager.getSessionByUserId(user.getId());
             if (session != null) {
-                // Mất kết nối giữa trận = FORFEIT
                 if (!session.isFinished()) {
-                    Player opponent = session.getOpponent(user.getId());
-                    int winnerId = (opponent != null) ? opponent.getUserId() : 0;
-                    if (session.finishGame(winnerId, "FORFEIT_DISCONNECT")) {
-                        ClientHandler oppHandler = session.getOpponentHandler(user.getId());
-                        if (oppHandler != null) {
-                            Message dcMsg = new Message(MessageType.OPPONENT_DISCONNECTED);
-                            JsonObject p = new JsonObject();
-                            p.addProperty("reason", "Doi thu mat ket noi!");
-                            p.addProperty("scoreDelta", ServerConfig.SCORE_VICTORY);
-                            session.attachMines(p, winnerId);
-                            dcMsg.setPayload(p);
-                            oppHandler.sendMessage(dcMsg);
-                        }
-                    }
+                    // Mất kết nối giữa trận: cho phép 15 giây kết nối lại trước khi xử FORFEIT
+                    session.handlePlayerDisconnect(user.getId(), gameManager);
+                } else {
+                    // Rời phòng khi trận đã kết thúc
+                    session.handleExit(user.getId(), gameManager);
                 }
-                // Rời phòng: báo cho đối thủ (vô hiệu nút PLAY AGAIN),
-                // đưa cả hai người chơi về IDLE và hủy session
-                session.handleExit(user.getId(), gameManager);
             }
         }
 

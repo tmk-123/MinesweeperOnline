@@ -40,7 +40,7 @@ public class MainClient {
         } else {
             int option = JOptionPane.showConfirmDialog(null,
                     "Không thể kết nối đến Máy chủ (" + host + ":" + port + ")!\n" +
-                    "Vui lòng đảm bảo MainServer đã được khởi động.\n\nBạn có muốn thử kết nối lại không?",
+                            "Vui lòng đảm bảo MainServer đã được khởi động.\n\nBạn có muốn thử kết nối lại không?",
                     "Lỗi kết nối Server",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.ERROR_MESSAGE);
@@ -54,7 +54,7 @@ public class MainClient {
     }
 
     /**
-     * Cách dùng: MainClient [host] [port]  (mặc định 127.0.0.1 2209).
+     * Cách dùng: MainClient [host] [port] (mặc định 127.0.0.1 2209).
      * Truyền IP LAN của máy chạy server để chơi từ máy tính khác.
      */
     public static void main(String[] args) {

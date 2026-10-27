@@ -24,7 +24,10 @@ public class MainMenuFrame extends JFrame {
     private final ServerConnection connection;
     private final User currentUser;
     private OnlinePlayersPanel onlinePanel;
+    private LeaderboardPanel leaderboardPanel;
     private JLabel lblUserInfo;
+    private JButton btnQuickMatch;
+    private boolean isSearchingMatch = false;
     private Timer autoRefreshTimer;
     private LeaderboardDialog leaderboardDialog;
     private MatchHistoryDialog matchHistoryDialog;
@@ -36,13 +39,19 @@ public class MainMenuFrame extends JFrame {
         initComponents();
         setupNetworkListener();
 
-        // Gửi yêu cầu lấy danh sách người chơi lần đầu
+        // Gửi yêu cầu lấy danh sách người chơi online và BXH ban đầu
         onlinePanel.refreshOnlinePlayers();
+        if (leaderboardPanel != null) {
+            leaderboardPanel.refreshLeaderboard();
+        }
 
-        // Tự động làm mới danh sách online ở sảnh chờ mỗi 4 giây
+        // Tự động làm mới danh sách online và BXH ở sảnh chờ mỗi 4 giây
         autoRefreshTimer = new Timer(4000, e -> {
             if (this.isVisible()) {
                 onlinePanel.refreshOnlinePlayers();
+                if (leaderboardPanel != null) {
+                    leaderboardPanel.refreshLeaderboard();
+                }
             }
         });
         autoRefreshTimer.start();
@@ -50,43 +59,51 @@ public class MainMenuFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Sảnh Chờ (" + currentUser.getUsername() + ")");
-        setSize(520, 380);
+        setSize(1100, 700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Mở toàn màn hình theo yêu cầu người dùng
 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        JPanel mainPanel = new JPanel(new BorderLayout(12, 12));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+        mainPanel.setBackground(UITheme.BG_MAIN);
 
-        // Header 2 hàng: thông tin người chơi ở trên, các nút ở dưới.
-        // Đặt cùng một hàng thì cụm nút đè lên nhãn khi cửa sổ hẹp (520px).
-        JPanel headerPanel = new JPanel(new BorderLayout(0, 8));
+        // Header phía trên: Thông tin người chơi bên trái, Nút thao tác bên phải
+        JPanel headerPanel = new JPanel(new BorderLayout(15, 0));
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+                BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
+                BorderFactory.createEmptyBorder(10, 18, 10, 18)
         ));
-        headerPanel.setBackground(new Color(245, 248, 255));
+        headerPanel.setBackground(UITheme.BG_CARD);
 
-        lblUserInfo = new JLabel("Người chơi: " + currentUser.getUsername() + "   |   Điểm số: " + currentUser.getTotalScore());
-        lblUserInfo.setFont(new Font("Arial", Font.BOLD, 13));
-        lblUserInfo.setForeground(new Color(20, 50, 100));
+        String rank = UITheme.getRankTitle(currentUser.getTotalScore());
+        lblUserInfo = new JLabel("Tài khoản: " + currentUser.getUsername() + "   |   Hạng: " + rank + "   |   Điểm số: " + currentUser.getTotalScore());
+        lblUserInfo.setFont(UITheme.FONT_TITLE);
+        lblUserInfo.setForeground(UITheme.COLOR_PRIMARY);
+        headerPanel.add(lblUserInfo, BorderLayout.WEST);
 
-        JPanel rightHeaderBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel rightHeaderBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightHeaderBtns.setOpaque(false);
 
-        JButton btnLeaderboard = new JButton("🏆 Bảng xếp hạng");
-        btnLeaderboard.setBackground(new Color(255, 250, 230));
-        btnLeaderboard.addActionListener(e -> {
-            if (leaderboardDialog == null || !leaderboardDialog.isDisplayable()) {
-                leaderboardDialog = new LeaderboardDialog(this, connection, currentUser.getUsername());
-                leaderboardDialog.setVisible(true);
-            } else {
-                leaderboardDialog.toFront();
-                leaderboardDialog.refresh();
+        btnQuickMatch = new JButton("Tìm trận nhanh");
+        UITheme.styleButton(btnQuickMatch, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
+        btnQuickMatch.setToolTipText("Hệ thống tự động tìm và ghép ván với người chơi khác đang online");
+        btnQuickMatch.addActionListener(e -> toggleQuickMatch());
+
+        JButton btnRefreshAll = new JButton("Làm mới");
+        UITheme.styleOutlineButton(btnRefreshAll, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
+        btnRefreshAll.setToolTipText("Làm mới danh sách người chơi online và bảng xếp hạng");
+        btnRefreshAll.addActionListener(e -> {
+            if (onlinePanel != null) {
+                onlinePanel.refreshOnlinePlayers();
+            }
+            if (leaderboardPanel != null) {
+                leaderboardPanel.refreshLeaderboard();
             }
         });
 
-        JButton btnMatchHistory = new JButton("📜 Lịch sử đấu");
-        btnMatchHistory.setBackground(new Color(240, 248, 255));
+        JButton btnMatchHistory = new JButton("Lịch sử đấu");
+        UITheme.styleOutlineButton(btnMatchHistory, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
         btnMatchHistory.addActionListener(e -> {
             if (matchHistoryDialog == null || !matchHistoryDialog.isDisplayable()) {
                 matchHistoryDialog = new MatchHistoryDialog(this, connection, currentUser.getId());
@@ -97,8 +114,21 @@ public class MainMenuFrame extends JFrame {
             }
         });
 
+        JButton btnHelp = new JButton("? Hướng dẫn");
+        UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
+        btnHelp.setToolTipText("Xem cẩm nang luật chơi 1v1, quy tắc xếp hạng và mẹo chơi");
+        btnHelp.addActionListener(e -> {
+            HelpDialog helpDialog = new HelpDialog(this, 0);
+            helpDialog.setVisible(true);
+        });
+
         JButton btnLogout = new JButton("Đăng xuất");
+        UITheme.styleButton(btnLogout, new Color(254, 226, 226), new Color(254, 202, 202), UITheme.COLOR_DANGER);
         btnLogout.addActionListener(e -> {
+            if (isSearchingMatch) {
+                connection.sendMessage(JsonProtocol.createCancelQuickMatch());
+                isSearchingMatch = false;
+            }
             connection.sendMessage(JsonProtocol.createLogout());
             if (autoRefreshTimer != null) autoRefreshTimer.stop();
             if (leaderboardDialog != null && leaderboardDialog.isDisplayable()) {
@@ -112,22 +142,49 @@ public class MainMenuFrame extends JFrame {
             loginFrame.setVisible(true);
         });
 
-        rightHeaderBtns.add(btnLeaderboard);
+        rightHeaderBtns.add(btnQuickMatch);
+        rightHeaderBtns.add(btnRefreshAll);
         rightHeaderBtns.add(btnMatchHistory);
+        rightHeaderBtns.add(btnHelp);
         rightHeaderBtns.add(btnLogout);
-        headerPanel.add(lblUserInfo, BorderLayout.NORTH);
-        headerPanel.add(rightHeaderBtns, BorderLayout.CENTER);
+        headerPanel.add(rightHeaderBtns, BorderLayout.EAST);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // Ở giữa: bảng người chơi online
+        // Ở giữa: Chia đôi màn hình - Bên trái là OnlinePlayersPanel, Bên phải là LeaderboardPanel
+        JPanel centerSplitPanel = new JPanel(new GridLayout(1, 2, 16, 0));
+        centerSplitPanel.setOpaque(false);
+
         onlinePanel = new OnlinePlayersPanel(connection);
-        mainPanel.add(onlinePanel, BorderLayout.CENTER);
+        leaderboardPanel = new LeaderboardPanel(connection, currentUser.getUsername());
+
+        centerSplitPanel.add(onlinePanel);
+        centerSplitPanel.add(leaderboardPanel);
+
+        mainPanel.add(centerSplitPanel, BorderLayout.CENTER);
 
         add(mainPanel);
     }
 
+    private void toggleQuickMatch() {
+        if (!isSearchingMatch) {
+            isSearchingMatch = true;
+            btnQuickMatch.setText("Đang tìm trận... (Hủy)");
+            btnQuickMatch.setBackground(UITheme.COLOR_WARNING);
+            connection.sendMessage(JsonProtocol.createQuickMatch());
+        } else {
+            isSearchingMatch = false;
+            btnQuickMatch.setText("Tìm trận nhanh");
+            btnQuickMatch.setBackground(UITheme.COLOR_PRIMARY);
+            connection.sendMessage(JsonProtocol.createCancelQuickMatch());
+        }
+    }
+
     @Override
     public void dispose() {
+        if (isSearchingMatch) {
+            connection.sendMessage(JsonProtocol.createCancelQuickMatch());
+            isSearchingMatch = false;
+        }
         // Nếu không gỡ listener, sảnh chờ cũ vẫn tiếp tục bật dialog CHALLENGE_REQUEST sau khi đăng xuất
         connection.removeMessageListener(lobbyListener);
         super.dispose();
@@ -158,6 +215,10 @@ public class MainMenuFrame extends JFrame {
                 handleMatchCreated(message);
                 break;
 
+            case GAME_RECONNECTED:
+                handleGameReconnected(message);
+                break;
+
             case REJECT:
                 handleChallengeRejected(message);
                 break;
@@ -174,8 +235,7 @@ public class MainMenuFrame extends JFrame {
                 String err = message.getPayload().has("errorMessage") ?
                         message.getPayload().get("errorMessage").getAsString() : "Đã có lỗi xảy ra!";
                 JOptionPane.showMessageDialog(this, err, "Thông báo từ máy chủ", JOptionPane.WARNING_MESSAGE);
-                onlinePanel.getBtnChallenge().setEnabled(true);
-                onlinePanel.getBtnChallenge().setText("Thách đấu");
+                onlinePanel.resetChallengeState();
                 break;
 
             default:
@@ -215,6 +275,16 @@ public class MainMenuFrame extends JFrame {
     }
 
     private GameFrame currentGameFrame;
+    // Trạng thái và kích thước cửa sổ trận đấu (mặc định mở đầu phóng to toàn màn hình)
+    private int lastGameExtendedState = Frame.MAXIMIZED_BOTH;
+    private Rectangle lastGameBounds = null;
+
+    public void saveGameWindowState(int extendedState, Rectangle bounds) {
+        this.lastGameExtendedState = extendedState;
+        if (bounds != null && bounds.width > 200 && bounds.height > 200) {
+            this.lastGameBounds = new Rectangle(bounds);
+        }
+    }
 
     private void handleMatchCreated(Message message) {
         JsonObject payload = message.getPayload();
@@ -222,14 +292,55 @@ public class MainMenuFrame extends JFrame {
         String opponentName = payload.has("opponentUsername") ?
                 payload.get("opponentUsername").getAsString() : "Đối thủ";
 
-        onlinePanel.getBtnChallenge().setEnabled(true);
-        onlinePanel.getBtnChallenge().setText("Thách đấu");
+        onlinePanel.resetChallengeState();
+        if (isSearchingMatch) {
+            isSearchingMatch = false;
+            btnQuickMatch.setText("Tìm trận nhanh");
+            btnQuickMatch.setBackground(UITheme.COLOR_PRIMARY);
+        }
+
+        int targetState = lastGameExtendedState;
+        Rectangle targetBounds = lastGameBounds;
 
         if (currentGameFrame != null && currentGameFrame.isDisplayable()) {
+            targetState = currentGameFrame.getCurrentExtendedState();
+            targetBounds = currentGameFrame.getNormalBounds();
+            lastGameExtendedState = targetState;
+            lastGameBounds = targetBounds;
             currentGameFrame.dispose();
         }
 
-        currentGameFrame = new GameFrame(connection, currentUser, opponentName, gameId, this);
+        currentGameFrame = new GameFrame(connection, currentUser, opponentName, gameId, this, targetState, targetBounds);
+        currentGameFrame.setVisible(true);
+        this.setVisible(false);
+    }
+
+    private void handleGameReconnected(Message message) {
+        JsonObject payload = message.getPayload();
+        String gameId = payload.get("gameId").getAsString();
+        String opponentName = payload.has("opponentUsername") ?
+                payload.get("opponentUsername").getAsString() : "Đối thủ";
+
+        onlinePanel.resetChallengeState();
+        if (isSearchingMatch) {
+            isSearchingMatch = false;
+            btnQuickMatch.setText("Tìm trận nhanh");
+            btnQuickMatch.setBackground(UITheme.COLOR_PRIMARY);
+        }
+
+        int targetState = lastGameExtendedState;
+        Rectangle targetBounds = lastGameBounds;
+
+        if (currentGameFrame != null && currentGameFrame.isDisplayable()) {
+            targetState = currentGameFrame.getCurrentExtendedState();
+            targetBounds = currentGameFrame.getNormalBounds();
+            lastGameExtendedState = targetState;
+            lastGameBounds = targetBounds;
+            currentGameFrame.dispose();
+        }
+
+        currentGameFrame = new GameFrame(connection, currentUser, opponentName, gameId, this, targetState, targetBounds);
+        currentGameFrame.restoreGameState(payload);
         currentGameFrame.setVisible(true);
         this.setVisible(false);
     }
@@ -243,8 +354,7 @@ public class MainMenuFrame extends JFrame {
                 rejectedByName + " đã từ chối lời mời thách đấu của bạn.",
                 "Thách đấu bị từ chối", JOptionPane.INFORMATION_MESSAGE);
 
-        onlinePanel.getBtnChallenge().setEnabled(true);
-        onlinePanel.getBtnChallenge().setText("Thách đấu");
+        onlinePanel.resetChallengeState();
         onlinePanel.refreshOnlinePlayers();
     }
 
@@ -267,8 +377,21 @@ public class MainMenuFrame extends JFrame {
             }
         }
 
+        if (leaderboardPanel != null) {
+            leaderboardPanel.updateLeaderboard(list);
+        }
         if (leaderboardDialog != null && leaderboardDialog.isDisplayable()) {
             leaderboardDialog.updateLeaderboard(list);
+        }
+    }
+
+    @Override
+    public void setVisible(boolean b) {
+        super.setVisible(b);
+        if (b) {
+            setExtendedState(JFrame.MAXIMIZED_BOTH);
+            if (onlinePanel != null) onlinePanel.refreshOnlinePlayers();
+            if (leaderboardPanel != null) leaderboardPanel.refreshLeaderboard();
         }
     }
 

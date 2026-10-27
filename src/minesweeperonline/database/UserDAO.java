@@ -148,17 +148,23 @@ public class UserDAO {
     }
 
     /**
-     * Lấy danh sách user top đầu, sắp xếp theo điểm giảm dần, sau đó theo số trận thắng giảm dần.
+     * Lấy danh sách user top đầu theo thứ tự ưu tiên:
+     * 1. Điểm số giảm dần
+     * 2. Tỉ lệ thắng giảm dần
+     * 3. Số trận thắng giảm dần
+     * 4. Tổng số trận giảm dần
+     * 5. Tên người chơi A-Z
      */
     public List<LeaderboardEntry> getLeaderboard(int limit) {
         List<LeaderboardEntry> list = new ArrayList<>();
         String sql = "SELECT u.id, u.username, u.totalScore, " +
                 "COUNT(CASE WHEN mp.result = 'VICTORY' THEN 1 END) AS wins, " +
-                "COUNT(mp.id) AS totalMatches " +
+                "COUNT(mp.id) AS totalMatches, " +
+                "(CASE WHEN COUNT(mp.id) > 0 THEN COUNT(CASE WHEN mp.result = 'VICTORY' THEN 1 END) * 1.0 / COUNT(mp.id) ELSE 0 END) AS winRate " +
                 "FROM `User` u " +
                 "LEFT JOIN `MatchPlayer` mp ON u.id = mp.userId " +
                 "GROUP BY u.id, u.username, u.totalScore " +
-                "ORDER BY u.totalScore DESC, wins DESC, u.username ASC LIMIT ?";
+                "ORDER BY u.totalScore DESC, winRate DESC, wins DESC, totalMatches DESC, u.username ASC LIMIT ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -179,11 +185,29 @@ public class UserDAO {
             // Bảng xếp hạng fallback lấy từ bộ nhớ trong
             List<User> allUsers = new ArrayList<>(fallbackUsers.values());
             allUsers.sort((u1, u2) -> {
+                // 1. Điểm số
                 int scoreCmp = Integer.compare(u2.getTotalScore(), u1.getTotalScore());
                 if (scoreCmp != 0) return scoreCmp;
+
                 int[] s1 = MatchPlayerDAO.getFallbackStats(u1.getId());
                 int[] s2 = MatchPlayerDAO.getFallbackStats(u2.getId());
-                return Integer.compare(s2[0], s1[0]); // số trận thắng giảm dần
+                double wr1 = s1[1] > 0 ? (double) s1[0] / s1[1] : 0.0;
+                double wr2 = s2[1] > 0 ? (double) s2[0] / s2[1] : 0.0;
+
+                // 2. Tỉ lệ thắng
+                int wrCmp = Double.compare(wr2, wr1);
+                if (wrCmp != 0) return wrCmp;
+
+                // 3. Số trận thắng
+                int winCmp = Integer.compare(s2[0], s1[0]);
+                if (winCmp != 0) return winCmp;
+
+                // 4. Tổng số trận
+                int matchCmp = Integer.compare(s2[1], s1[1]);
+                if (matchCmp != 0) return matchCmp;
+
+                // 5. Tên người chơi A-Z
+                return u1.getUsername().compareToIgnoreCase(u2.getUsername());
             });
 
             int rank = 1;
