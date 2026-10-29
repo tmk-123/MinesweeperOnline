@@ -31,7 +31,6 @@ public class GameFrame extends JFrame {
     private PlayerInfoPanel infoPanel;
     private GameBoardPanel boardPanel;
     private OpponentMiniBoardPanel miniBoardPanel;
-    private JLabel lblTimer;
     private JLabel lblStatus;
     private JButton btnSound;
     private JButton btnForfeit;
@@ -112,7 +111,7 @@ public class GameFrame extends JFrame {
             setExtendedState(Frame.NORMAL);
         }
 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 8));
+        JPanel mainPanel = new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.DUEL, new BorderLayout(10, 8));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 
         // 1. Phía trên (North): thống kê người chơi
@@ -121,6 +120,7 @@ public class GameFrame extends JFrame {
 
         // 2. Ở giữa (Center): bàn cờ 12x12 của người chơi + bàn cờ thu nhỏ của đối thủ
         JPanel boardsContainer = new JPanel(new BorderLayout(12, 0));
+        boardsContainer.setOpaque(false);
         boardPanel = new GameBoardPanel(connection, gameId);
         miniBoardPanel = new OpponentMiniBoardPanel();
 
@@ -129,32 +129,26 @@ public class GameFrame extends JFrame {
         mainPanel.add(boardsContainer, BorderLayout.CENTER);
 
         // 3. Phía dưới (South): trạng thái, đồng hồ và nút đầu hàng
-        JPanel southPanel = new JPanel(new BorderLayout(10, 5));
+        JPanel southPanel = new GlassPanel(new BorderLayout(10, 5), UITheme.BG_CARD, 150);
         southPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
                 BorderFactory.createEmptyBorder(10, 16, 10, 16)
         ));
-        southPanel.setBackground(UITheme.BG_CARD);
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 18, 0));
         statusPanel.setOpaque(false);
 
-        lblTimer = new JLabel("Thời gian: 05:00");
-        lblTimer.setFont(UITheme.FONT_TITLE);
-        lblTimer.setForeground(UITheme.COLOR_DANGER);
-
         lblStatus = new JLabel("Trạng thái: CHUẨN BỊ (5s)");
         lblStatus.setFont(UITheme.FONT_BOLD);
-        lblStatus.setForeground(UITheme.COLOR_PRIMARY);
+        lblStatus.setForeground(UITheme.COLOR_WARNING);
 
-        statusPanel.add(lblTimer);
         statusPanel.add(lblStatus);
 
         JPanel actionControlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         actionControlPanel.setOpaque(false);
 
         btnSound = new JButton(SoundManager.getInstance().isMuted() ? "Âm thanh: Tắt" : "Âm thanh: Bật");
-        UITheme.styleOutlineButton(btnSound, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_BODY);
+        UITheme.styleOutlineButton(btnSound, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_BODY);
         btnSound.addActionListener(e -> {
             boolean muted = SoundManager.getInstance().toggleMute();
             btnSound.setText(muted ? "Âm thanh: Tắt" : "Âm thanh: Bật");
@@ -164,7 +158,7 @@ public class GameFrame extends JFrame {
         });
 
         btnForfeit = new JButton("Đầu hàng");
-        UITheme.styleButton(btnForfeit, new Color(254, 226, 226), new Color(254, 202, 202), UITheme.COLOR_DANGER);
+        UITheme.styleButton(btnForfeit, new Color(83, 39, 44), new Color(112, 47, 52), new Color(255, 224, 224));
         btnForfeit.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Bạn có chắc chắn muốn đầu hàng không?\n(Bạn sẽ bị xử thua và trừ 5 điểm)",
@@ -275,29 +269,37 @@ public class GameFrame extends JFrame {
 
     private void startReadyCountdownVisual() {
         readySeconds = 5;
-        lblStatus.setText("Trạng thái: CHUẨN BỊ (Bắt đầu sau " + readySeconds + "s...)");
-        lblStatus.setForeground(new Color(220, 100, 0));
+        setGameStatus("Trạng thái: CHUẨN BỊ (Bắt đầu sau " + readySeconds + "s...)", UITheme.COLOR_WARNING);
         SoundManager.getInstance().playTick();
 
         readyCountdownTimer = new Timer(1000, e -> {
             readySeconds--;
             if (readySeconds > 0) {
-                lblStatus.setText("Trạng thái: CHUẨN BỊ (Bắt đầu sau " + readySeconds + "s...)");
+                setGameStatus("Trạng thái: CHUẨN BỊ (Bắt đầu sau " + readySeconds + "s...)", UITheme.COLOR_WARNING);
                 SoundManager.getInstance().playTick();
             } else {
-                lblStatus.setText("Trạng thái: ĐANG BẮT ĐẦU...");
+                setGameStatus("Trạng thái: ĐANG BẮT ĐẦU...", UITheme.COLOR_PRIMARY);
                 if (readyCountdownTimer != null) readyCountdownTimer.stop();
             }
         });
         readyCountdownTimer.start();
     }
 
+    private void setGameStatus(String text, Color color) {
+        if (lblStatus != null) {
+            lblStatus.setText(text);
+            lblStatus.setForeground(color);
+        }
+        if (infoPanel != null) {
+            infoPanel.updateMatchStatus(text, color);
+        }
+    }
+
     private void onGameStart() {
         if (readyCountdownTimer != null) {
             readyCountdownTimer.stop();
         }
-        lblStatus.setText("Trạng thái: ĐANG THI ĐẤU");
-        lblStatus.setForeground(UITheme.COLOR_SUCCESS);
+        setGameStatus("Trạng thái: ĐANG THI ĐẤU", UITheme.COLOR_SUCCESS);
         boardPanel.setInteractive(true);
 
         remainingSeconds = 300;
@@ -306,7 +308,7 @@ public class GameFrame extends JFrame {
             remainingSeconds--;
             int mins = remainingSeconds / 60;
             int secs = remainingSeconds % 60;
-            lblTimer.setText(String.format("Thời gian: %02d:%02d", mins, secs));
+            infoPanel.updateMatchTimer(String.format("%02d:%02d", mins, secs));
             if (remainingSeconds <= 5 && remainingSeconds > 0) {
                 SoundManager.getInstance().playTick();
             }
@@ -408,7 +410,7 @@ public class GameFrame extends JFrame {
         if (opponentDisconnectTimer != null) opponentDisconnectTimer.stop();
         boardPanel.setInteractive(false);
         btnForfeit.setEnabled(false);
-        lblStatus.setText("Trạng thái: KẾT THÚC");
+        setGameStatus("Trạng thái: KẾT THÚC", UITheme.TEXT_MUTED);
 
         if (isWin) {
             SoundManager.getInstance().playVictory();
@@ -416,17 +418,25 @@ public class GameFrame extends JFrame {
             SoundManager.getInstance().playDefeat();
         }
 
-        // Hiện hết bom trên bàn của mình (server chỉ gửi danh sách mìn khi trận đã kết thúc)
+        String reason = p.has("reason") ? p.get("reason").getAsString() : "Trận đấu kết thúc.";
+
+        // Khi thua do click trúng mìn, GAME_LOSE không kèm CELL_OPENED.
+        // Đối chiếu click đang chờ với danh sách mìn để giữ hiệu ứng nổ ở đúng ô.
         if (p.has("mines") && p.get("mines").isJsonArray()) {
             List<int[]> mines = new ArrayList<>();
             for (JsonElement el : p.getAsJsonArray("mines")) {
                 JsonObject o = el.getAsJsonObject();
                 mines.add(new int[]{o.get("r").getAsInt(), o.get("c").getAsInt()});
             }
+            if (!isWin && isMineClickLoss(reason)) {
+                int[] explodedCell = boardPanel.getPendingMineCoordinate(mines);
+                if (explodedCell != null) {
+                    boardPanel.revealCell(explodedCell[0], explodedCell[1], 0, true, true);
+                }
+            }
             boardPanel.revealAllMines(mines);
         }
 
-        String reason = p.has("reason") ? p.get("reason").getAsString() : "Trận đấu kết thúc.";
         int delta = p.has("scoreDelta") ? p.get("scoreDelta").getAsInt() : 0;
 
         activeResultDialog = new ResultDialog(this, connection, gameId,
@@ -449,6 +459,12 @@ public class GameFrame extends JFrame {
                     }
                 });
         activeResultDialog.setVisible(true);
+    }
+
+    private boolean isMineClickLoss(String reason) {
+        if (reason == null) return false;
+        String normalized = reason.toLowerCase(java.util.Locale.ROOT);
+        return normalized.contains("phai min") || normalized.contains("clicked_mine");
     }
 
     @Override
@@ -492,8 +508,7 @@ public class GameFrame extends JFrame {
 
     private void startOpponentDisconnectCountdown(int seconds, String dcName) {
         opponentDisconnectSeconds = seconds;
-        lblStatus.setText("Trạng thái: ĐỐI THỦ MẤT KẾT NỐI (Chờ " + opponentDisconnectSeconds + "s...)");
-        lblStatus.setForeground(UITheme.COLOR_DANGER);
+        setGameStatus("Trạng thái: ĐỐI THỦ MẤT KẾT NỐI (Chờ " + opponentDisconnectSeconds + "s...)", UITheme.COLOR_DANGER);
 
         // 1. Khóa click trên bàn cờ
         boardPanel.setInteractive(false);
@@ -513,12 +528,12 @@ public class GameFrame extends JFrame {
         opponentDisconnectTimer = new Timer(1000, e -> {
             opponentDisconnectSeconds--;
             if (opponentDisconnectSeconds > 0) {
-                lblStatus.setText("Trạng thái: ĐỐI THỦ MẤT KẾT NỐI (Chờ " + opponentDisconnectSeconds + "s...)");
+                setGameStatus("Trạng thái: ĐỐI THỦ MẤT KẾT NỐI (Chờ " + opponentDisconnectSeconds + "s...)", UITheme.COLOR_DANGER);
                 if (disconnectOverlay != null) {
                     disconnectOverlay.update(opponentDisconnectSeconds, dcName);
                 }
             } else {
-                lblStatus.setText("Trạng thái: HẾT GIỜ KẾT NỐI LẠI");
+                setGameStatus("Trạng thái: HẾT GIỜ KẾT NỐI LẠI", UITheme.COLOR_DANGER);
                 if (opponentDisconnectTimer != null) opponentDisconnectTimer.stop();
             }
         });
@@ -545,8 +560,7 @@ public class GameFrame extends JFrame {
             gameClock.start();
         }
 
-        lblStatus.setText("Trạng thái: ĐANG THI ĐẤU");
-        lblStatus.setForeground(UITheme.COLOR_SUCCESS);
+        setGameStatus("Trạng thái: ĐANG THI ĐẤU", UITheme.COLOR_SUCCESS);
         SoundManager.getInstance().playTick();
         String oppName = (p != null && p.has("reconnectedUsername")) ? p.get("reconnectedUsername").getAsString() : opponentName;
         JOptionPane.showMessageDialog(this,
@@ -580,11 +594,10 @@ public class GameFrame extends JFrame {
             setFocusable(true);
 
             // Card thông báo ở giữa
-            JPanel card = new JPanel();
+            JPanel card = new GlassPanel(new BorderLayout(), UITheme.BG_CARD, 215);
             card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-            card.setBackground(Color.WHITE);
             card.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(239, 68, 68), 2, true),
+                    BorderFactory.createLineBorder(UITheme.COLOR_DANGER, 2, true),
                     BorderFactory.createEmptyBorder(28, 40, 28, 40)
             ));
 
@@ -594,7 +607,7 @@ public class GameFrame extends JFrame {
 
             JLabel lblTitle = new JLabel("ĐỐI THỦ BỊ MẤT KẾT NỐI", SwingConstants.CENTER);
             lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
-            lblTitle.setForeground(new Color(220, 38, 38));
+            lblTitle.setForeground(UITheme.COLOR_DANGER);
             lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
             lblOpponent = new JLabel("Đang chờ đối thủ kết nối lại...", SwingConstants.CENTER);
@@ -604,16 +617,16 @@ public class GameFrame extends JFrame {
 
             // Ô số đếm ngược to
             JPanel countdownBox = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 4));
-            countdownBox.setBackground(new Color(254, 243, 199)); // Amber 100
+            countdownBox.setBackground(new Color(53, 47, 34));
             countdownBox.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(245, 158, 11), 1, true),
+                    BorderFactory.createLineBorder(UITheme.COLOR_WARNING, 1, true),
                     BorderFactory.createEmptyBorder(6, 26, 6, 26)
             ));
             countdownBox.setAlignmentX(Component.CENTER_ALIGNMENT);
 
             lblCountdown = new JLabel("15s", SwingConstants.CENTER);
             lblCountdown.setFont(new Font("Segoe UI", Font.BOLD, 42));
-            lblCountdown.setForeground(new Color(217, 119, 6)); // Amber 600
+            lblCountdown.setForeground(UITheme.COLOR_PRIMARY);
             countdownBox.add(lblCountdown);
 
             JLabel lblNotice1 = new JLabel("Ván đấu đang tạm dừng. Bạn không thể thao tác trong lúc này.", SwingConstants.CENTER);
@@ -623,7 +636,7 @@ public class GameFrame extends JFrame {
 
             JLabel lblNotice2 = new JLabel("Nếu hết 15 giây đối thủ không vào lại, bạn sẽ được xử THẮNG (+5 điểm)!", SwingConstants.CENTER);
             lblNotice2.setFont(UITheme.FONT_BOLD);
-            lblNotice2.setForeground(new Color(5, 150, 105));
+            lblNotice2.setForeground(UITheme.COLOR_SUCCESS);
             lblNotice2.setAlignmentX(Component.CENTER_ALIGNMENT);
 
             card.add(lblIcon);
@@ -669,14 +682,14 @@ public class GameFrame extends JFrame {
         }
         int mins = remainingSeconds / 60;
         int secs = remainingSeconds % 60;
-        lblTimer.setText(String.format("Thời gian: %02d:%02d", mins, secs));
+        infoPanel.updateMatchTimer(String.format("%02d:%02d", mins, secs));
 
         if (gameClock != null) gameClock.stop();
         gameClock = new Timer(1000, e -> {
             remainingSeconds--;
             int m = remainingSeconds / 60;
             int s = remainingSeconds % 60;
-            lblTimer.setText(String.format("Thời gian: %02d:%02d", m, s));
+            infoPanel.updateMatchTimer(String.format("%02d:%02d", m, s));
             if (remainingSeconds <= 5 && remainingSeconds > 0) {
                 SoundManager.getInstance().playTick();
             }
@@ -736,8 +749,7 @@ public class GameFrame extends JFrame {
 
         // 6. Cho phép tương tác bàn cờ
         boardPanel.setInteractive(true);
-        lblStatus.setText("Trạng thái: ĐÃ KHÔI PHỤC VÁN ĐẤU");
-        lblStatus.setForeground(UITheme.COLOR_SUCCESS);
+        setGameStatus("Trạng thái: ĐÃ KHÔI PHỤC VÁN ĐẤU", UITheme.COLOR_SUCCESS);
 
         JOptionPane.showMessageDialog(this,
                 "Đã khôi phục kết nối ván đấu thành công!\nVán đấu của bạn đang tiếp tục.",

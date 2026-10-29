@@ -30,98 +30,87 @@ public class LoginFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Đăng nhập");
-        setSize(420, 390);
+        setSize(920, 570);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         getContentPane().setBackground(UITheme.BG_MAIN);
 
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(24, 32, 24, 32));
-        mainPanel.setBackground(UITheme.BG_CARD);
+        JPanel mainPanel = new JPanel(new GridLayout(1, 2, 0, 0));
+        mainPanel.setBackground(UITheme.BG_MAIN);
+        mainPanel.add(new MinesweeperHeroPanel());
 
-        // Card bao ngoài
-        JPanel cardWrapper = new JPanel(new BorderLayout());
-        cardWrapper.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
-        cardWrapper.setBackground(UITheme.BG_MAIN);
-
+        JPanel formArea = new JPanel(new GridBagLayout());
+        formArea.setBorder(BorderFactory.createEmptyBorder(28, 34, 28, 34));
+        formArea.setBackground(UITheme.BG_MAIN);
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
         cardPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
-                BorderFactory.createEmptyBorder(22, 24, 22, 24)
-        ));
+                BorderFactory.createEmptyBorder(28, 30, 28, 30)));
         cardPanel.setBackground(UITheme.BG_CARD);
+        cardPanel.setPreferredSize(new Dimension(370, 370));
 
-        // Header Tiêu đề
-        JLabel lblTitle = new JLabel("MINESWEEPER ONLINE", SwingConstants.CENTER);
+        JLabel lblEyebrow = new JLabel("01  •  ĐẤU TRƯỜNG ONLINE");
+        lblEyebrow.setFont(UITheme.FONT_SMALL_BOLD);
+        lblEyebrow.setForeground(UITheme.COLOR_PRIMARY);
+        lblEyebrow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel lblTitle = new JLabel("Chào mừng trở lại");
         lblTitle.setFont(UITheme.FONT_LARGE_TITLE);
-        lblTitle.setForeground(UITheme.COLOR_PRIMARY);
-        lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel lblSub = new JLabel("Đấu trí dò mìn đối kháng thời gian thực", SwingConstants.CENTER);
-        lblSub.setFont(UITheme.FONT_SMALL);
+        lblTitle.setForeground(UITheme.TEXT_TITLE);
+        lblTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel lblSub = new JLabel("Đăng nhập để tiếp tục thi đấu");
+        lblSub.setFont(UITheme.FONT_REGULAR);
         lblSub.setForeground(UITheme.TEXT_MUTED);
-        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+        lblSub.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cardPanel.add(lblEyebrow);
+        cardPanel.add(Box.createVerticalStrut(10));
         cardPanel.add(lblTitle);
         cardPanel.add(Box.createVerticalStrut(4));
         cardPanel.add(lblSub);
-        cardPanel.add(Box.createVerticalStrut(20));
+        cardPanel.add(Box.createVerticalStrut(28));
 
-        // Form Fields
-        JLabel lblUser = new JLabel("Tên đăng nhập:");
+        JLabel lblUser = new JLabel("Tên đăng nhập");
         lblUser.setFont(UITheme.FONT_BOLD);
-        lblUser.setForeground(UITheme.TEXT_TITLE);
+        lblUser.setForeground(UITheme.TEXT_BODY);
         lblUser.setAlignmentX(Component.LEFT_ALIGNMENT);
-
         txtUsername = new JTextField();
         UITheme.styleTextField(txtUsername);
-        txtUsername.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        txtUsername.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        txtUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel lblPass = new JLabel("Mật khẩu:");
+        JLabel lblPass = new JLabel("Mật khẩu");
         lblPass.setFont(UITheme.FONT_BOLD);
-        lblPass.setForeground(UITheme.TEXT_TITLE);
+        lblPass.setForeground(UITheme.TEXT_BODY);
         lblPass.setAlignmentX(Component.LEFT_ALIGNMENT);
-
         txtPassword = new JPasswordField();
         UITheme.stylePasswordField(txtPassword);
-        txtPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        txtPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        txtPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JPanel formBox = new JPanel();
-        formBox.setLayout(new BoxLayout(formBox, BoxLayout.Y_AXIS));
-        formBox.setOpaque(false);
-        formBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cardPanel.add(lblUser);
+        cardPanel.add(Box.createVerticalStrut(7));
+        cardPanel.add(txtUsername);
+        cardPanel.add(Box.createVerticalStrut(16));
+        cardPanel.add(lblPass);
+        cardPanel.add(Box.createVerticalStrut(7));
+        cardPanel.add(txtPassword);
+        cardPanel.add(Box.createVerticalStrut(24));
 
-        formBox.add(lblUser);
-        formBox.add(Box.createVerticalStrut(4));
-        formBox.add(txtUsername);
-        formBox.add(Box.createVerticalStrut(12));
-        formBox.add(lblPass);
-        formBox.add(Box.createVerticalStrut(4));
-        formBox.add(txtPassword);
-
-        cardPanel.add(formBox);
-        cardPanel.add(Box.createVerticalStrut(22));
-
-        // Các nút bấm
         btnLogin = new JButton("Đăng nhập");
-        UITheme.styleButton(btnLogin, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
-        btnLogin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        btnRegister = new JButton("Chưa có tài khoản? Đăng ký ngay");
-        UITheme.styleOutlineButton(btnRegister, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.COLOR_PRIMARY);
-        btnRegister.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
-        btnRegister.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+        UITheme.styleButton(btnLogin, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
+        btnLogin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        btnLogin.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnRegister = new JButton("Chưa có tài khoản?  Đăng ký ngay");
+        UITheme.styleOutlineButton(btnRegister, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_BODY);
+        btnRegister.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        btnRegister.setAlignmentX(Component.LEFT_ALIGNMENT);
         cardPanel.add(btnLogin);
-        cardPanel.add(Box.createVerticalStrut(10));
+        cardPanel.add(Box.createVerticalStrut(11));
         cardPanel.add(btnRegister);
-
-        cardWrapper.add(cardPanel, BorderLayout.CENTER);
-        add(cardWrapper);
+        formArea.add(cardPanel);
+        mainPanel.add(formArea);
+        add(mainPanel);
 
         // Gắn các action listener
         btnLogin.addActionListener(e -> performLogin());

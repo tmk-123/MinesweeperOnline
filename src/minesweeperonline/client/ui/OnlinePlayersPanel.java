@@ -16,7 +16,7 @@ import java.util.List;
  * Panel hiển thị danh sách người chơi đang online.
  * Hỗ trợ thách đấu nhanh bằng cách nháy vào ô/dòng người chơi trên bảng.
  */
-public class OnlinePlayersPanel extends JPanel {
+public class OnlinePlayersPanel extends GlassPanel {
 
     private final ServerConnection connection;
     private JTable table;
@@ -26,13 +26,12 @@ public class OnlinePlayersPanel extends JPanel {
     private boolean isChallenging = false;
 
     public OnlinePlayersPanel(ServerConnection connection) {
+        super(new BorderLayout(8, 8), UITheme.BG_CARD, 142);
         this.connection = connection;
         initComponents();
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(8, 8));
-        setBackground(UITheme.BG_CARD);
         setBorder(UITheme.createCardBorder("Người chơi đang online"));
 
         String[] columns = {"Mã ID", "Tên người chơi", "Cấp bậc", "Tổng điểm", "Trạng thái"};
@@ -51,7 +50,7 @@ public class OnlinePlayersPanel extends JPanel {
         // Thiết lập độ rộng cột
         table.getColumnModel().getColumn(0).setPreferredWidth(55);  // ID
         table.getColumnModel().getColumn(1).setPreferredWidth(130); // Tên
-        table.getColumnModel().getColumn(2).setPreferredWidth(110); // Cấp bậc
+        table.getColumnModel().getColumn(2).setPreferredWidth(132); // Huy hiệu cấp bậc và tên hạng
         table.getColumnModel().getColumn(3).setPreferredWidth(75);  // Điểm
         table.getColumnModel().getColumn(4).setPreferredWidth(125); // Trạng thái
 
@@ -61,12 +60,14 @@ public class OnlinePlayersPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
                 setFont(UITheme.FONT_REGULAR);
+                setIcon(null);
+                setIconTextGap(5);
                 setHorizontalAlignment(col == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
                 setIcon(null); // Mặc định không có icon để tránh icon rò rỉ sang cột khác
 
                 // Màu xen kẽ dòng hiện đại
                 if (!isSel) {
-                    c.setBackground(row % 2 == 1 ? UITheme.BG_MAIN : Color.WHITE);
+                    c.setBackground(UITheme.withAlpha(row % 2 == 1 ? UITheme.BG_PANEL : UITheme.BG_CARD, 178));
                     c.setForeground(UITheme.TEXT_TITLE);
                 }
 
@@ -78,17 +79,11 @@ public class OnlinePlayersPanel extends JPanel {
                 // Cột Cấp bậc
                 if (col == 2 && val instanceof String) {
                     setFont(UITheme.FONT_SMALL_BOLD);
+                    int score = (int) tableModel.getValueAt(row, 3);
+                    setIcon(GameUiIcons.rankTierIcon(score, 18));
+                    setHorizontalAlignment(SwingConstants.LEFT);
                     if (!isSel) {
-                        String tier = (String) val;
-                        if (tier.contains("Kim Cương")) {
-                            c.setForeground(new Color(14, 116, 144));
-                        } else if (tier.contains("Cao thủ")) {
-                            c.setForeground(new Color(180, 83, 9));
-                        } else if (tier.contains("Chiến binh")) {
-                            c.setForeground(new Color(71, 85, 105));
-                        } else {
-                            c.setForeground(new Color(194, 65, 12));
-                        }
+                        c.setForeground(UITheme.getRankColor(score));
                     }
                 }
 
@@ -102,21 +97,21 @@ public class OnlinePlayersPanel extends JPanel {
                     setFont(UITheme.FONT_SMALL_BOLD);
                     String rawStatus = (String) val;
                     if (Player.STATUS_IDLE.equals(rawStatus) || rawStatus.contains("Sẵn sàng")) {
-                        setIcon(new UITheme.StatusDotIcon(new Color(22, 163, 74), 8));
+                        setIcon(new UITheme.StatusDotIcon(UITheme.COLOR_SUCCESS, 8));
                         setText("Sẵn sàng");
-                        if (!isSel) c.setForeground(new Color(21, 128, 61)); // Green 700
+                        if (!isSel) c.setForeground(UITheme.COLOR_SUCCESS);
                     } else if (Player.STATUS_QUEUED.equals(rawStatus) || rawStatus.contains("tìm trận")) {
-                        setIcon(new UITheme.StatusDotIcon(new Color(217, 119, 6), 8));
+                        setIcon(new UITheme.StatusDotIcon(UITheme.COLOR_WARNING, 8));
                         setText("Đang tìm trận");
-                        if (!isSel) c.setForeground(new Color(180, 83, 9)); // Amber 700
+                        if (!isSel) c.setForeground(UITheme.COLOR_WARNING);
                     } else if (Player.STATUS_PLAYING.equals(rawStatus) || rawStatus.contains("thi đấu")) {
-                        setIcon(new UITheme.StatusDotIcon(new Color(220, 38, 38), 8));
+                        setIcon(new UITheme.StatusDotIcon(UITheme.COLOR_DANGER, 8));
                         setText("Đang thi đấu");
-                        if (!isSel) c.setForeground(new Color(185, 28, 28)); // Red 700
+                        if (!isSel) c.setForeground(UITheme.COLOR_DANGER);
                     } else if (Player.STATUS_CHALLENGING.equals(rawStatus) || rawStatus.contains("thách đấu") || rawStatus.contains("mời")) {
-                        setIcon(new UITheme.StatusDotIcon(new Color(234, 88, 12), 8));
+                        setIcon(new UITheme.StatusDotIcon(UITheme.COLOR_WARNING, 8));
                         setText("Đang mời");
-                        if (!isSel) c.setForeground(new Color(194, 65, 12)); // Orange 700
+                        if (!isSel) c.setForeground(UITheme.COLOR_WARNING);
                     }
                 }
 
@@ -140,13 +135,13 @@ public class OnlinePlayersPanel extends JPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(table);
+        UITheme.styleScrollPane(scrollPane);
         scrollPane.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1));
-        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.getViewport().setBackground(UITheme.withAlpha(UITheme.BG_PANEL, 158));
         add(scrollPane, BorderLayout.CENTER);
 
         // Chân bảng: dòng hướng dẫn nháy vào người chơi
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
-        actionPanel.setBackground(UITheme.BG_CARD);
+        JPanel actionPanel = new GlassPanel(new FlowLayout(FlowLayout.LEFT, 10, 6), UITheme.BG_CARD, 150);
         lblHint = new JLabel("• Nháy chuột vào người chơi để gửi lời thách đấu");
         lblHint.setFont(UITheme.FONT_SMALL);
         lblHint.setForeground(UITheme.TEXT_MUTED);
@@ -185,11 +180,7 @@ public class OnlinePlayersPanel extends JPanel {
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc muốn gửi lời thách đấu tới: " + targetUsername + "?",
-                "Xác nhận thách đấu", JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
+        if (ChallengeConfirmDialog.confirm(this, targetUsername)) {
             isChallenging = true;
             btnChallenge.setEnabled(false);
             btnChallenge.setText("Đang chờ phản hồi...");

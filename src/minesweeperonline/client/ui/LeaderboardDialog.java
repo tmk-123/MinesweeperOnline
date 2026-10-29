@@ -32,18 +32,17 @@ public class LeaderboardDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(620, 480);
+        setSize(980, 570);
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(8, 8));
+        setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(8, 8)));
 
         // Phần tiêu đề phía trên
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        JPanel headerPanel = new GlassPanel(new BorderLayout(), UITheme.BG_CARD, 105);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
-        headerPanel.setBackground(new Color(245, 248, 255));
 
         JLabel lblTitle = new JLabel("BẢNG XẾP HẠNG CAO THỦ", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitle.setForeground(new Color(20, 60, 140));
+        lblTitle.setFont(UITheme.FONT_LARGE_TITLE);
+        lblTitle.setForeground(UITheme.COLOR_PRIMARY);
         headerPanel.add(lblTitle, BorderLayout.CENTER);
 
         add(headerPanel, BorderLayout.NORTH);
@@ -58,17 +57,13 @@ public class LeaderboardDialog extends JDialog {
         };
 
         table = new JTable(tableModel);
-        table.setRowHeight(28);
-        table.setFont(new Font("Arial", Font.PLAIN, 13));
-        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
-        table.getTableHeader().setBackground(new Color(230, 238, 248));
-        table.getTableHeader().setReorderingAllowed(false);
+        UITheme.styleTable(table);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // Độ rộng các cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(75);
+        table.getColumnModel().getColumn(0).setPreferredWidth(82);
         table.getColumnModel().getColumn(1).setPreferredWidth(130);
-        table.getColumnModel().getColumn(2).setPreferredWidth(95);
+        table.getColumnModel().getColumn(2).setPreferredWidth(112);
         table.getColumnModel().getColumn(3).setPreferredWidth(75);
         table.getColumnModel().getColumn(4).setPreferredWidth(95);
         table.getColumnModel().getColumn(5).setPreferredWidth(80);
@@ -79,6 +74,8 @@ public class LeaderboardDialog extends JDialog {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
+                setIcon(null);
+                setIconTextGap(5);
                 setHorizontalAlignment(col == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
 
                 String nameInRow = (String) tableModel.getValueAt(row, 1);
@@ -88,19 +85,9 @@ public class LeaderboardDialog extends JDialog {
                 // Định dạng hiển thị sạch đẹp
                 if (col == 0) {
                     setFont(getFont().deriveFont(Font.BOLD));
-                    if (rank == 1) {
-                        setText("🥇 Top 1");
-                        if (!isSel) c.setForeground(new Color(180, 83, 9));
-                    } else if (rank == 2) {
-                        setText("🥈 Top 2");
-                        if (!isSel) c.setForeground(new Color(71, 85, 105));
-                    } else if (rank == 3) {
-                        setText("🥉 Top 3");
-                        if (!isSel) c.setForeground(new Color(194, 65, 12));
-                    } else {
-                        setText("Top " + rank);
-                        if (!isSel) c.setForeground(new Color(100, 116, 139));
-                    }
+                    setText(String.format("%02d", rank));
+                    setIcon(GameUiIcons.podiumMedalIcon(rank, 20));
+                    if (!isSel) c.setForeground(rank == 1 ? UITheme.COLOR_PRIMARY : rank == 2 ? UITheme.COLOR_SILVER : rank == 3 ? UITheme.COLOR_BRONZE : UITheme.TEXT_MUTED);
                 } else if (col == 1) {
                     if (isCurrentUser) {
                         setText(nameInRow + " (Bạn)");
@@ -110,13 +97,16 @@ public class LeaderboardDialog extends JDialog {
                     }
                 } else if (col == 2) {
                     setFont(getFont().deriveFont(Font.BOLD, 12f));
-                    if (val instanceof String && !isSel) {
+                    if (val instanceof String) {
                         int score = (int) tableModel.getValueAt(row, 3);
-                        c.setForeground(UITheme.getRankColor(score));
+                        setIcon(GameUiIcons.rankTierIcon(score, 18));
+                        setIconTextGap(5);
+                        setHorizontalAlignment(SwingConstants.LEFT);
+                        if (!isSel) c.setForeground(UITheme.getRankColor(score));
                     }
                 } else if (col == 3) {
                     setFont(getFont().deriveFont(Font.BOLD));
-                    if (!isSel) c.setForeground(new Color(20, 60, 140));
+                    if (!isSel) c.setForeground(UITheme.COLOR_PRIMARY);
                 } else if (col == 6) {
                     Object totalObj = tableModel.getValueAt(row, 5);
                     int total = totalObj instanceof Number ? ((Number) totalObj).intValue() : 0;
@@ -128,32 +118,9 @@ public class LeaderboardDialog extends JDialog {
                 }
 
                 if (!isSel) {
-                    if (rank == 1) {
-                        c.setBackground(new Color(254, 249, 195)); // Top 1 tô màu vàng kim
-                        if (col != 0 && col != 2 && col != 3) {
-                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(133, 77, 14));
-                        }
-                    } else if (rank == 2) {
-                        c.setBackground(new Color(226, 232, 240)); // Top 2 tô màu bạc rõ ràng
-                        if (col != 0 && col != 2 && col != 3) {
-                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(51, 65, 85));
-                        }
-                    } else if (rank == 3) {
-                        c.setBackground(new Color(255, 237, 213)); // Top 3 tô màu đồng
-                        if (col != 0 && col != 2 && col != 3) {
-                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(154, 52, 18));
-                        }
-                    } else {
-                        // Top 4 trở đi: Bỏ màu nền, để nền trắng
-                        c.setBackground(Color.WHITE);
-                        if (col != 0 && col != 2 && col != 3) {
-                            if (isCurrentUser && col == 1) {
-                                c.setForeground(new Color(6, 95, 70));
-                            } else {
-                                c.setForeground(UITheme.TEXT_TITLE);
-                            }
-                        }
-                    }
+                    Color rowColor = rank == 1 ? new Color(53, 47, 34) : rank == 2 ? new Color(35, 46, 54) : rank == 3 ? new Color(49, 40, 35) : (row % 2 == 0 ? UITheme.BG_PANEL : UITheme.BG_CARD);
+                    c.setBackground(UITheme.withAlpha(rowColor, rank <= 3 ? 198 : 178));
+                    if (isCurrentUser && col == 1) c.setForeground(UITheme.COLOR_BLUE);
                 }
                 return c;
             }
@@ -164,20 +131,27 @@ public class LeaderboardDialog extends JDialog {
         }
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
-        add(scrollPane, BorderLayout.CENTER);
+        UITheme.styleScrollPane(scrollPane);
+        scrollPane.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD));
+        scrollPane.getViewport().setBackground(UITheme.BG_PANEL);
+        JPanel centerPanel = new GlassPanel(new BorderLayout(12, 0), UITheme.BG_MAIN, 72);
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
+        centerPanel.add(scrollPane, BorderLayout.CENTER);
+        centerPanel.add(createRankPanel(), BorderLayout.EAST);
+        add(centerPanel, BorderLayout.CENTER);
 
         // Panel phía dưới
-        JPanel bottomPanel = new JPanel(new BorderLayout(10, 5));
+        JPanel bottomPanel = new GlassPanel(new BorderLayout(10, 5), UITheme.BG_CARD, 150);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 12, 16));
 
         lblStatus = new JLabel("Đang tải dữ liệu...");
-        lblStatus.setFont(new Font("Arial", Font.ITALIC, 12));
-        lblStatus.setForeground(Color.GRAY);
+        lblStatus.setFont(UITheme.FONT_SMALL);
+        lblStatus.setForeground(UITheme.TEXT_MUTED);
         bottomPanel.add(lblStatus, BorderLayout.WEST);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         JButton btnHelp = new JButton("? Quy tắc");
+        UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
         btnHelp.setToolTipText("Xem các tiêu chí phân định thứ hạng trên bảng xếp hạng");
         btnHelp.addActionListener(e -> {
             Frame ownerFrame = getOwner() instanceof Frame ? (Frame) getOwner() : null;
@@ -186,9 +160,11 @@ public class LeaderboardDialog extends JDialog {
         });
 
         JButton btnRefresh = new JButton("Làm mới");
+        UITheme.styleOutlineButton(btnRefresh, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
         btnRefresh.addActionListener(e -> refresh());
 
         JButton btnClose = new JButton("Đóng");
+        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
         btnClose.addActionListener(e -> dispose());
 
         btnPanel.add(btnHelp);
@@ -197,6 +173,45 @@ public class LeaderboardDialog extends JDialog {
         bottomPanel.add(btnPanel, BorderLayout.EAST);
 
         add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private JComponent createRankPanel() {
+        JPanel panel = new GlassPanel(new BorderLayout(), UITheme.BG_CARD, 150);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD), BorderFactory.createEmptyBorder(12, 12, 12, 12)));
+        panel.setPreferredSize(new Dimension(210, 0));
+        JLabel title = new JLabel("HỆ THỐNG CẤP BẬC");
+        title.setFont(UITheme.FONT_BOLD);
+        title.setForeground(UITheme.COLOR_PRIMARY);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(title);
+        panel.add(Box.createVerticalStrut(12));
+        String[][] ranks = {{"Tập sự", "0 – 49 điểm"}, {"Bình nhì", "50 – 199 điểm"}, {"Chiến binh", "200 – 499 điểm"}, {"Cao thủ", "500 – 999 điểm"}, {"Huyền thoại", "1000+ điểm"}};
+        int[] scores = {0, 50, 200, 500, 1000};
+        for (int i = 0; i < ranks.length; i++) {
+            JPanel row = new GlassPanel(new BorderLayout(9, 0), UITheme.BG_PANEL, 174);
+            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD), BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+            row.setAlignmentX(Component.LEFT_ALIGNMENT);
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
+            JLabel emblem = new JLabel(GameUiIcons.rankTierIcon(scores[i], 34));
+            emblem.setPreferredSize(new Dimension(38, 38));
+            row.add(emblem, BorderLayout.WEST);
+
+            JPanel labels = new JPanel(new GridLayout(2, 1, 0, 2));
+            labels.setOpaque(false);
+            JLabel name = new JLabel(ranks[i][0]);
+            name.setFont(UITheme.FONT_BOLD);
+            name.setForeground(UITheme.getRankColor(scores[i]));
+            JLabel range = new JLabel(ranks[i][1]);
+            range.setFont(UITheme.FONT_SMALL);
+            range.setForeground(UITheme.TEXT_BODY);
+            labels.add(name);
+            labels.add(range);
+            row.add(labels, BorderLayout.CENTER);
+            panel.add(row);
+            panel.add(Box.createVerticalStrut(7));
+        }
+        return panel;
     }
 
     public void refresh() {
