@@ -35,29 +35,31 @@ public class RegisterFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Đăng ký tài khoản");
-        setSize(420, 460);
+        setSize(920, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(false);
         getContentPane().setBackground(UITheme.BG_MAIN);
 
-        // Card bao ngoài
-        JPanel cardWrapper = new JPanel(new BorderLayout());
-        cardWrapper.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
-        cardWrapper.setBackground(UITheme.BG_MAIN);
-
+        JPanel mainPanel = new JPanel(new GridLayout(1, 2, 0, 0));
+        mainPanel.setBackground(UITheme.BG_MAIN);
+        mainPanel.add(new MinesweeperHeroPanel());
+        JPanel formArea = new JPanel(new GridBagLayout());
+        formArea.setBorder(BorderFactory.createEmptyBorder(24, 34, 24, 34));
+        formArea.setBackground(UITheme.BG_MAIN);
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
         cardPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
-                BorderFactory.createEmptyBorder(20, 24, 20, 24)
+                BorderFactory.createEmptyBorder(25, 30, 25, 30)
         ));
         cardPanel.setBackground(UITheme.BG_CARD);
+        cardPanel.setPreferredSize(new Dimension(370, 455));
 
         // Header Tiêu đề
         JLabel lblTitle = new JLabel("ĐĂNG KÝ TÀI KHOẢN", SwingConstants.CENTER);
         lblTitle.setFont(UITheme.FONT_LARGE_TITLE);
-        lblTitle.setForeground(UITheme.COLOR_SUCCESS);
+        lblTitle.setForeground(UITheme.COLOR_PRIMARY);
         lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel lblSub = new JLabel("Gia nhập đấu trường Minesweeper Online", SwingConstants.CENTER);
@@ -65,6 +67,13 @@ public class RegisterFrame extends JFrame {
         lblSub.setForeground(UITheme.TEXT_MUTED);
         lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        JLabel eyebrow = new JLabel("01  •  TẠO TÀI KHOẢN", SwingConstants.CENTER);
+        eyebrow.setFont(UITheme.FONT_SMALL_BOLD);
+        eyebrow.setForeground(UITheme.COLOR_PRIMARY);
+        eyebrow.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        cardPanel.add(eyebrow);
+        cardPanel.add(Box.createVerticalStrut(9));
         cardPanel.add(lblTitle);
         cardPanel.add(Box.createVerticalStrut(4));
         cardPanel.add(lblSub);
@@ -73,27 +82,30 @@ public class RegisterFrame extends JFrame {
         // Form Fields
         JLabel lblUser = new JLabel("Tên đăng nhập:");
         lblUser.setFont(UITheme.FONT_BOLD);
-        lblUser.setForeground(UITheme.TEXT_TITLE);
+        lblUser.setForeground(UITheme.TEXT_BODY);
 
         txtUsername = new JTextField();
         UITheme.styleTextField(txtUsername);
-        txtUsername.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        txtUsername.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        txtUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblPass = new JLabel("Mật khẩu:");
         lblPass.setFont(UITheme.FONT_BOLD);
-        lblPass.setForeground(UITheme.TEXT_TITLE);
+        lblPass.setForeground(UITheme.TEXT_BODY);
 
         txtPassword = new JPasswordField();
         UITheme.stylePasswordField(txtPassword);
-        txtPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        txtPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        txtPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblConfirm = new JLabel("Nhập lại mật khẩu:");
         lblConfirm.setFont(UITheme.FONT_BOLD);
-        lblConfirm.setForeground(UITheme.TEXT_TITLE);
+        lblConfirm.setForeground(UITheme.TEXT_BODY);
 
         txtConfirmPassword = new JPasswordField();
         UITheme.stylePasswordField(txtConfirmPassword);
-        txtConfirmPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        txtConfirmPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        txtConfirmPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JPanel formBox = new JPanel();
         formBox.setLayout(new BoxLayout(formBox, BoxLayout.Y_AXIS));
@@ -117,12 +129,12 @@ public class RegisterFrame extends JFrame {
 
         // Các nút bấm
         btnRegister = new JButton("Đăng ký tài khoản");
-        UITheme.styleButton(btnRegister, UITheme.COLOR_SUCCESS, UITheme.COLOR_SUCCESS_HOVER, Color.WHITE);
+        UITheme.styleButton(btnRegister, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
         btnRegister.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         btnRegister.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         btnBack = new JButton("Đã có tài khoản? Quay lại đăng nhập");
-        UITheme.styleOutlineButton(btnBack, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.COLOR_PRIMARY);
+        UITheme.styleOutlineButton(btnBack, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_BODY);
         btnBack.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
         btnBack.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -130,8 +142,9 @@ public class RegisterFrame extends JFrame {
         cardPanel.add(Box.createVerticalStrut(10));
         cardPanel.add(btnBack);
 
-        cardWrapper.add(cardPanel, BorderLayout.CENTER);
-        add(cardWrapper);
+        formArea.add(cardPanel);
+        mainPanel.add(formArea);
+        add(mainPanel);
 
         btnRegister.addActionListener(e -> performRegister());
         btnBack.addActionListener(e -> {

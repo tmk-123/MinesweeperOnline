@@ -27,6 +27,7 @@ public class MainClient {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ignored) {
             }
+            minesweeperonline.client.ui.UITheme.installDefaults();
 
             connectAndOpenLogin();
         });

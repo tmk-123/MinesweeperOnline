@@ -40,12 +40,11 @@ public class MatchHistoryDialog extends JDialog {
     private void initComponents() {
         setSize(860, 530);
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(8, 8));
+        setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(8, 8)));
 
         // Phần tiêu đề phía trên
-        JPanel headerPanel = new JPanel(new BorderLayout(5, 5));
+        JPanel headerPanel = new GlassPanel(new BorderLayout(5, 5), UITheme.BG_CARD, 100);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(14, 18, 12, 18));
-        headerPanel.setBackground(UITheme.BG_CARD);
 
         JLabel lblTitle = new JLabel("LỊCH SỬ THI ĐẤU", SwingConstants.CENTER);
         lblTitle.setFont(UITheme.FONT_LARGE_TITLE);
@@ -90,11 +89,8 @@ public class MatchHistoryDialog extends JDialog {
                 setHorizontalAlignment(SwingConstants.CENTER);
 
                 if (!isSel) {
-                    if (row % 2 == 1) {
-                        c.setBackground(new Color(248, 249, 252));
-                    } else {
-                        c.setBackground(Color.WHITE);
-                    }
+                    c.setBackground(UITheme.withAlpha(row % 2 == 1 ? UITheme.BG_PANEL : UITheme.BG_CARD, 178));
+                    c.setForeground(UITheme.TEXT_BODY);
                 }
 
                 // Định dạng cột Kết quả (cột 2)
@@ -102,32 +98,32 @@ public class MatchHistoryDialog extends JDialog {
                     String res = val.toString();
                     setFont(getFont().deriveFont(Font.BOLD));
                     if ("VICTORY".equalsIgnoreCase(res) || res.contains("THẮNG")) {
-                        c.setForeground(new Color(39, 174, 96));
+                        c.setForeground(UITheme.COLOR_SUCCESS);
                     } else if ("DEFEAT".equalsIgnoreCase(res) || res.contains("THUA")) {
-                        c.setForeground(new Color(214, 48, 49));
+                        c.setForeground(UITheme.COLOR_DANGER);
                     } else if ("FORFEIT".equalsIgnoreCase(res) || res.contains("BỎ CUỘC")) {
-                        c.setForeground(new Color(230, 126, 34));
+                        c.setForeground(UITheme.COLOR_WARNING);
                     } else {
-                        c.setForeground(new Color(41, 128, 185)); // Hòa
+                        c.setForeground(UITheme.COLOR_BLUE);
                     }
                 } else if (col == 3 && val != null) { // Cột điểm số
                     String score = val.toString();
                     setFont(getFont().deriveFont(Font.BOLD));
                     if (score.startsWith("+")) {
-                        c.setForeground(new Color(39, 174, 96));
+                        c.setForeground(UITheme.COLOR_SUCCESS);
                     } else if (score.startsWith("-")) {
-                        c.setForeground(new Color(214, 48, 49));
+                        c.setForeground(UITheme.COLOR_DANGER);
                     } else {
-                        c.setForeground(new Color(52, 73, 94));
+                        c.setForeground(UITheme.TEXT_BODY);
                     }
                 } else if (col == 1) {
                     setHorizontalAlignment(SwingConstants.LEFT);
-                    c.setForeground(new Color(44, 62, 80));
+                    c.setForeground(UITheme.TEXT_TITLE);
                 } else if (col == 7) {
                     setHorizontalAlignment(SwingConstants.LEFT);
-                    c.setForeground(new Color(120, 120, 120));
+                    c.setForeground(UITheme.TEXT_MUTED);
                 } else {
-                    c.setForeground(new Color(44, 62, 80));
+                    c.setForeground(UITheme.TEXT_BODY);
                 }
 
                 return c;
@@ -139,13 +135,13 @@ public class MatchHistoryDialog extends JDialog {
         }
 
         JScrollPane scrollPane = new JScrollPane(table);
+        UITheme.styleScrollPane(scrollPane);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         add(scrollPane, BorderLayout.CENTER);
 
         // Panel phía dưới: tổng kết & các nút
-        JPanel bottomPanel = new JPanel(new BorderLayout(10, 5));
+        JPanel bottomPanel = new GlassPanel(new BorderLayout(10, 5), UITheme.BG_CARD, 150);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 12, 16));
-        bottomPanel.setBackground(UITheme.BG_CARD);
 
         JPanel statsPanel = new JPanel(new GridLayout(2, 1, 2, 2));
         statsPanel.setOpaque(false);
@@ -168,7 +164,7 @@ public class MatchHistoryDialog extends JDialog {
         btnRefresh.addActionListener(e -> refresh());
 
         JButton btnClose = new JButton("Đóng");
-        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
+        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
         btnClose.addActionListener(e -> dispose());
 
         btnPanel.add(btnRefresh);

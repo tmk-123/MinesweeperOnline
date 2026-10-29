@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Panel hiển thị bảng xếp hạng cao thủ, gắn trực tiếp vào sảnh chờ MainMenuFrame.
  */
-public class LeaderboardPanel extends JPanel {
+public class LeaderboardPanel extends GlassPanel {
 
     private final ServerConnection connection;
     private final String currentUsername;
@@ -23,6 +23,7 @@ public class LeaderboardPanel extends JPanel {
     private JLabel lblStatus;
 
     public LeaderboardPanel(ServerConnection connection, String currentUsername) {
+        super(new BorderLayout(8, 8), UITheme.BG_CARD, 142);
         this.connection = connection;
         this.currentUsername = currentUsername;
 
@@ -30,8 +31,6 @@ public class LeaderboardPanel extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(8, 8));
-        setBackground(UITheme.BG_CARD);
         setBorder(UITheme.createCardBorder("Bảng xếp hạng cao thủ (Top 10)"));
 
         // Bảng dữ liệu: Thêm cột "Cấp bậc" (Rank Tier)
@@ -48,9 +47,9 @@ public class LeaderboardPanel extends JPanel {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // Độ rộng các cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(75);  // Hạng (🥇 Top 1, 🥈 Top 2, 🥉 Top 3, Top 4...)
+        table.getColumnModel().getColumn(0).setPreferredWidth(82);  // Hạng với huy hiệu Top 3
         table.getColumnModel().getColumn(1).setPreferredWidth(125); // Tên người chơi
-        table.getColumnModel().getColumn(2).setPreferredWidth(95);  // Cấp bậc
+        table.getColumnModel().getColumn(2).setPreferredWidth(110); // Huy hiệu cấp bậc và tên hạng
         table.getColumnModel().getColumn(3).setPreferredWidth(65);  // Điểm số
         table.getColumnModel().getColumn(4).setPreferredWidth(90);  // Trận thắng (không bị cắt chữ)
         table.getColumnModel().getColumn(5).setPreferredWidth(75);  // Tổng trận
@@ -61,27 +60,30 @@ public class LeaderboardPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
                 setFont(UITheme.FONT_REGULAR);
+                setIcon(null);
+                setIconTextGap(5);
                 setHorizontalAlignment(col == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
 
                 String nameInRow = (String) tableModel.getValueAt(row, 1);
                 int rank = (int) tableModel.getValueAt(row, 0);
                 boolean isCurrentUser = currentUsername != null && currentUsername.equals(nameInRow);
 
-                // 1. Cột Hạng: Huy chương 🥇 🥈 🥉 cho Top 3
+                // 1. Cột Hạng: giữ huy chương ở dạng chữ, không phụ thuộc font emoji.
                 if (col == 0) {
                     setFont(UITheme.FONT_BOLD);
+                    setIcon(GameUiIcons.podiumMedalIcon(rank, 20));
                     if (rank == 1) {
-                        setText("🥇 Top 1");
-                        if (!isSel) c.setForeground(new Color(180, 83, 9));       // Vàng kim (Amber 700)
+                        setText("01");
+                        if (!isSel) c.setForeground(UITheme.COLOR_PRIMARY);
                     } else if (rank == 2) {
-                        setText("🥈 Top 2");
-                        if (!isSel) c.setForeground(new Color(71, 85, 105));      // Bạc (Slate 600)
+                        setText("02");
+                        if (!isSel) c.setForeground(UITheme.COLOR_SILVER);
                     } else if (rank == 3) {
-                        setText("🥉 Top 3");
-                        if (!isSel) c.setForeground(new Color(194, 65, 12));      // Đồng (Orange 700)
+                        setText("03");
+                        if (!isSel) c.setForeground(UITheme.COLOR_BRONZE);
                     } else {
-                        setText("Top " + rank);
-                        if (!isSel) c.setForeground(new Color(100, 116, 139));    // Top 4+: Xám Slate 500
+                        setText(String.format("%02d", rank));
+                        if (!isSel) c.setForeground(UITheme.TEXT_MUTED);
                     }
                 } else if (col == 1) {
                     // Cột Tên: gắn thẻ "(Bạn)" nếu là người dùng hiện tại
@@ -96,7 +98,13 @@ public class LeaderboardPanel extends JPanel {
                     setFont(UITheme.FONT_SMALL_BOLD);
                     if (val instanceof String && !isSel) {
                         int score = (int) tableModel.getValueAt(row, 3);
+                        setIcon(GameUiIcons.rankTierIcon(score, 18));
+                        setHorizontalAlignment(SwingConstants.LEFT);
                         c.setForeground(UITheme.getRankColor(score));
+                    } else if (val instanceof String) {
+                        int score = (int) tableModel.getValueAt(row, 3);
+                        setIcon(GameUiIcons.rankTierIcon(score, 18));
+                        setHorizontalAlignment(SwingConstants.LEFT);
                     }
                 } else if (col == 3) {
                     // Cột Điểm số
@@ -113,34 +121,18 @@ public class LeaderboardPanel extends JPanel {
                     }
                 }
 
-                // 2. Màu nền: Chỉ giữ màu nền cho Top 1, 2, 3; các top sau để nền trắng
+                // 2. Các hàng đầu có sắc độ kim loại tối, còn hàng người dùng được nhấn nhẹ.
                 if (!isSel) {
                     if (rank == 1) {
-                        c.setBackground(new Color(254, 249, 195)); // Gold light
-                        if (col != 0 && col != 2 && col != 3) {
-                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(133, 77, 14));
-                        }
+                        c.setBackground(UITheme.withAlpha(new Color(53, 47, 34), 198));
                     } else if (rank == 2) {
-                        c.setBackground(new Color(226, 232, 240)); // Silver light (màu bạc rõ ràng)
-                        if (col != 0 && col != 2 && col != 3) {
-                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(51, 65, 85));
-                        }
+                        c.setBackground(UITheme.withAlpha(new Color(35, 46, 54), 198));
                     } else if (rank == 3) {
-                        c.setBackground(new Color(255, 237, 213)); // Bronze light
-                        if (col != 0 && col != 2 && col != 3) {
-                            c.setForeground(isCurrentUser && col == 1 ? new Color(6, 95, 70) : new Color(154, 52, 18));
-                        }
+                        c.setBackground(UITheme.withAlpha(new Color(49, 40, 35), 198));
                     } else {
-                        // Top 4 trở đi: Bỏ màu nền, để nền trắng
-                        c.setBackground(Color.WHITE);
-                        if (col != 0 && col != 2 && col != 3) {
-                            if (isCurrentUser && col == 1) {
-                                c.setForeground(new Color(6, 95, 70)); // Tên bạn vẫn nổi bật màu xanh lá
-                            } else {
-                                c.setForeground(UITheme.TEXT_TITLE);
-                            }
-                        }
+                        c.setBackground(UITheme.withAlpha(row % 2 == 0 ? UITheme.BG_PANEL : UITheme.BG_CARD, 178));
                     }
+                    if (isCurrentUser && col == 1) c.setForeground(UITheme.COLOR_BLUE);
                 }
                 return c;
             }
@@ -151,13 +143,13 @@ public class LeaderboardPanel extends JPanel {
         }
 
         JScrollPane scrollPane = new JScrollPane(table);
+        UITheme.styleScrollPane(scrollPane);
         scrollPane.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1));
-        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.getViewport().setBackground(UITheme.withAlpha(UITheme.BG_PANEL, 158));
         add(scrollPane, BorderLayout.CENTER);
 
         // Panel chân bảng: Trạng thái bên trái, Nút ? Quy tắc xếp hạng bên phải
-        JPanel actionPanel = new JPanel(new BorderLayout(8, 0));
-        actionPanel.setBackground(UITheme.BG_CARD);
+        JPanel actionPanel = new GlassPanel(new BorderLayout(8, 0), UITheme.BG_CARD, 150);
         actionPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
 
         lblStatus = new JLabel("Đang tải dữ liệu bảng xếp hạng...");

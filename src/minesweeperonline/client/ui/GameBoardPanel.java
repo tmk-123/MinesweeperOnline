@@ -5,9 +5,12 @@ import minesweeperonline.common.protocol.JsonProtocol;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.Path2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Bàn cờ Minesweeper 12x12 có thể tương tác.
@@ -24,30 +27,30 @@ public class GameBoardPanel extends JPanel {
     private final JButton[][] buttons;
     private final boolean[][] opened;
     private final boolean[][] flagged;
+    private final Set<Long> pendingOpenCells = new LinkedHashSet<>();
 
     private boolean interactive = false;
 
-    // Màu số kiểu cổ điển
+    // Number colors are checked against OPENED_BG and keep at least 4.5:1 contrast.
     private static final Color[] NUMBER_COLORS = {
-            Color.BLACK,
-            new Color(0, 0, 255),       // 1: Xanh dương
-            new Color(0, 128, 0),       // 2: Xanh lá
-            new Color(255, 0, 0),       // 3: Đỏ
-            new Color(0, 0, 128),       // 4: Xanh navy
-            new Color(128, 0, 0),       // 5: Đỏ sẫm
-            new Color(0, 128, 128),     // 6: Xanh mòng két
-            Color.BLACK,                // 7: Đen
-            Color.GRAY                  // 8: Xám
+            UITheme.TEXT_TITLE,
+            new Color(29, 78, 216),
+            new Color(22, 101, 52),
+            new Color(185, 28, 28),
+            new Color(30, 58, 138),
+            new Color(127, 29, 29),
+            new Color(17, 94, 89),
+            new Color(48, 54, 63),
+            new Color(63, 75, 87)
     };
 
-    // Ô chưa mở: xám xanh, nổi khối; ô đã mở: gần trắng, phẳng -> nhìn là phân biệt được
-    private static final Color HIDDEN_BG = new Color(178, 190, 204);
-    private static final Color OPENED_BG = new Color(250, 251, 252);
-    private static final Color OPENED_BORDER = new Color(205, 211, 218);
+    private static final Color HIDDEN_BG = new Color(70, 84, 94);
+    private static final Color OPENED_BG = new Color(211, 222, 227);
+    private static final Color OPENED_BORDER = new Color(160, 177, 185);
 
     private static final Icon FLAG_ICON = new FlagIcon();
     private static final Icon MINE_NORMAL_ICON = new MineIcon(false);
-    private static final Icon MINE_EXPLODED_ICON = new MineIcon(true);
+    private static final Icon MINE_EXPLODED_ICON = new ExplosionIcon();
     private static final Icon CROSSED_MINE_ICON = new CrossedMineIcon();
 
     public GameBoardPanel(ServerConnection connection, String gameId) {
@@ -63,7 +66,7 @@ public class GameBoardPanel extends JPanel {
     private void initComponents() {
         setLayout(new GridLayout(ROWS, COLS, 2, 2));
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
-        setBackground(new Color(180, 190, 200));
+        setBackground(UITheme.BG_MAIN);
 
         Font cellFont = new Font("Arial", Font.BOLD, 14);
 
@@ -92,6 +95,7 @@ public class GameBoardPanel extends JPanel {
                         if (SwingUtilities.isLeftMouseButton(e)) {
                             // Click trái -> mở ô
                             if (!flagged[row][col]) {
+                                pendingOpenCells.add(cellKey(row, col));
                                 connection.sendMessage(JsonProtocol.createOpenCell(gameId, row, col));
                             }
                         } else if (SwingUtilities.isRightMouseButton(e)) {
@@ -118,6 +122,7 @@ public class GameBoardPanel extends JPanel {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
 
         JButton btn = buttons[r][c];
+        pendingOpenCells.remove(cellKey(r, c));
         opened[r][c] = true;
         flagged[r][c] = false;
 
@@ -129,7 +134,7 @@ public class GameBoardPanel extends JPanel {
             btn.setIcon(mIcon);
             btn.setDisabledIcon(mIcon);
             btn.setText("");
-            btn.setBackground(isExploded ? new Color(255, 80, 80) : new Color(255, 180, 180));
+            btn.setBackground(isExploded ? new Color(126, 35, 34) : new Color(211, 151, 151));
         } else {
             btn.setIcon(null);
             btn.setDisabledIcon(null);
@@ -164,15 +169,36 @@ public class GameBoardPanel extends JPanel {
         this.interactive = interactive;
     }
 
+    /** Returns the earliest still-pending clicked cell that the server confirms is a mine. */
+    public int[] getPendingMineCoordinate(List<int[]> mines) {
+        if (mines == null || mines.isEmpty() || pendingOpenCells.isEmpty()) return null;
+        for (long key : pendingOpenCells) {
+            int row = (int) (key / COLS);
+            int col = (int) (key % COLS);
+            for (int[] mine : mines) {
+                if (mine != null && mine.length >= 2 && mine[0] == row && mine[1] == col) {
+                    return new int[]{row, col};
+                }
+            }
+        }
+        return null;
+    }
+
+    private static long cellKey(int row, int col) {
+        return (long) row * COLS + col;
+    }
+
     /**
      * Khi trận kết thúc: hiện tất cả mìn trên bàn của mình theo danh sách server gửi kèm.
      * - Ô mìn chưa mở, không cắm cờ -> hiện quả mìn
-     * - Mọi ô đang cắm cờ           -> chuyển sang nền "đã mở", hiện quả mìn có dấu X đỏ
+     * - Mìn ở ô đã cắm cờ           -> hiện mìn để người chơi đối chiếu
+     * - Cờ cắm sai                  -> chuyển sang nền "đã mở", hiện quả mìn có dấu X đỏ
      * Ô đã mở (kể cả quả mìn vừa nổ) giữ nguyên.
      *
      * @param mines tọa độ {row, col} của các ô có mìn
      */
     public void revealAllMines(List<int[]> mines) {
+        if (mines == null || mines.isEmpty()) return;
         boolean[][] isMine = new boolean[ROWS][COLS];
         for (int[] m : mines) {
             if (m[0] >= 0 && m[0] < ROWS && m[1] >= 0 && m[1] < COLS) {
@@ -185,12 +211,14 @@ public class GameBoardPanel extends JPanel {
                 if (opened[r][c]) continue;
                 JButton btn = buttons[r][c];
                 Icon icon = null;
-                if (flagged[r][c]) {
+                if (flagged[r][c] && !isMine[r][c]) {
                     icon = CROSSED_MINE_ICON;
                     btn.setBackground(OPENED_BG);
                     btn.setBorder(BorderFactory.createLineBorder(OPENED_BORDER, 1));
                 } else if (isMine[r][c]) {
                     icon = MINE_NORMAL_ICON;
+                    btn.setBackground(new Color(178, 117, 105));
+                    btn.setBorder(BorderFactory.createLineBorder(new Color(211, 151, 151), 1));
                 }
                 if (icon != null) {
                     btn.setIcon(icon);
@@ -295,6 +323,52 @@ public class GameBoardPanel extends JPanel {
 
         @Override
         public int getIconHeight() { return height; }
+    }
+
+    /** Larger fireburst marker for the exact mine that ended the game. */
+    private static class ExplosionIcon implements Icon {
+        private static final int SIZE = 38;
+
+        @Override
+        public void paintIcon(Component component, Graphics graphics, int x, int y) {
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int cx = x + SIZE / 2;
+            int cy = y + SIZE / 2;
+
+            g2.setColor(new Color(255, 213, 83, 105));
+            g2.fillOval(cx - 17, cy - 17, 34, 34);
+
+            Path2D burst = new Path2D.Double();
+            for (int i = 0; i < 16; i++) {
+                double angle = -Math.PI / 2 + i * Math.PI / 8;
+                double radius = (i % 2 == 0) ? 18 : 10;
+                double px = cx + Math.cos(angle) * radius;
+                double py = cy + Math.sin(angle) * radius;
+                if (i == 0) burst.moveTo(px, py); else burst.lineTo(px, py);
+            }
+            burst.closePath();
+            g2.setPaint(new GradientPaint(cx, cy - 18, new Color(255, 247, 155), cx, cy + 18, new Color(232, 48, 31)));
+            g2.fill(burst);
+
+            g2.setColor(new Color(91, 21, 24));
+            g2.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine(cx - 13, cy, cx + 13, cy);
+            g2.drawLine(cx, cy - 13, cx, cy + 13);
+            g2.drawLine(cx - 9, cy - 9, cx + 9, cy + 9);
+            g2.drawLine(cx - 9, cy + 9, cx + 9, cy - 9);
+
+            g2.setColor(new Color(42, 29, 29));
+            g2.fillOval(cx - 7, cy - 7, 14, 14);
+            g2.setColor(new Color(255, 218, 103));
+            g2.fillOval(cx - 3, cy - 4, 3, 3);
+            g2.setColor(new Color(255, 244, 196));
+            g2.fillOval(cx - 1, cy - 1, 2, 2);
+            g2.dispose();
+        }
+
+        @Override public int getIconWidth() { return SIZE; }
+        @Override public int getIconHeight() { return SIZE; }
     }
 
     /**

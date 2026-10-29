@@ -64,17 +64,15 @@ public class MainMenuFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH); // Mở toàn màn hình theo yêu cầu người dùng
 
-        JPanel mainPanel = new JPanel(new BorderLayout(12, 12));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
-        mainPanel.setBackground(UITheme.BG_MAIN);
+        JPanel mainPanel = new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(12, 12));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
 
         // Header phía trên: Thông tin người chơi bên trái, Nút thao tác bên phải
-        JPanel headerPanel = new JPanel(new BorderLayout(15, 0));
+        JPanel headerPanel = new GlassPanel(new BorderLayout(15, 0), UITheme.BG_CARD, 150);
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
                 BorderFactory.createEmptyBorder(10, 18, 10, 18)
         ));
-        headerPanel.setBackground(UITheme.BG_CARD);
 
         String rank = UITheme.getRankTitle(currentUser.getTotalScore());
         lblUserInfo = new JLabel("Tài khoản: " + currentUser.getUsername() + "   |   Hạng: " + rank + "   |   Điểm số: " + currentUser.getTotalScore());
@@ -86,12 +84,12 @@ public class MainMenuFrame extends JFrame {
         rightHeaderBtns.setOpaque(false);
 
         btnQuickMatch = new JButton("Tìm trận nhanh");
-        UITheme.styleButton(btnQuickMatch, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
+        UITheme.styleButton(btnQuickMatch, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
         btnQuickMatch.setToolTipText("Hệ thống tự động tìm và ghép ván với người chơi khác đang online");
         btnQuickMatch.addActionListener(e -> toggleQuickMatch());
 
         JButton btnRefreshAll = new JButton("Làm mới");
-        UITheme.styleOutlineButton(btnRefreshAll, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
+        UITheme.styleOutlineButton(btnRefreshAll, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
         btnRefreshAll.setToolTipText("Làm mới danh sách người chơi online và bảng xếp hạng");
         btnRefreshAll.addActionListener(e -> {
             if (onlinePanel != null) {
@@ -103,7 +101,7 @@ public class MainMenuFrame extends JFrame {
         });
 
         JButton btnMatchHistory = new JButton("Lịch sử đấu");
-        UITheme.styleOutlineButton(btnMatchHistory, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
+        UITheme.styleOutlineButton(btnMatchHistory, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
         btnMatchHistory.addActionListener(e -> {
             if (matchHistoryDialog == null || !matchHistoryDialog.isDisplayable()) {
                 matchHistoryDialog = new MatchHistoryDialog(this, connection, currentUser.getId());
@@ -115,15 +113,27 @@ public class MainMenuFrame extends JFrame {
         });
 
         JButton btnHelp = new JButton("? Hướng dẫn");
-        UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);
+        UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
         btnHelp.setToolTipText("Xem cẩm nang luật chơi 1v1, quy tắc xếp hạng và mẹo chơi");
         btnHelp.addActionListener(e -> {
             HelpDialog helpDialog = new HelpDialog(this, 0);
             helpDialog.setVisible(true);
         });
 
+        JButton btnLeaderboard = new JButton("Bảng xếp hạng");
+        UITheme.styleOutlineButton(btnLeaderboard, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
+        btnLeaderboard.addActionListener(e -> {
+            if (leaderboardDialog == null || !leaderboardDialog.isDisplayable()) {
+                leaderboardDialog = new LeaderboardDialog(this, connection, currentUser.getUsername());
+                leaderboardDialog.setVisible(true);
+            } else {
+                leaderboardDialog.toFront();
+                leaderboardDialog.refresh();
+            }
+        });
+
         JButton btnLogout = new JButton("Đăng xuất");
-        UITheme.styleButton(btnLogout, new Color(254, 226, 226), new Color(254, 202, 202), UITheme.COLOR_DANGER);
+        UITheme.styleOutlineButton(btnLogout, new Color(113, 55, 59), new Color(67, 36, 41), UITheme.COLOR_DANGER);
         btnLogout.addActionListener(e -> {
             if (isSearchingMatch) {
                 connection.sendMessage(JsonProtocol.createCancelQuickMatch());
@@ -146,19 +156,26 @@ public class MainMenuFrame extends JFrame {
         rightHeaderBtns.add(btnRefreshAll);
         rightHeaderBtns.add(btnMatchHistory);
         rightHeaderBtns.add(btnHelp);
+        rightHeaderBtns.add(btnLeaderboard);
         rightHeaderBtns.add(btnLogout);
         headerPanel.add(rightHeaderBtns, BorderLayout.EAST);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
         // Ở giữa: Chia đôi màn hình - Bên trái là OnlinePlayersPanel, Bên phải là LeaderboardPanel
-        JPanel centerSplitPanel = new JPanel(new GridLayout(1, 2, 16, 0));
+        JPanel centerSplitPanel = new JPanel(new GridBagLayout());
         centerSplitPanel.setOpaque(false);
 
         onlinePanel = new OnlinePlayersPanel(connection);
         leaderboardPanel = new LeaderboardPanel(connection, currentUser.getUsername());
 
-        centerSplitPanel.add(onlinePanel);
-        centerSplitPanel.add(leaderboardPanel);
+        GridBagConstraints left = new GridBagConstraints();
+        left.gridx = 0; left.gridy = 0; left.weightx = 0.55; left.weighty = 1;
+        left.fill = GridBagConstraints.BOTH; left.insets = new Insets(0, 0, 0, 8);
+        centerSplitPanel.add(onlinePanel, left);
+        GridBagConstraints right = new GridBagConstraints();
+        right.gridx = 1; right.gridy = 0; right.weightx = 0.45; right.weighty = 1;
+        right.fill = GridBagConstraints.BOTH; right.insets = new Insets(0, 8, 0, 0);
+        centerSplitPanel.add(leaderboardPanel, right);
 
         mainPanel.add(centerSplitPanel, BorderLayout.CENTER);
 

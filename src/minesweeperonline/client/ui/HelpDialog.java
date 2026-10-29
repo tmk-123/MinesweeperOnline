@@ -29,12 +29,10 @@ public class HelpDialog extends JDialog {
         setSize(780, 560);
         setMinimumSize(new Dimension(650, 480));
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(0, 0));
-        getContentPane().setBackground(UITheme.BG_MAIN);
+        setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(0, 0)));
 
         // Header phía trên
-        JPanel headerPanel = new JPanel(new BorderLayout(5, 4));
-        headerPanel.setBackground(UITheme.BG_CARD);
+        JPanel headerPanel = new GlassPanel(new BorderLayout(5, 4), UITheme.BG_CARD, 95);
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_CARD),
                 new EmptyBorder(14, 20, 12, 20)
@@ -55,29 +53,27 @@ public class HelpDialog extends JDialog {
         // TabbedPane ở giữa
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(UITheme.FONT_BOLD);
-        tabbedPane.setBackground(Color.WHITE);
 
-        tabbedPane.addTab("  🎮 Thể thức & Luật chơi  ", createRulesTab());
-        tabbedPane.addTab("  🏆 Điểm số & Cấp bậc  ", createRankTab());
-        tabbedPane.addTab("  🖱️ Thao tác & Mẹo chơi  ", createControlsTab());
+        tabbedPane.addTab("  Thể thức & Luật chơi  ", createRulesTab());
+        tabbedPane.addTab("  Điểm số & Cấp bậc  ", createRankTab());
+        tabbedPane.addTab("  Thao tác & Mẹo chơi  ", createControlsTab());
+        UITheme.styleTabbedPane(tabbedPane);
 
         if (initialTabIndex >= 0 && initialTabIndex < tabbedPane.getTabCount()) {
             tabbedPane.setSelectedIndex(initialTabIndex);
         }
 
-        JPanel centerContainer = new JPanel(new BorderLayout());
+        JPanel centerContainer = new GlassPanel(new BorderLayout(), UITheme.BG_MAIN, 64);
         centerContainer.setBorder(new EmptyBorder(10, 14, 10, 14));
-        centerContainer.setBackground(UITheme.BG_MAIN);
         centerContainer.add(tabbedPane, BorderLayout.CENTER);
         add(centerContainer, BorderLayout.CENTER);
 
         // Footer với nút Đóng
-        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 10));
-        footerPanel.setBackground(UITheme.BG_CARD);
+        JPanel footerPanel = new GlassPanel(new FlowLayout(FlowLayout.RIGHT, 14, 10), UITheme.BG_CARD, 150);
         footerPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UITheme.BORDER_CARD));
 
         JButton btnClose = new JButton("Đã hiểu");
-        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
+        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
         btnClose.setPreferredSize(new Dimension(100, 34));
         btnClose.addActionListener(e -> dispose());
         footerPanel.add(btnClose);
@@ -155,24 +151,29 @@ public class HelpDialog extends JDialog {
                 + "    <td style='border: 1px solid #CBD5E1;'>Đặc điểm</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #059669;'>🟢 Tập sự</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>0 – 29 điểm</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Bậc xếp hạng khởi đầu cho người chơi mới</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #D97706;'>Tập sự</b></td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>0 – 49 điểm</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>Bậc xếp hạng khởi đầu</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #2563EB;'>🔵 Chiến binh</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>30 – 69 điểm</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Đã tích lũy kinh nghiệm và có tỉ lệ thắng tốt</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #CBD6DC;'>Bình nhì</b></td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>50 – 199 điểm</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>Bắt đầu tích lũy thành tích thi đấu</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #7C3AED;'>🟣 Cao thủ</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>70 – 149 điểm</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Gỡ mìn tốc độ cao, khả năng phán đoán sắc bén</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #5BAFF4;'>Chiến binh</b></td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>200 – 499 điểm</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>Đã có kinh nghiệm đối kháng</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #D97706;'>🟡 Đại kiện tướng</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Từ 150 điểm trở lên</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Đỉnh cao kỹ năng, thuộc nhóm cao thủ hàng đầu</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #A484DF;'>Cao thủ</b></td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>500 – 999 điểm</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>Nhóm người chơi dẫn đầu</td>"
+                + "  </tr>"
+                + "  <tr>"
+                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #F6B842;'>Huyền thoại</b></td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>Từ 1000 điểm</td>"
+                + "    <td style='border: 1px solid #E2E8F0;'>Cấp bậc cao nhất</td>"
                 + "  </tr>"
                 + "</table>"
                 + "</body></html>";
@@ -221,18 +222,33 @@ public class HelpDialog extends JDialog {
     }
 
     private JScrollPane createHtmlScrollPane(String html) {
+        html = html.replace("#1E293B", "#CBD6DC")
+                .replace("#1D4ED8", "#F6B842")
+                .replace("#CBD5E1", "#344550")
+                .replace("#F8FAFC", "#101A22")
+                .replace("#FFFFFF", "#14212B")
+                .replace("#F1F5F9", "#1D2B35")
+                .replace("#E2E8F0", "#2C3B46")
+                .replace("#DC2626", "#F55B5E")
+                .replace("#059669", "#47C5A4")
+                .replace("#D97706", "#F2A137")
+                .replace("#2563EB", "#5BAFF4")
+                .replace("#7C3AED", "#A484DF")
+                .replace("#7F1D1D", "#F55B5E");
         JEditorPane editorPane = new JEditorPane("text/html", html);
         editorPane.setEditable(false);
-        editorPane.setOpaque(true);
-        editorPane.setBackground(Color.WHITE);
+        editorPane.setOpaque(false);
+        editorPane.setBackground(UITheme.BG_PANEL);
+        editorPane.setForeground(UITheme.TEXT_BODY);
         editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         editorPane.setFont(UITheme.FONT_REGULAR);
         editorPane.setCaretPosition(0);
 
         JScrollPane scroll = new JScrollPane(editorPane);
+        UITheme.styleScrollPane(scroll);
         scroll.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1));
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.getViewport().setBackground(Color.WHITE);
+        scroll.getViewport().setBackground(UITheme.BG_PANEL);
         return scroll;
     }
 }

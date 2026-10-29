@@ -43,8 +43,7 @@
                includeantruntime="false"
                encoding="UTF-8"
                debug="true"
-               source="26"
-               target="26">
+               release="21">
         </javac>
         <copy todir="${build.classes.dir}">
             <fileset dir="${src.dir}">

@@ -18,12 +18,10 @@ public class LeaderboardRulesDialog extends JDialog {
         setSize(580, 440);
         setMinimumSize(new Dimension(500, 380));
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(0, 0));
-        getContentPane().setBackground(UITheme.BG_MAIN);
+        setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(0, 0)));
 
         // Header phía trên
-        JPanel headerPanel = new JPanel(new BorderLayout(5, 4));
-        headerPanel.setBackground(UITheme.BG_CARD);
+        JPanel headerPanel = new GlassPanel(new BorderLayout(5, 4), UITheme.BG_CARD, 95);
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_CARD),
                 new EmptyBorder(14, 20, 12, 20)
@@ -81,27 +79,35 @@ public class LeaderboardRulesDialog extends JDialog {
                 + "</ul>"
                 + "</body></html>";
 
+        html = html.replace("#1E293B", "#CBD6DC")
+                .replace("#1D4ED8", "#F6B842")
+                .replace("#CBD5E1", "#344550")
+                .replace("#FFFFFF", "#14212B")
+                .replace("#F1F5F9", "#1D2B35")
+                .replace("#E2E8F0", "#2C3B46")
+                .replace("#2563EB", "#5BAFF4");
         JEditorPane editorPane = new JEditorPane("text/html", html);
         editorPane.setEditable(false);
-        editorPane.setOpaque(true);
-        editorPane.setBackground(Color.WHITE);
+        editorPane.setOpaque(false);
+        editorPane.setBackground(UITheme.BG_PANEL);
+        editorPane.setForeground(UITheme.TEXT_BODY);
         editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         editorPane.setFont(UITheme.FONT_REGULAR);
         editorPane.setCaretPosition(0);
 
         JScrollPane scrollPane = new JScrollPane(editorPane);
+        UITheme.styleScrollPane(scrollPane);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.getViewport().setBackground(UITheme.BG_PANEL);
         add(scrollPane, BorderLayout.CENTER);
 
         // Footer với nút Đóng
-        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 10));
-        footerPanel.setBackground(UITheme.BG_CARD);
+        JPanel footerPanel = new GlassPanel(new FlowLayout(FlowLayout.RIGHT, 14, 10), UITheme.BG_CARD, 150);
         footerPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UITheme.BORDER_CARD));
 
         JButton btnClose = new JButton("Đã hiểu");
-        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
+        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
         btnClose.setPreferredSize(new Dimension(100, 34));
         btnClose.addActionListener(e -> dispose());
         footerPanel.add(btnClose);
