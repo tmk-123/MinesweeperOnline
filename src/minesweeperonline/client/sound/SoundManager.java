@@ -1,21 +1,31 @@
 package minesweeperonline.client.sound;
 
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.IOException;
+import java.net.URL;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
  * Trình quản lý âm thanh thuần Java JDK (javax.sound.sampled.Clip).
- * Tự động tổng hợp sóng âm (PCM in-memory synthesis) - không phụ thuộc file .wav ngoài,
- * không cần thư viện bên thứ ba, đảm bảo 100% tương thích và không bị lỗi thiếu file.
+ * Hiệu ứng được tổng hợp trong bộ nhớ; nhạc nền WAV được nạp từ tài nguyên ứng dụng.
+ * Không cần thư viện bên thứ ba. Lỗi âm thanh không làm gián đoạn game.
  */
 public class SoundManager {
 
     private static final float SAMPLE_RATE = 44100.0f;
     private static final AudioFormat AUDIO_FORMAT = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
+    private static final String BACKGROUND_MUSIC_RESOURCE =
+            "/minesweeperonline/client/sound/assets/a-tricky-puzzle.wav";
 
     private static final SoundManager INSTANCE = new SoundManager();
 
@@ -30,6 +40,10 @@ public class SoundManager {
     });
 
     private volatile boolean muted = false;
+    private volatile boolean musicMuted = false;
+    // 13% is approximately the previous background level of -18 dB.
+    private volatile int musicVolume = 13;
+    private final PropertyChangeSupport settingsChanges = new PropertyChangeSupport(this);
 
     // Cache các mảng byte âm thanh đã tổng hợp
     private byte[] dataClick;
@@ -48,6 +62,9 @@ public class SoundManager {
     private Clip clipTick;
     private Clip clipVictory;
     private Clip clipDefeat;
+    // Chỉ truy cập nhạc nền trên soundPool để tránh phát chồng hoặc tranh chấp khi tắt/bật.
+    private Clip backgroundMusic;
+    private boolean backgroundMusicEnabled;
 
     private SoundManager() {
         try {
@@ -63,12 +80,116 @@ public class SoundManager {
     }
 
     public void setMuted(boolean muted) {
+        boolean previous = this.muted;
         this.muted = muted;
+        soundPool.submit(() -> {
+            updateBackgroundMusic();
+            if (this.muted) {
+                for (Clip clip : clickClips) stopClip(clip);
+                for (Clip clip : new Clip[]{clipFlag, clipExplosion, clipTick, clipVictory, clipDefeat}) {
+                    stopClip(clip);
+                }
+            }
+        });
+        settingsChanges.firePropertyChange("muted", previous, muted);
     }
 
     public boolean toggleMute() {
-        this.muted = !this.muted;
+        setMuted(!muted);
         return this.muted;
+    }
+
+    public boolean isMusicMuted() {
+        return musicMuted;
+    }
+
+    public void setMusicMuted(boolean musicMuted) {
+        boolean previous = this.musicMuted;
+        this.musicMuted = musicMuted;
+        soundPool.submit(this::updateBackgroundMusic);
+        settingsChanges.firePropertyChange("musicMuted", previous, musicMuted);
+    }
+
+    public int getMusicVolume() {
+        return musicVolume;
+    }
+
+    public void setMusicVolume(int volume) {
+        int previous = musicVolume;
+        musicVolume = Math.max(0, Math.min(100, volume));
+        soundPool.submit(this::updateBackgroundMusic);
+        settingsChanges.firePropertyChange("musicVolume", previous, musicVolume);
+    }
+
+    public void addSettingsListener(PropertyChangeListener listener) {
+        settingsChanges.addPropertyChangeListener(listener);
+    }
+
+    public void removeSettingsListener(PropertyChangeListener listener) {
+        settingsChanges.removePropertyChangeListener(listener);
+    }
+
+    /** Nạp nhạc ngoài EDT, sau đó phát lặp xuyên suốt phiên client. */
+    public void startBackgroundMusic() {
+        soundPool.submit(() -> {
+            backgroundMusicEnabled = true;
+            if (backgroundMusic == null) {
+                backgroundMusic = loadBackgroundMusic();
+            }
+            updateBackgroundMusic();
+        });
+    }
+
+    public void stopBackgroundMusic() {
+        soundPool.submit(() -> {
+            backgroundMusicEnabled = false;
+            updateBackgroundMusic();
+        });
+    }
+
+    private void updateBackgroundMusic() {
+        if (backgroundMusic == null) return;
+        applyMusicVolume();
+        if (backgroundMusicEnabled && !muted && !musicMuted && musicVolume > 0) {
+            if (!backgroundMusic.isRunning()) {
+                backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY);
+            }
+        } else {
+            // Giữ vị trí hiện tại để bật lại tiếp tục đoạn nhạc đang nghe.
+            backgroundMusic.stop();
+        }
+    }
+
+    private void applyMusicVolume() {
+        if (backgroundMusic == null || musicVolume == 0) return;
+        if (backgroundMusic.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+            FloatControl gain = (FloatControl) backgroundMusic.getControl(FloatControl.Type.MASTER_GAIN);
+            float decibels = (float) (20.0 * Math.log10(musicVolume / 100.0));
+            gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), decibels)));
+        } else if (backgroundMusic.isControlSupported(FloatControl.Type.VOLUME)) {
+            FloatControl volume = (FloatControl) backgroundMusic.getControl(FloatControl.Type.VOLUME);
+            volume.setValue(Math.max(volume.getMinimum(), Math.min(volume.getMaximum(), musicVolume / 100.0f)));
+        }
+    }
+
+    private Clip loadBackgroundMusic() {
+        URL resource = SoundManager.class.getResource(BACKGROUND_MUSIC_RESOURCE);
+        if (resource == null) {
+            System.err.println("[SoundManager] Background music resource not found: " + BACKGROUND_MUSIC_RESOURCE);
+            return null;
+        }
+
+        Clip clip = null;
+        try (AudioInputStream stream = AudioSystem.getAudioInputStream(resource)) {
+            clip = AudioSystem.getClip();
+            clip.open(stream);
+            return clip;
+        } catch (IOException | UnsupportedAudioFileException | LineUnavailableException
+                | IllegalArgumentException | SecurityException e) {
+            if (clip != null) clip.close();
+            System.err.println("[SoundManager] Background music could not be opened: " + e.getMessage());
+            return null;
+        }
     }
 
     // --- Các phương thức phát âm thanh công khai ---
@@ -76,6 +197,7 @@ public class SoundManager {
     public void playClick() {
         if (muted) return;
         soundPool.submit(() -> {
+            if (muted) return;
             try {
                 synchronized (clickClips) {
                     Clip c = clickClips[clickClipIndex];
@@ -113,6 +235,7 @@ public class SoundManager {
     private void playClip(Clip clip) {
         if (muted || clip == null) return;
         soundPool.submit(() -> {
+            if (muted) return;
             try {
                 synchronized (clip) {
                     if (clip.isRunning()) clip.stop();
@@ -121,6 +244,10 @@ public class SoundManager {
                 }
             } catch (Throwable ignored) {}
         });
+    }
+
+    private void stopClip(Clip clip) {
+        if (clip != null && clip.isRunning()) clip.stop();
     }
 
     // --- Khởi tạo và tổng hợp âm thanh bằng thuật toán ---
@@ -206,34 +333,33 @@ public class SoundManager {
     }
 
     /**
-     * Tiếng bom nổ (Boom trầm 550ms: White noise + sóng rumble tần số thấp 75Hz)
+     * Tiếng bom: xung nổ nhanh, thân âm trầm hạ tần và đuôi nhiễu tắt dần.
+     * Biên độ có headroom và fade hai đầu để tránh rè/click trên loa nhỏ.
      */
     private byte[] synthesizeExplosion() {
-        double duration = 0.550;
+        double duration = 1.050;
         int numSamples = (int) (SAMPLE_RATE * duration);
         byte[] bytes = new byte[numSamples * 2];
-        double rumblePhase = 0.0;
-        double smoothNoise = 0.0;
+        Random random = new Random(2209L);
+        double phase = 0.0;
+        double lowNoise = 0.0;
+        double bodyNoise = 0.0;
 
         for (int i = 0; i < numSamples; i++) {
             double t = (double) i / SAMPLE_RATE;
-            double progress = t / duration;
-
-            // Nhiễu trắng được làm mượt (low-pass filter)
-            double rawNoise = Math.random() * 2.0 - 1.0;
-            smoothNoise = 0.82 * smoothNoise + 0.18 * rawNoise;
-
-            // Sóng rumble âm trầm 75Hz quét xuống 45Hz
-            double rumbleFreq = 75.0 - 30.0 * progress;
-            rumblePhase += 2.0 * Math.PI * rumbleFreq / SAMPLE_RATE;
-            double rumble = Math.sin(rumblePhase);
-
-            double amp = Math.exp(-4.8 * progress);
-            double sample = (smoothNoise * 0.70 + rumble * 0.45) * amp;
-
-            // Bão hòa mềm (soft-saturation) tạo cảm giác đập mạnh
-            sample = Math.tanh(sample * 1.8);
-
+            double noise = random.nextDouble() * 2.0 - 1.0;
+            lowNoise += 0.035 * (noise - lowNoise);
+            bodyNoise += 0.22 * (noise - bodyNoise);
+            double frequency = 42.0 + 105.0 * Math.exp(-t * 18.0);
+            phase += 2.0 * Math.PI * frequency / SAMPLE_RATE;
+            double crack = (noise - bodyNoise) * Math.exp(-t * 65.0) * 0.52;
+            double body = bodyNoise * Math.exp(-t * 8.0) * 1.35;
+            double thump = (Math.sin(phase) + 0.25 * Math.sin(phase * 1.7))
+                    * Math.exp(-t * 9.0) * 0.62;
+            double debris = lowNoise * Math.exp(-t * 4.8) * 1.8;
+            double attack = Math.min(1.0, t / 0.0015);
+            double release = Math.min(1.0, (duration - t) / 0.08);
+            double sample = 0.88 * Math.tanh(crack + body + thump + debris) * attack * release;
             writeSample(bytes, i * 2, sample);
         }
         return bytes;

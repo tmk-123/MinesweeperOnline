@@ -26,8 +26,10 @@ public class OpponentMiniBoardPanel extends JPanel {
 
     public OpponentMiniBoardPanel() {
         setPreferredSize(new Dimension(COLS * CELL_SIZE + 24, ROWS * CELL_SIZE + 45));
-        setBorder(BorderFactory.createTitledBorder("Bàn đối thủ (Trực tiếp)"));
-        setBackground(new Color(245, 247, 250));
+        setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD),
+                "Bàn đối thủ (Trực tiếp)", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
+                javax.swing.border.TitledBorder.DEFAULT_POSITION, UITheme.FONT_SMALL_BOLD, UITheme.TEXT_TITLE));
+        setBackground(UITheme.BG_CARD);
     }
 
     public void resetBoard() {
@@ -99,19 +101,19 @@ public class OpponentMiniBoardPanel extends JPanel {
 
                 if (state == STATE_OPENED) {
                     // Ô an toàn đã mở
-                    g2.setColor(new Color(220, 224, 230));
+                    g2.setColor(new Color(211, 222, 227));
                     g2.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-                    g2.setColor(new Color(180, 190, 200));
+                    g2.setColor(new Color(150, 169, 178));
                     g2.drawRect(x, y, CELL_SIZE, CELL_SIZE);
 
-                    g2.setColor(new Color(100, 160, 220));
+                    g2.setColor(UITheme.COLOR_BLUE);
                     g2.fillOval(x + CELL_SIZE / 2 - 2, y + CELL_SIZE / 2 - 2, 4, 4);
 
                 } else if (state == STATE_FLAGGED) {
                     // Ô đã cắm cờ
-                    g2.setColor(new Color(255, 230, 230));
+                    g2.setColor(new Color(70, 37, 40));
                     g2.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-                    g2.setColor(new Color(220, 140, 140));
+                    g2.setColor(new Color(131, 69, 73));
                     g2.drawRect(x, y, CELL_SIZE, CELL_SIZE);
 
                     // Lá cờ đỏ thu nhỏ
@@ -119,15 +121,15 @@ public class OpponentMiniBoardPanel extends JPanel {
                     int[] xPoints = {x + 5, x + 13, x + 5};
                     int[] yPoints = {y + 4, y + 8, y + 12};
                     g2.fillPolygon(xPoints, yPoints, 3);
-                    g2.setColor(new Color(50, 50, 50));
+                    g2.setColor(UITheme.TEXT_BODY);
                     g2.drawLine(x + 5, y + 3, x + 5, y + 14);
                     g2.drawLine(x + 3, y + 14, x + 7, y + 14);
 
                 } else {
                     // Ô chưa mở
-                    g2.setColor(new Color(195, 205, 218));
+                    g2.setColor(new Color(70, 84, 94));
                     g2.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-                    g2.setColor(new Color(160, 175, 192));
+                    g2.setColor(new Color(48, 63, 72));
                     g2.drawRect(x, y, CELL_SIZE, CELL_SIZE);
                 }
             }

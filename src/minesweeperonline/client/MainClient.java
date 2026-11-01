@@ -1,6 +1,7 @@
 package minesweeperonline.client;
 
 import minesweeperonline.client.network.ServerConnection;
+import minesweeperonline.client.sound.SoundManager;
 import minesweeperonline.client.ui.LoginFrame;
 import minesweeperonline.server.ServerConfig;
 
@@ -22,11 +23,13 @@ public class MainClient {
     }
 
     public void launch() {
+        SoundManager.getInstance().startBackgroundMusic();
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ignored) {
             }
+            minesweeperonline.client.ui.UITheme.installDefaults();
 
             connectAndOpenLogin();
         });

@@ -10,12 +10,12 @@ import java.awt.*;
  * - Quy tắc tính điểm, tiêu chí Bảng xếp hạng và các mốc Cấp bậc
  * - Thao tác điều khiển chuột và mẹo chơi
  */
-public class HelpDialog extends JDialog {
+public class HelpDialog extends InfoFrame {
 
     private final int initialTabIndex;
 
     public HelpDialog(Frame owner, int initialTabIndex) {
-        super(owner, "Hướng Dẫn & Luật Chơi - Minesweeper Online", false);
+        super(owner, "Hướng Dẫn & Luật Chơi - Minesweeper Online");
         this.initialTabIndex = initialTabIndex;
 
         initComponents();
@@ -26,15 +26,12 @@ public class HelpDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(780, 560);
-        setMinimumSize(new Dimension(650, 480));
-        setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(0, 0));
-        getContentPane().setBackground(UITheme.BG_MAIN);
+        UITheme.configureWindow(this, 940, 680, 700, 500);
+        setLocationRelativeTo(getParentFrame());
+        setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(0, 0)));
 
         // Header phía trên
-        JPanel headerPanel = new JPanel(new BorderLayout(5, 4));
-        headerPanel.setBackground(UITheme.BG_CARD);
+        JPanel headerPanel = new GlassPanel(new BorderLayout(5, 4), UITheme.BG_CARD, 95);
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UITheme.BORDER_CARD),
                 new EmptyBorder(14, 20, 12, 20)
@@ -55,29 +52,31 @@ public class HelpDialog extends JDialog {
         // TabbedPane ở giữa
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(UITheme.FONT_BOLD);
-        tabbedPane.setBackground(Color.WHITE);
 
-        tabbedPane.addTab("  🎮 Thể thức & Luật chơi  ", createRulesTab());
-        tabbedPane.addTab("  🏆 Điểm số & Cấp bậc  ", createRankTab());
-        tabbedPane.addTab("  🖱️ Thao tác & Mẹo chơi  ", createControlsTab());
+        tabbedPane.addTab("  Thể thức & Luật chơi  ", createRulesTab());
+        tabbedPane.addTab("  Điểm số & Cấp bậc  ", createRankTab());
+        tabbedPane.addTab("  Thao tác & Mẹo chơi  ", createControlsTab());
+        UITheme.styleTabbedPane(tabbedPane);
 
         if (initialTabIndex >= 0 && initialTabIndex < tabbedPane.getTabCount()) {
             tabbedPane.setSelectedIndex(initialTabIndex);
         }
 
-        JPanel centerContainer = new JPanel(new BorderLayout());
+        JPanel centerContainer = new GlassPanel(new BorderLayout(), UITheme.BG_MAIN, 64);
         centerContainer.setBorder(new EmptyBorder(10, 14, 10, 14));
-        centerContainer.setBackground(UITheme.BG_MAIN);
         centerContainer.add(tabbedPane, BorderLayout.CENTER);
         add(centerContainer, BorderLayout.CENTER);
 
         // Footer với nút Đóng
-        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 10));
-        footerPanel.setBackground(UITheme.BG_CARD);
+        JPanel footerPanel = new GlassPanel(new FlowLayout(FlowLayout.RIGHT, 14, 10), UITheme.BG_CARD, 150);
         footerPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UITheme.BORDER_CARD));
+        JLabel sizeHint = new JLabel("F11: Phóng to / Thu gọn");
+        sizeHint.setFont(UITheme.FONT_SMALL);
+        sizeHint.setForeground(UITheme.TEXT_MUTED);
+        footerPanel.add(sizeHint);
 
         JButton btnClose = new JButton("Đã hiểu");
-        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, Color.WHITE);
+        UITheme.styleButton(btnClose, UITheme.COLOR_PRIMARY, UITheme.COLOR_PRIMARY_HOVER, new Color(28, 25, 20));
         btnClose.setPreferredSize(new Dimension(100, 34));
         btnClose.addActionListener(e -> dispose());
         footerPanel.add(btnClose);
@@ -86,30 +85,31 @@ public class HelpDialog extends JDialog {
     }
 
     private JComponent createRulesTab() {
-        String html = "<html><body style='font-family: Segoe UI, Arial, sans-serif; font-size: 13px; color: #1E293B; margin: 12px; line-height: 1.5;'>"
-                + "<h2 style='color: #1D4ED8; margin-top: 0;'>1. Tổng quan Trận đấu Đối Kháng 1v1</h2>"
+        String html = "<html><body style='color: #CBD6DC; margin: 12px; line-height: 1.5;'>"
+                + "<h2 style='color: #F6B842; margin-top: 0;'>1. Tổng quan Trận đấu Đối Kháng 1v1</h2>"
                 + "<p>Minesweeper Online là tựa game dò mìn thi đấu đối kháng trực tuyến thời gian thực giữa 2 người chơi qua giao thức mạng TCP Socket.</p>"
-                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #CBD5E1; background: #F8FAFC; margin-bottom: 12px;'>"
-                + "  <tr><td style='border-bottom: 1px solid #E2E8F0;'><b>Kích thước bàn cờ:</b></td><td style='border-bottom: 1px solid #E2E8F0;'><b>12 hàng x 12 cột</b> (Tổng cộng 144 ô)</td></tr>"
-                + "  <tr><td style='border-bottom: 1px solid #E2E8F0;'><b>Số lượng mìn ẩn:</b></td><td style='border-bottom: 1px solid #E2E8F0;'><span style='color: #DC2626; font-weight: bold;'>23 quả mìn</span> được rải ngẫu nhiên</td></tr>"
-                + "  <tr><td style='border-bottom: 1px solid #E2E8F0;'><b>Tổng số ô an toàn:</b></td><td style='border-bottom: 1px solid #E2E8F0;'><span style='color: #059669; font-weight: bold;'>121 ô an toàn</span> cần mở để hoàn thành</td></tr>"
+                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #344550; background: #101A22; margin-bottom: 12px;'>"
+                + "  <tr><td style='border-bottom: 1px solid #2C3B46;'><b>Kích thước bàn cờ:</b></td><td style='border-bottom: 1px solid #2C3B46;'><b>12 hàng x 12 cột</b> (Tổng cộng 144 ô)</td></tr>"
+                + "  <tr><td style='border-bottom: 1px solid #2C3B46;'><b>Số lượng mìn ẩn:</b></td><td style='border-bottom: 1px solid #2C3B46;'><span style='color: #F55B5E; font-weight: bold;'>23 quả mìn</span> được rải ngẫu nhiên</td></tr>"
+                + "  <tr><td style='border-bottom: 1px solid #2C3B46;'><b>Tổng số ô an toàn:</b></td><td style='border-bottom: 1px solid #2C3B46;'><span style='color: #47C5A4; font-weight: bold;'>121 ô an toàn</span> cần mở để hoàn thành</td></tr>"
                 + "  <tr><td><b>Thời gian thi đấu:</b></td><td><b>5 phút (300 giây)</b> đếm ngược</td></tr>"
                 + "</table>"
 
-                + "<h2 style='color: #1D4ED8; margin-top: 14px;'>2. Điều kiện Thắng - Thua</h2>"
+                + "<h2 style='color: #F6B842; margin-top: 14px;'>2. Điều kiện Thắng - Thua</h2>"
                 + "<ul style='padding-left: 20px;'>"
-                + "  <li><b>💥 Mở trúng mìn:</b> Người chơi nào nhấp phải ô có mìn sẽ <span style='color: #DC2626; font-weight: bold;'>Thua ngay lập tức</span>. Đối thủ giành chiến thắng.</li>"
-                + "  <li><b>🏁 Mở sạch 121 ô an toàn:</b> Người chơi mở hết toàn bộ 121 ô an toàn trước sẽ giành <span style='color: #059669; font-weight: bold;'>Chiến thắng tuyệt đối</span>.</li>"
-                + "  <li><b>⏱️ Hết giờ (5 phút):</b> Hệ thống tự động so sánh số ô an toàn đã mở giữa 2 bên:"
+                + "  <li><b>Mở trúng mìn:</b> Người chơi nào nhấp phải ô có mìn sẽ <span style='color: #F55B5E; font-weight: bold;'>Thua ngay lập tức</span>. Đối thủ giành chiến thắng.</li>"
+                + "  <li><b>Mở sạch 121 ô an toàn:</b> Người chơi mở hết toàn bộ 121 ô an toàn trước sẽ giành <span style='color: #47C5A4; font-weight: bold;'>Chiến thắng tuyệt đối</span>.</li>"
+                + "  <li><b>Hết giờ (5 phút):</b> Hệ thống tự động so sánh số ô an toàn đã mở giữa 2 bên:"
                 + "    <ul>"
                 + "      <li>Ai mở được <b>nhiều ô an toàn hơn</b> sẽ Thắng.</li>"
-                + "      <li>Nếu số ô an toàn bằng nhau: Tính kết quả <b>Hòa</b>.</li>"
+                + "      <li>Nếu bằng số ô an toàn: ưu tiên <b>ít thao tác hơn</b>, sau đó <b>nhiều cờ hơn</b>.</li>"
+                + "      <li>Hòa khi cả ba chỉ số trên đều bằng nhau.</li>"
                 + "    </ul>"
                 + "  </li>"
-                + "  <li><b>🏃 Rời trận / Mất kết nối:</b> Người chơi thoát game hoặc mất mạng giữa trận sẽ bị xử <span style='color: #DC2626;'>Bỏ cuộc (Forfeit)</span> và bị phạt điểm nặng hơn.</li>"
+                + "  <li><b>Rời trận / Mất kết nối:</b> Người chơi thoát game hoặc mất mạng giữa trận sẽ bị xử <span style='color: #F55B5E;'>Bỏ cuộc (Forfeit)</span> và bị phạt điểm nặng hơn.</li>"
                 + "</ul>"
 
-                + "<h2 style='color: #1D4ED8; margin-top: 14px;'>3. Đồng bộ & Theo dõi đối thủ</h2>"
+                + "<h2 style='color: #F6B842; margin-top: 14px;'>3. Đồng bộ & Theo dõi đối thủ</h2>"
                 + "<p>Mỗi người chơi có bàn cờ riêng, nhưng trong suốt trận đấu, bạn có thể quan sát <b>thanh tiến độ</b> và <b>bàn cờ thu nhỏ</b> của đối thủ ở góc màn hình để nắm bắt tình hình và điều chỉnh nhịp độ thi đấu.</p>"
                 + "</body></html>";
 
@@ -117,62 +117,67 @@ public class HelpDialog extends JDialog {
     }
 
     private JComponent createRankTab() {
-        String html = "<html><body style='font-family: Segoe UI, Arial, sans-serif; font-size: 13px; color: #1E293B; margin: 12px; line-height: 1.5;'>"
-                + "<h2 style='color: #1D4ED8; margin-top: 0;'>1. Cơ chế Cộng / Trừ Điểm sau mỗi trận</h2>"
-                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #CBD5E1; background: #FFFFFF; margin-bottom: 12px;'>"
-                + "  <tr style='background: #F1F5F9; font-weight: bold;'>"
-                + "    <td style='border: 1px solid #CBD5E1;'>Kết quả</td>"
-                + "    <td style='border: 1px solid #CBD5E1;'>Điểm cộng / trừ</td>"
-                + "    <td style='border: 1px solid #CBD5E1;'>Ghi chú</td>"
+        String html = "<html><body style='color: #CBD6DC; margin: 12px; line-height: 1.5;'>"
+                + "<h2 style='color: #F6B842; margin-top: 0;'>1. Cơ chế Cộng / Trừ Điểm sau mỗi trận</h2>"
+                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #344550; background: #14212B; margin-bottom: 12px;'>"
+                + "  <tr style='background: #1D2B35; font-weight: bold;'>"
+                + "    <td style='border: 1px solid #344550;'>Kết quả</td>"
+                + "    <td style='border: 1px solid #344550;'>Điểm cộng / trừ</td>"
+                + "    <td style='border: 1px solid #344550;'>Ghi chú</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #059669;'>Chiến thắng (Victory)</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #059669;'>+5 điểm</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Mở sạch ô trước hoặc đối thủ dẫm mìn</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #47C5A4;'>Chiến thắng (Victory)</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #47C5A4;'>+5 điểm</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Mở sạch ô trước hoặc đối thủ dẫm mìn</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #D97706;'>Hòa trận (Draw)</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #D97706;'>+1 điểm</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Hết 5 phút và số ô mở ngang nhau</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F2A137;'>Hòa trận (Draw)</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F2A137;'>+1 điểm</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Hết giờ và cả ba chỉ số phân định đều bằng nhau</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #DC2626;'>Thất bại (Defeat)</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #DC2626;'>-3 điểm</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Dẫm phải mìn hoặc mở ít ô hơn khi hết giờ</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F55B5E;'>Thất bại (Defeat)</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F55B5E;'>-3 điểm</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Dẫm phải mìn hoặc mở ít ô hơn khi hết giờ</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #7F1D1D;'>Bỏ cuộc (Forfeit)</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #7F1D1D;'>-5 điểm</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Chủ động thoát trận hoặc ngắt kết nối</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F55B5E;'>Bỏ cuộc (Forfeit)</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F55B5E;'>-5 điểm</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Chủ động thoát trận hoặc ngắt kết nối</td>"
                 + "  </tr>"
                 + "</table>"
 
-                + "<h2 style='color: #1D4ED8; margin-top: 14px;'>2. Hệ thống Cấp bậc (Rank Tiers)</h2>"
-                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #CBD5E1; background: #FFFFFF; margin-bottom: 12px;'>"
-                + "  <tr style='background: #F1F5F9; font-weight: bold;'>"
-                + "    <td style='border: 1px solid #CBD5E1;'>Cấp bậc</td>"
-                + "    <td style='border: 1px solid #CBD5E1;'>Mốc điểm số</td>"
-                + "    <td style='border: 1px solid #CBD5E1;'>Đặc điểm</td>"
+                + "<h2 style='color: #F6B842; margin-top: 14px;'>2. Hệ thống Cấp bậc (Rank Tiers)</h2>"
+                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #344550; background: #14212B; margin-bottom: 12px;'>"
+                + "  <tr style='background: #1D2B35; font-weight: bold;'>"
+                + "    <td style='border: 1px solid #344550;'>Cấp bậc</td>"
+                + "    <td style='border: 1px solid #344550;'>Mốc điểm số</td>"
+                + "    <td style='border: 1px solid #344550;'>Đặc điểm</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #059669;'>🟢 Tập sự</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>0 – 29 điểm</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Bậc xếp hạng khởi đầu cho người chơi mới</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F2A137;'>Tập sự</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>0 – 49 điểm</td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Bậc xếp hạng khởi đầu</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #2563EB;'>🔵 Chiến binh</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>30 – 69 điểm</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Đã tích lũy kinh nghiệm và có tỉ lệ thắng tốt</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #CBD6DC;'>Bình nhì</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>50 – 199 điểm</td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Bắt đầu tích lũy thành tích thi đấu</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #7C3AED;'>🟣 Cao thủ</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>70 – 149 điểm</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Gỡ mìn tốc độ cao, khả năng phán đoán sắc bén</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #5BAFF4;'>Chiến binh</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>200 – 499 điểm</td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Đã có kinh nghiệm đối kháng</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #D97706;'>🟡 Đại kiện tướng</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Từ 150 điểm trở lên</td>"
-                + "    <td style='border: 1px solid #E2E8F0;'>Đỉnh cao kỹ năng, thuộc nhóm cao thủ hàng đầu</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #A484DF;'>Cao thủ</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>500 – 999 điểm</td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Nhóm người chơi dẫn đầu</td>"
+                + "  </tr>"
+                + "  <tr>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #F6B842;'>Huyền thoại</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Từ 1000 điểm</td>"
+                + "    <td style='border: 1px solid #2C3B46;'>Cấp bậc cao nhất</td>"
                 + "  </tr>"
                 + "</table>"
                 + "</body></html>";
@@ -181,12 +186,12 @@ public class HelpDialog extends JDialog {
     }
 
     private JComponent createControlsTab() {
-        String html = "<html><body style='font-family: Segoe UI, Arial, sans-serif; font-size: 13px; color: #1E293B; margin: 12px; line-height: 1.5;'>"
-                + "<h2 style='color: #1D4ED8; margin-top: 0;'>1. Thao tác Chuột trong ván đấu</h2>"
-                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #CBD5E1; background: #F8FAFC; margin-bottom: 12px;'>"
+        String html = "<html><body style='color: #CBD6DC; margin: 12px; line-height: 1.5;'>"
+                + "<h2 style='color: #F6B842; margin-top: 0;'>1. Thao tác Chuột trong ván đấu</h2>"
+                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #344550; background: #101A22; margin-bottom: 12px;'>"
                 + "  <tr>"
-                + "    <td style='border-bottom: 1px solid #E2E8F0; width: 150px;'><b>🖱️ Chuột Trái (Left Click):</b></td>"
-                + "    <td style='border-bottom: 1px solid #E2E8F0;'>"
+                + "    <td style='border-bottom: 1px solid #2C3B46; width: 150px;'><b>Chuột Trái (Left Click):</b></td>"
+                + "    <td style='border-bottom: 1px solid #2C3B46;'>"
                 + "      <b>Mở ô bí mật</b>.<br>"
                 + "      - Nếu là ô an toàn: Hiện số quả mìn xung quanh (từ 1 đến 8).<br>"
                 + "      - Nếu là ô trống (số 0): Tự động mở lan nhanh các ô an toàn lân cận.<br>"
@@ -194,7 +199,7 @@ public class HelpDialog extends JDialog {
                 + "    </td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td><b>🚩 Chuột Phải (Right Click):</b></td>"
+                + "    <td><b>Chuột Phải (Right Click):</b></td>"
                 + "    <td>"
                 + "      <b>Cắm cờ / Gỡ cờ</b>.<br>"
                 + "      - Đánh dấu ô mà bạn nghi ngờ có mìn để tránh vô tình bấm nhầm.<br>"
@@ -203,17 +208,17 @@ public class HelpDialog extends JDialog {
                 + "  </tr>"
                 + "</table>"
 
-                + "<h2 style='color: #1D4ED8; margin-top: 14px;'>2. Ý nghĩa con số trên ô</h2>"
+                + "<h2 style='color: #F6B842; margin-top: 14px;'>2. Ý nghĩa con số trên ô</h2>"
                 + "<ul style='padding-left: 20px;'>"
                 + "  <li>Số hiển thị trên mỗi ô đã mở (từ 1 đến 8) đại diện cho <b>chính xác số quả mìn</b> nằm trong 8 ô tiếp giáp xung quanh nó.</li>"
                 + "  <li>Ví dụ: Ô số <b>1</b> mà đã tiếp giáp 1 ô cắm cờ chắc chắn là mìn, thì 7 ô còn lại xung quanh đều là ô an toàn 100%!</li>"
                 + "</ul>"
 
-                + "<h2 style='color: #1D4ED8; margin-top: 14px;'>3. Chiến thuật & Mẹo thi đấu Đối kháng</h2>"
+                + "<h2 style='color: #F6B842; margin-top: 14px;'>3. Chiến thuật & Mẹo thi đấu Đối kháng</h2>"
                 + "<ul style='padding-left: 20px;'>"
-                + "  <li>🎯 <b>Chính xác quan trọng hơn tốc độ:</b> Chỉ một cú click sai vào mìn là bạn thua ngay và đối thủ thắng ván, do đó đừng bấm ẩu khi chưa chắc chắn.</li>"
-                + "  <li>👀 <b>Canh chừng thanh tiến độ đối thủ:</b> Nếu đối phương mở ô rất nhanh, bạn cần đẩy cao nhịp độ; nếu đối phương đang chậm, hãy cẩn thận giữ an toàn để không tự dẫm mìn.</li>"
-                + "  <li>🚩 <b>Cắm cờ chiến thuật:</b> Cắm cờ không chỉ tránh bấm nhầm mà còn giúp não bộ loại trừ ô nghi vấn nhanh hơn gấp nhiều lần.</li>"
+                + "  <li><b>Chính xác quan trọng hơn tốc độ:</b> Chỉ một cú click sai vào mìn là bạn thua ngay và đối thủ thắng ván, do đó đừng bấm ẩu khi chưa chắc chắn.</li>"
+                + "  <li><b>Canh chừng thanh tiến độ đối thủ:</b> Nếu đối phương mở ô rất nhanh, bạn cần đẩy cao nhịp độ; nếu đối phương đang chậm, hãy cẩn thận giữ an toàn để không tự dẫm mìn.</li>"
+                + "  <li><b>Cắm cờ chiến thuật:</b> Cắm cờ không chỉ tránh bấm nhầm mà còn giúp não bộ loại trừ ô nghi vấn nhanh hơn gấp nhiều lần.</li>"
                 + "</ul>"
                 + "</body></html>";
 
@@ -221,18 +226,6 @@ public class HelpDialog extends JDialog {
     }
 
     private JScrollPane createHtmlScrollPane(String html) {
-        JEditorPane editorPane = new JEditorPane("text/html", html);
-        editorPane.setEditable(false);
-        editorPane.setOpaque(true);
-        editorPane.setBackground(Color.WHITE);
-        editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        editorPane.setFont(UITheme.FONT_REGULAR);
-        editorPane.setCaretPosition(0);
-
-        JScrollPane scroll = new JScrollPane(editorPane);
-        scroll.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1));
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.getViewport().setBackground(Color.WHITE);
-        return scroll;
+        return UITheme.createHtmlScrollPane(html);
     }
 }
