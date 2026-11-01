@@ -30,10 +30,9 @@ public class LoginFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Đăng nhập");
-        setSize(920, 570);
+        UITheme.configureWindow(this, 960, 660, 860, 560);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
         getContentPane().setBackground(UITheme.BG_MAIN);
 
         JPanel mainPanel = new JPanel(new GridLayout(1, 2, 0, 0));
@@ -41,7 +40,7 @@ public class LoginFrame extends JFrame {
         mainPanel.add(new MinesweeperHeroPanel());
 
         JPanel formArea = new JPanel(new GridBagLayout());
-        formArea.setBorder(BorderFactory.createEmptyBorder(28, 34, 28, 34));
+        formArea.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         formArea.setBackground(UITheme.BG_MAIN);
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
@@ -49,7 +48,7 @@ public class LoginFrame extends JFrame {
                 BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1, true),
                 BorderFactory.createEmptyBorder(28, 30, 28, 30)));
         cardPanel.setBackground(UITheme.BG_CARD);
-        cardPanel.setPreferredSize(new Dimension(370, 370));
+        cardPanel.setPreferredSize(new Dimension(390, 440));
 
         JLabel lblEyebrow = new JLabel("01  •  ĐẤU TRƯỜNG ONLINE");
         lblEyebrow.setFont(UITheme.FONT_SMALL_BOLD);
@@ -109,8 +108,12 @@ public class LoginFrame extends JFrame {
         cardPanel.add(Box.createVerticalStrut(11));
         cardPanel.add(btnRegister);
         formArea.add(cardPanel);
-        mainPanel.add(formArea);
+        JScrollPane formScroll = new JScrollPane(formArea);
+        UITheme.styleScrollPane(formScroll);
+        formScroll.setBorder(null);
+        mainPanel.add(formScroll);
         add(mainPanel);
+        add(new AudioControlsPanel(), BorderLayout.SOUTH);
 
         // Gắn các action listener
         btnLogin.addActionListener(e -> performLogin());

@@ -32,7 +32,6 @@ public class GameFrame extends JFrame {
     private GameBoardPanel boardPanel;
     private OpponentMiniBoardPanel miniBoardPanel;
     private JLabel lblStatus;
-    private JButton btnSound;
     private JButton btnForfeit;
 
     private ResultDialog activeResultDialog;
@@ -51,6 +50,8 @@ public class GameFrame extends JFrame {
     private int oppSafeCells = 0;
     private int oppFlags = 0;
     private int oppActions = 0;
+    private boolean explosionPlayed;
+    private boolean gameEnded;
 
     private Rectangle normalBounds;
 
@@ -79,7 +80,7 @@ public class GameFrame extends JFrame {
             setBounds(initialNormalBounds);
             this.normalBounds = new Rectangle(initialNormalBounds);
         } else {
-            setSize(820, 740);
+            UITheme.configureWindow(this, 1060, 760, 820, 600);
             setLocationRelativeTo(null);
             this.normalBounds = getBounds();
         }
@@ -124,7 +125,15 @@ public class GameFrame extends JFrame {
         boardPanel = new GameBoardPanel(connection, gameId);
         miniBoardPanel = new OpponentMiniBoardPanel();
 
-        boardsContainer.add(boardPanel, BorderLayout.CENTER);
+        JPanel boardArea = new JPanel(null) {
+            @Override public void doLayout() {
+                int side = Math.min(getWidth(), getHeight());
+                boardPanel.setBounds((getWidth() - side) / 2, (getHeight() - side) / 2, side, side);
+            }
+        };
+        boardArea.setOpaque(false);
+        boardArea.add(boardPanel);
+        boardsContainer.add(boardArea, BorderLayout.CENTER);
         boardsContainer.add(miniBoardPanel, BorderLayout.EAST);
         mainPanel.add(boardsContainer, BorderLayout.CENTER);
 
@@ -147,32 +156,24 @@ public class GameFrame extends JFrame {
         JPanel actionControlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         actionControlPanel.setOpaque(false);
 
-        btnSound = new JButton(SoundManager.getInstance().isMuted() ? "Âm thanh: Tắt" : "Âm thanh: Bật");
-        UITheme.styleOutlineButton(btnSound, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_BODY);
-        btnSound.addActionListener(e -> {
-            boolean muted = SoundManager.getInstance().toggleMute();
-            btnSound.setText(muted ? "Âm thanh: Tắt" : "Âm thanh: Bật");
-            if (!muted) {
-                SoundManager.getInstance().playClick();
-            }
-        });
-
         btnForfeit = new JButton("Đầu hàng");
         UITheme.styleButton(btnForfeit, new Color(83, 39, 44), new Color(112, 47, 52), new Color(255, 224, 224));
         btnForfeit.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Bạn có chắc chắn muốn đầu hàng không?\n(Bạn sẽ bị xử thua và trừ 5 điểm)",
-                    "Xác nhận đầu hàng", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (confirm == JOptionPane.YES_OPTION) {
+            Object[] options = {"Đầu hàng", "Tiếp tục chơi"};
+            int confirm = JOptionPane.showOptionDialog(this,
+                    "Bạn có chắc chắn muốn đầu hàng không?\nBạn sẽ bị xử thua và trừ 5 điểm.",
+                    "Xác nhận đầu hàng", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+                    null, options, options[1]);
+            if (confirm == 0) {
                 connection.sendMessage(JsonProtocol.createForfeit(gameId));
             }
         });
 
-        actionControlPanel.add(btnSound);
+        actionControlPanel.add(new AudioControlsPanel());
         actionControlPanel.add(btnForfeit);
 
-        southPanel.add(statusPanel, BorderLayout.CENTER);
-        southPanel.add(actionControlPanel, BorderLayout.EAST);
+        southPanel.add(statusPanel, BorderLayout.NORTH);
+        southPanel.add(actionControlPanel, BorderLayout.CENTER);
         mainPanel.add(southPanel, BorderLayout.SOUTH);
 
         add(mainPanel);
@@ -343,7 +344,7 @@ public class GameFrame extends JFrame {
         infoPanel.updateSelfStats(mySafeCells, myFlags, myActions);
 
         if (exploded) {
-            SoundManager.getInstance().playExplosion();
+            playExplosionOnce();
         } else {
             SoundManager.getInstance().playClick();
         }
@@ -405,20 +406,24 @@ public class GameFrame extends JFrame {
     }
 
     private void onGameEnd(String titleOutcome, JsonObject p, boolean isWin) {
+        if (gameEnded) return;
+        gameEnded = true;
         hideDisconnectOverlay();
+        if (readyCountdownTimer != null) readyCountdownTimer.stop();
         if (gameClock != null) gameClock.stop();
         if (opponentDisconnectTimer != null) opponentDisconnectTimer.stop();
         boardPanel.setInteractive(false);
         btnForfeit.setEnabled(false);
         setGameStatus("Trạng thái: KẾT THÚC", UITheme.TEXT_MUTED);
 
-        if (isWin) {
+        String reason = p.has("reason") ? p.get("reason").getAsString() : "Trận đấu kết thúc.";
+        if (!isWin && isMineClickLoss(reason)) {
+            playExplosionOnce();
+        } else if (isWin) {
             SoundManager.getInstance().playVictory();
         } else {
             SoundManager.getInstance().playDefeat();
         }
-
-        String reason = p.has("reason") ? p.get("reason").getAsString() : "Trận đấu kết thúc.";
 
         // Khi thua do click trúng mìn, GAME_LOSE không kèm CELL_OPENED.
         // Đối chiếu click đang chờ với danh sách mìn để giữ hiệu ứng nổ ở đúng ô.
@@ -463,8 +468,16 @@ public class GameFrame extends JFrame {
 
     private boolean isMineClickLoss(String reason) {
         if (reason == null) return false;
-        String normalized = reason.toLowerCase(java.util.Locale.ROOT);
+        String normalized = java.text.Normalizer.normalize(reason, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toLowerCase(java.util.Locale.ROOT);
         return normalized.contains("phai min") || normalized.contains("clicked_mine");
+    }
+
+    private void playExplosionOnce() {
+        if (!explosionPlayed) {
+            explosionPlayed = true;
+            SoundManager.getInstance().playExplosion();
+        }
     }
 
     @Override
@@ -601,12 +614,11 @@ public class GameFrame extends JFrame {
                     BorderFactory.createEmptyBorder(28, 40, 28, 40)
             ));
 
-            JLabel lblIcon = new JLabel("⚠️", SwingConstants.CENTER);
-            lblIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 46));
+            JLabel lblIcon = new JLabel(UIManager.getIcon("OptionPane.warningIcon"), SwingConstants.CENTER);
             lblIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
 
             JLabel lblTitle = new JLabel("ĐỐI THỦ BỊ MẤT KẾT NỐI", SwingConstants.CENTER);
-            lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            lblTitle.setFont(UITheme.FONT_BOLD.deriveFont(20f));
             lblTitle.setForeground(UITheme.COLOR_DANGER);
             lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -625,7 +637,7 @@ public class GameFrame extends JFrame {
             countdownBox.setAlignmentX(Component.CENTER_ALIGNMENT);
 
             lblCountdown = new JLabel("15s", SwingConstants.CENTER);
-            lblCountdown.setFont(new Font("Segoe UI", Font.BOLD, 42));
+            lblCountdown.setFont(UITheme.FONT_BOLD.deriveFont(42f));
             lblCountdown.setForeground(UITheme.COLOR_PRIMARY);
             countdownBox.add(lblCountdown);
 

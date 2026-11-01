@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Dialog bảng xếp hạng cao thủ, hiển thị cố định thứ hạng theo điểm số và số trận thắng.
  */
-public class LeaderboardDialog extends JDialog {
+public class LeaderboardDialog extends InfoFrame {
 
     private final ServerConnection connection;
     private final String currentUsername;
@@ -23,7 +23,7 @@ public class LeaderboardDialog extends JDialog {
     private JLabel lblStatus;
 
     public LeaderboardDialog(Frame owner, ServerConnection connection, String currentUsername) {
-        super(owner, "Bảng Xếp Hạng - Minesweeper Online", false);
+        super(owner, "Bảng Xếp Hạng - Minesweeper Online");
         this.connection = connection;
         this.currentUsername = currentUsername;
 
@@ -32,8 +32,8 @@ public class LeaderboardDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(980, 570);
-        setLocationRelativeTo(getOwner());
+        UITheme.configureWindow(this, 1080, 660, 800, 500);
+        setLocationRelativeTo(getParentFrame());
         setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(8, 8)));
 
         // Phần tiêu đề phía trên
@@ -57,25 +57,19 @@ public class LeaderboardDialog extends JDialog {
         };
 
         table = new JTable(tableModel);
-        UITheme.styleTable(table);
+        UITheme.styleCompactTable(table, 48, 112, 102, 52, 55, 55, 63);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        // Độ rộng các cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(82);
-        table.getColumnModel().getColumn(1).setPreferredWidth(130);
-        table.getColumnModel().getColumn(2).setPreferredWidth(112);
-        table.getColumnModel().getColumn(3).setPreferredWidth(75);
-        table.getColumnModel().getColumn(4).setPreferredWidth(95);
-        table.getColumnModel().getColumn(5).setPreferredWidth(80);
-        table.getColumnModel().getColumn(6).setPreferredWidth(90);
 
         // Cell renderer cố định theo thứ hạng chuẩn
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
+                setFont(t.getFont());
+                putClientProperty("html.disable", Boolean.TRUE);
+                setToolTipText(null);
                 setIcon(null);
-                setIconTextGap(5);
+                setIconTextGap(3);
                 setHorizontalAlignment(col == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
 
                 String nameInRow = (String) tableModel.getValueAt(row, 1);
@@ -86,7 +80,7 @@ public class LeaderboardDialog extends JDialog {
                 if (col == 0) {
                     setFont(getFont().deriveFont(Font.BOLD));
                     setText(String.format("%02d", rank));
-                    setIcon(GameUiIcons.podiumMedalIcon(rank, 20));
+                    setIcon(GameUiIcons.podiumMedalIcon(rank, 16));
                     if (!isSel) c.setForeground(rank == 1 ? UITheme.COLOR_PRIMARY : rank == 2 ? UITheme.COLOR_SILVER : rank == 3 ? UITheme.COLOR_BRONZE : UITheme.TEXT_MUTED);
                 } else if (col == 1) {
                     if (isCurrentUser) {
@@ -95,12 +89,12 @@ public class LeaderboardDialog extends JDialog {
                     } else {
                         setText(nameInRow);
                     }
+                    setToolTipText(getText());
                 } else if (col == 2) {
                     setFont(getFont().deriveFont(Font.BOLD, 12f));
                     if (val instanceof String) {
                         int score = (int) tableModel.getValueAt(row, 3);
-                        setIcon(GameUiIcons.rankTierIcon(score, 18));
-                        setIconTextGap(5);
+                        setIcon(GameUiIcons.rankTierIcon(score, 16));
                         setHorizontalAlignment(SwingConstants.LEFT);
                         if (!isSel) c.setForeground(UITheme.getRankColor(score));
                     }
@@ -131,6 +125,7 @@ public class LeaderboardDialog extends JDialog {
         }
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         UITheme.styleScrollPane(scrollPane);
         scrollPane.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD));
         scrollPane.getViewport().setBackground(UITheme.BG_PANEL);
@@ -150,12 +145,12 @@ public class LeaderboardDialog extends JDialog {
         bottomPanel.add(lblStatus, BorderLayout.WEST);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        btnPanel.setOpaque(false);
         JButton btnHelp = new JButton("? Quy tắc");
         UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
         btnHelp.setToolTipText("Xem các tiêu chí phân định thứ hạng trên bảng xếp hạng");
         btnHelp.addActionListener(e -> {
-            Frame ownerFrame = getOwner() instanceof Frame ? (Frame) getOwner() : null;
-            LeaderboardRulesDialog dialog = new LeaderboardRulesDialog(ownerFrame);
+            LeaderboardRulesDialog dialog = new LeaderboardRulesDialog(this);
             dialog.setVisible(true);
         });
 

@@ -346,3 +346,20 @@ Sau khi demo xong, có thể xóa quy tắc firewall: `Remove-NetFirewallRule -D
   - **Ghi chú**: Lý do kết thúc trận (Mở trúng mìn, Hết 5 phút thi đấu, Đầu hàng giữa chừng, Mất kết nối, Mở sạch 121 ô an toàn).
   - **Thống kê tổng kết**: Tự động tính tổng số trận, số trận thắng/thua/hòa và phần trăm tỉ lệ thắng tổng thể.
   - Nút **Làm mới** truy vấn trực tiếp từ cơ sở dữ liệu MySQL (kèm fallback bộ nhớ RAM khi chạy thử nghiệm).
+
+## 15. Nhạc nền
+
+- Client tự động phát lặp **A Tricky Puzzle Loop** của **3xBlast** với âm lượng nhỏ.
+- Nút **Âm thanh: Bật/Tắt** trong trận điều khiển cả nhạc nền và hiệu ứng. Bật lại sẽ tiếp tục đoạn nhạc đang nghe.
+- Thanh âm thanh ở màn hình đăng nhập, đăng ký, sảnh chờ và trong trận có nút **Nhạc nền: Bật/Tắt** riêng cùng thanh âm lượng **0–100%**. Kéo về 0% sẽ tắt tiếng nhạc; các lựa chọn được giữ khi chuyển màn hình trong cùng phiên client.
+- Nguồn: https://opengameart.org/content/a-tricky-puzzle-loop
+- Nhạc được sử dụng theo giấy phép [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/), giữ nguyên âm thanh gốc.
+- Thông tin ghi công và toàn văn giấy phép nằm trong [thư mục tài nguyên âm thanh](src/minesweeperonline/client/sound/assets/CREDITS.md), được đóng gói cùng JAR.
+
+## 16. Hiển thị và kích thước cửa sổ
+
+- Hướng dẫn, quy tắc xếp hạng, bảng xếp hạng và lịch sử đấu có nút phóng to trên thanh tiêu đề; **F11** chuyển giữa phóng to và kích thước thường.
+- Cửa sổ kết quả có nút **Phóng to / Thu gọn** và phím **F11**.
+- Đăng nhập và đăng ký cho phép thay đổi kích thước; nội dung có thanh cuộn khi không đủ chỗ.
+- Font tiếng Việt và màu các nút thông báo được dùng thống nhất. Bảng người chơi và bảng xếp hạng dùng cỡ chữ gọn, tự co cột vừa khung để hiện đủ cột cuối, không cần cuộn ngang. Tên dài hiện `...`; rê chuột vào tên để xem đầy đủ.
+- Khi mở trúng mìn, client phát tiếng nổ một lần, không chồng nhạc thua lên tiếng nổ.

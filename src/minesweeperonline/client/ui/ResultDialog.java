@@ -41,7 +41,7 @@ public class ResultDialog extends JDialog {
 
     private void initComponents(String titleOutcome, String reason, int scoreDelta,
                                 int openedSafe, int totalActions, int flagsPlaced) {
-        setSize(650, 420);
+        UITheme.configureWindow(this, 760, 480, 700, 430);
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout());
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -68,6 +68,7 @@ public class ResultDialog extends JDialog {
         lblOutcome.setFont(UITheme.FONT_LARGE_TITLE);
         lblOutcome.setForeground(outcomeColor);
         JLabel lblReason = new JLabel(reason);
+        lblReason.setToolTipText(reason);
         lblReason.setFont(UITheme.FONT_REGULAR);
         lblReason.setForeground(UITheme.TEXT_BODY);
         titleStack.add(lblOutcome);
@@ -102,7 +103,7 @@ public class ResultDialog extends JDialog {
         lblStatusRematch.setForeground(UITheme.COLOR_PRIMARY);
         southPanel.add(lblStatusRematch, BorderLayout.NORTH);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 5));
+        JPanel btnPanel = new JPanel(new WrapLayout(FlowLayout.CENTER, 16, 5));
         btnPanel.setOpaque(false);
 
         btnPlayAgain = new JButton("Chơi lại ván mới");
@@ -115,6 +116,7 @@ public class ResultDialog extends JDialog {
 
         btnPanel.add(btnPlayAgain);
         btnPanel.add(btnExit);
+        btnPanel.add(UITheme.createDialogSizeButton(this));
         southPanel.add(btnPanel, BorderLayout.SOUTH);
 
         mainPanel.add(southPanel, BorderLayout.SOUTH);
@@ -145,7 +147,7 @@ public class ResultDialog extends JDialog {
         lblTitle.setFont(UITheme.FONT_SMALL_BOLD);
         lblTitle.setForeground(UITheme.TEXT_MUTED);
         JLabel lblValue = new JLabel(value, SwingConstants.CENTER);
-        lblValue.setFont(new Font("Segoe UI", Font.BOLD, 23));
+        lblValue.setFont(UITheme.FONT_BOLD.deriveFont(23f));
         lblValue.setForeground(valueColor);
         JLabel lblNote = new JLabel(note, SwingConstants.CENTER);
         lblNote.setFont(UITheme.FONT_SMALL);

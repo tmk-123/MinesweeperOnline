@@ -33,7 +33,7 @@ public class PlayerInfoPanel extends JPanel {
         caption.setForeground(UITheme.TEXT_MUTED);
         caption.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblMatchTimer = new JLabel("05:00", SwingConstants.CENTER);
-        lblMatchTimer.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        lblMatchTimer.setFont(UITheme.FONT_BOLD.deriveFont(32f));
         lblMatchTimer.setForeground(UITheme.COLOR_PRIMARY);
         lblMatchTimer.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblMatchStatus = new JLabel("SẮP BẮT ĐẦU", SwingConstants.CENTER);

@@ -10,9 +10,14 @@ import javax.swing.table.JTableHeader;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
+import javax.swing.plaf.FontUIResource;
+import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.HierarchyEvent;
 
 /** Shared dark steel and gold presentation for the Minesweeper client. */
 public final class UITheme {
@@ -47,15 +52,38 @@ public final class UITheme {
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.max(0, Math.min(255, alpha)));
     }
 
-    public static final Font FONT_LARGE_TITLE = new Font("Segoe UI", Font.BOLD, 22);
-    public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 15);
-    public static final Font FONT_BOLD = new Font("Segoe UI", Font.BOLD, 13);
-    public static final Font FONT_REGULAR = new Font("Segoe UI", Font.PLAIN, 13);
-    public static final Font FONT_SMALL = new Font("Segoe UI", Font.PLAIN, 12);
-    public static final Font FONT_SMALL_BOLD = new Font("Segoe UI", Font.BOLD, 12);
+    private static final String FONT_FAMILY = selectFontFamily();
+    public static final Font FONT_LARGE_TITLE = new Font(FONT_FAMILY, Font.BOLD, 24);
+    public static final Font FONT_TITLE = new Font(FONT_FAMILY, Font.BOLD, 16);
+    public static final Font FONT_BOLD = new Font(FONT_FAMILY, Font.BOLD, 14);
+    public static final Font FONT_REGULAR = new Font(FONT_FAMILY, Font.PLAIN, 14);
+    public static final Font FONT_SMALL = new Font(FONT_FAMILY, Font.PLAIN, 13);
+    public static final Font FONT_SMALL_BOLD = new Font(FONT_FAMILY, Font.BOLD, 13);
+
+    private static String selectFontFamily() {
+        String sample = "Tiếng Việt: Đăng nhập, Hướng dẫn, Đầu hàng, Ắ Ằ Ễ Ộ Ử Ỹ";
+        for (String family : new String[]{"Segoe UI", "Arial", Font.SANS_SERIF}) {
+            Font font = new Font(family, Font.PLAIN, 14);
+            if (font.canDisplayUpTo(sample) == -1) return font.getFamily();
+        }
+        return Font.DIALOG;
+    }
 
     /** Installs colors for Swing controls that use UI defaults instead of explicit component styling. */
     public static void installDefaults() {
+        // Native controls otherwise keep unrelated fonts and bright button backgrounds.
+        for (Object key : UIManager.getDefaults().keySet().toArray()) {
+            if (UIManager.get(key) instanceof Font) {
+                UIManager.put(key, new FontUIResource(FONT_REGULAR));
+            }
+        }
+        UIManager.put("OptionPaneUI", ThemedOptionPaneUI.class.getName());
+        UIManager.put("OptionPane.messageFont", new FontUIResource(FONT_REGULAR));
+        UIManager.put("OptionPane.buttonFont", new FontUIResource(FONT_BOLD));
+        UIManager.put("OptionPane.yesButtonText", "Có");
+        UIManager.put("OptionPane.noButtonText", "Không");
+        UIManager.put("OptionPane.cancelButtonText", "Hủy");
+        UIManager.put("OptionPane.okButtonText", "Đồng ý");
         UIManager.put("Panel.background", BG_MAIN);
         UIManager.put("Panel.foreground", TEXT_BODY);
         UIManager.put("Label.foreground", TEXT_BODY);
@@ -84,6 +112,77 @@ public final class UITheme {
         UIManager.put("TabbedPane.darkShadow", BORDER_CARD);
         UIManager.put("ScrollPane.background", BG_PANEL);
         UIManager.put("Viewport.background", BG_PANEL);
+        UIManager.put("ToolTip.background", BG_ELEVATED);
+        UIManager.put("ToolTip.foreground", TEXT_TITLE);
+    }
+
+    /** Keep a usable minimum size while fitting the current monitor's work area. */
+    public static void configureWindow(Window window, int width, int height, int minWidth, int minHeight) {
+        GraphicsConfiguration config = window.getGraphicsConfiguration();
+        Rectangle area = new Rectangle(config.getBounds());
+        Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(config);
+        area.width -= insets.left + insets.right;
+        area.height -= insets.top + insets.bottom;
+        window.setMinimumSize(new Dimension(Math.min(minWidth, area.width), Math.min(minHeight, area.height)));
+        window.setSize(Math.min(width, area.width), Math.min(height, area.height));
+        if (window instanceof Frame frame) frame.setResizable(true);
+        if (window instanceof Dialog dialog) dialog.setResizable(true);
+    }
+
+    /** Dialogs have no native maximize button on Windows; expose the same action via F11. */
+    public static JButton createDialogSizeButton(JDialog dialog) {
+        JButton button = new JButton("Phóng to");
+        styleOutlineButton(button, BORDER_CARD, COLOR_SECONDARY_HOVER, TEXT_TITLE);
+        Rectangle[] restoredBounds = new Rectangle[1];
+        AbstractAction toggle = new AbstractAction() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent event) {
+                if (restoredBounds[0] == null) {
+                    restoredBounds[0] = dialog.getBounds();
+                    GraphicsConfiguration config = dialog.getGraphicsConfiguration();
+                    Rectangle area = new Rectangle(config.getBounds());
+                    Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(config);
+                    area.x += insets.left;
+                    area.y += insets.top;
+                    area.width -= insets.left + insets.right;
+                    area.height -= insets.top + insets.bottom;
+                    dialog.setBounds(area);
+                    button.setText("Thu gọn");
+                } else {
+                    dialog.setBounds(restoredBounds[0]);
+                    restoredBounds[0] = null;
+                    button.setText("Phóng to");
+                }
+            }
+        };
+        button.addActionListener(toggle);
+        button.setToolTipText("Phóng to / Thu gọn (F11)");
+        dialog.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke("F11"), "toggleMaximize");
+        dialog.getRootPane().getActionMap().put("toggleMaximize", toggle);
+        return button;
+    }
+
+    public static JScrollPane createHtmlScrollPane(String html) {
+        JEditorPane editor = new JEditorPane();
+        HTMLEditorKit kit = new HTMLEditorKit();
+        kit.getStyleSheet().addRule("body { color: #CBD6DC; margin: 16px; font-size: 12pt; }");
+        kit.getStyleSheet().addRule("h2 { font-size: 16pt; margin-top: 16px; margin-bottom: 8px; }");
+        kit.getStyleSheet().addRule("p, li { margin-top: 6px; margin-bottom: 8px; }");
+        editor.setEditorKit(kit);
+        editor.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        editor.setFont(FONT_REGULAR);
+        editor.setEditable(false);
+        editor.setBackground(BG_PANEL);
+        editor.setForeground(TEXT_BODY);
+        editor.setText(html);
+        editor.setCaretPosition(0);
+        JScrollPane scroll = new JScrollPane(editor);
+        styleScrollPane(scroll);
+        editor.setOpaque(true);
+        scroll.getViewport().setOpaque(true);
+        scroll.setBorder(BorderFactory.createLineBorder(BORDER_CARD));
+        scroll.getVerticalScrollBar().setUnitIncrement(24);
+        return scroll;
     }
 
     public static void styleButton(JButton btn, Color bg, Color hoverBg, Color fg) {
@@ -132,8 +231,20 @@ public final class UITheme {
     }
 
     public static void styleTable(JTable table) {
-        table.setRowHeight(34);
-        table.setFont(FONT_REGULAR);
+        styleTable(table, false);
+    }
+
+    /** Compact lobby tables always fit their viewport, including after data refreshes. */
+    public static void styleCompactTable(JTable table, int... columnWidths) {
+        styleTable(table, true);
+        for (int i = 0; i < columnWidths.length; i++) {
+            table.getColumnModel().getColumn(i).setPreferredWidth(columnWidths[i]);
+        }
+    }
+
+    private static void styleTable(JTable table, boolean compact) {
+        table.setRowHeight(compact ? 28 : 34);
+        table.setFont(compact ? FONT_REGULAR.deriveFont(12f) : FONT_REGULAR);
         table.setForeground(TEXT_BODY);
         table.setBackground(withAlpha(BG_PANEL, 178));
         table.setOpaque(false);
@@ -143,13 +254,32 @@ public final class UITheme {
         table.setShowGrid(true);
         table.setIntercellSpacing(new Dimension(1, 1));
         table.setFillsViewportHeight(true);
+        if (compact) {
+            // Never toggle resize modes on viewport resize: scrollbar visibility can
+            // otherwise trigger another layout and move the columns back and forth.
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        } else {
+            // Wider detail tables retain horizontal scrolling when necessary.
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            table.addHierarchyListener(event -> {
+                if ((event.getChangeFlags() & HierarchyEvent.PARENT_CHANGED) != 0
+                        && table.getParent() instanceof JViewport viewport) {
+                    viewport.addComponentListener(new ComponentAdapter() {
+                        @Override public void componentResized(ComponentEvent event) {
+                            fitTableColumns(table, viewport);
+                        }
+                    });
+                    SwingUtilities.invokeLater(() -> fitTableColumns(table, viewport));
+                }
+            });
+        }
         JTableHeader header = table.getTableHeader();
         header.setUI(new BasicTableHeaderUI());
-        header.setFont(FONT_BOLD);
+        header.setFont(table.getFont().deriveFont(Font.BOLD));
         header.setBackground(BG_ELEVATED);
         header.setForeground(TEXT_TITLE);
         header.setOpaque(true);
-        header.setPreferredSize(new Dimension(0, 36));
+        header.setPreferredSize(new Dimension(0, compact ? 38 : 36));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_CARD));
         header.setReorderingAllowed(false);
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
@@ -159,14 +289,38 @@ public final class UITheme {
                 setOpaque(true);
                 setBackground(BG_ELEVATED);
                 setForeground(TEXT_TITLE);
-                setFont(FONT_BOLD);
+                setFont(t.getTableHeader().getFont());
                 setHorizontalAlignment(SwingConstants.CENTER);
                 setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, 0, 1, 1, BORDER_CARD),
-                        BorderFactory.createEmptyBorder(0, 6, 0, 6)));
+                        BorderFactory.createEmptyBorder(0, compact ? 3 : 6, 0, compact ? 3 : 6)));
+                String title = String.valueOf(value);
+                setToolTipText(title);
+                if (compact && getFontMetrics(getFont()).stringWidth(title) + 8
+                        > t.getColumnModel().getColumn(column).getWidth()) {
+                    int split = title.lastIndexOf(' ');
+                    if (split > 0) {
+                        setText("<html><center>" + title.substring(0, split) + "<br>"
+                                + title.substring(split + 1) + "</center></html>");
+                    }
+                }
                 return c;
             }
         });
+    }
+
+    private static void fitTableColumns(JTable table, JViewport viewport) {
+        FontMetrics metrics = table.getFontMetrics(FONT_BOLD);
+        int preferredWidth = 0;
+        for (int index = 0; index < table.getColumnCount(); index++) {
+            javax.swing.table.TableColumn column = table.getColumnModel().getColumn(index);
+            int headerWidth = metrics.stringWidth(String.valueOf(column.getHeaderValue())) + 24;
+            column.setMinWidth(headerWidth);
+            if (column.getPreferredWidth() < headerWidth) column.setPreferredWidth(headerWidth);
+            preferredWidth += column.getPreferredWidth();
+        }
+        table.setAutoResizeMode(viewport.getWidth() >= preferredWidth
+                ? JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS : JTable.AUTO_RESIZE_OFF);
     }
 
     public static Border createCardBorder(String title) {

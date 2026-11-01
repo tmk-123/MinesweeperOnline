@@ -10,8 +10,7 @@ public class ChallengeConfirmDialog extends JDialog {
 
     private ChallengeConfirmDialog(Window owner, String opponentName) {
         super(owner, "Xác nhận thách đấu", Dialog.ModalityType.APPLICATION_MODAL);
-        setSize(480, 315);
-        setResizable(false);
+        UITheme.configureWindow(this, 540, 380, 500, 350);
         setLocationRelativeTo(owner);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
@@ -29,7 +28,7 @@ public class ChallengeConfirmDialog extends JDialog {
         versus.setOpaque(false);
         versus.add(createPlayer("Bạn", new Color(78, 164, 231)));
         JLabel vs = new JLabel("VS", SwingConstants.CENTER);
-        vs.setFont(new Font("Segoe UI", Font.BOLD, 23));
+        vs.setFont(UITheme.FONT_BOLD.deriveFont(23f));
         vs.setForeground(UITheme.COLOR_PRIMARY);
         versus.add(vs);
         versus.add(createPlayer(opponentName, UITheme.COLOR_DANGER));

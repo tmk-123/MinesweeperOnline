@@ -7,17 +7,16 @@ import java.awt.*;
 /**
  * Hộp thoại chuyên biệt hiển thị Quy tắc & Tiêu chí xếp hạng của Leaderboard.
  */
-public class LeaderboardRulesDialog extends JDialog {
+public class LeaderboardRulesDialog extends InfoFrame {
 
     public LeaderboardRulesDialog(Frame owner) {
-        super(owner, "Quy Tắc Xếp Hạng - Minesweeper Online", false);
+        super(owner, "Quy Tắc Xếp Hạng - Minesweeper Online");
         initComponents();
     }
 
     private void initComponents() {
-        setSize(580, 440);
-        setMinimumSize(new Dimension(500, 380));
-        setLocationRelativeTo(getOwner());
+        UITheme.configureWindow(this, 860, 640, 660, 480);
+        setLocationRelativeTo(getParentFrame());
         setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(0, 0)));
 
         // Header phía trên
@@ -40,66 +39,47 @@ public class LeaderboardRulesDialog extends JDialog {
         add(headerPanel, BorderLayout.NORTH);
 
         // Nội dung chính
-        String html = "<html><body style='font-family: Segoe UI, Arial, sans-serif; font-size: 13px; color: #1E293B; margin: 12px; line-height: 1.5;'>"
-                + "<h2 style='color: #1D4ED8; margin-top: 0;'>Tiêu chí Xếp hạng (Theo thứ tự ưu tiên)</h2>"
+        String html = "<html><body style='color: #CBD6DC; margin: 12px; line-height: 1.5;'>"
+                + "<h2 style='color: #F6B842; margin-top: 0;'>Tiêu chí Xếp hạng (Theo thứ tự ưu tiên)</h2>"
                 + "<p>Bảng xếp hạng hiển thị Top 10 cao thủ. Khi có nhiều người chơi bằng điểm, vị trí thứ hạng được xét tuần tự theo các tiêu chí sau:</p>"
 
-                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #CBD5E1; background: #FFFFFF; margin-bottom: 14px;'>"
-                + "  <tr style='background: #F1F5F9; font-weight: bold;'>"
-                + "    <td style='border: 1px solid #CBD5E1; width: 35%;'>Mức ưu tiên</td>"
-                + "    <td style='border: 1px solid #CBD5E1;'>Tiêu chí phân định</td>"
+                + "<table cellpadding='8' cellspacing='0' style='width: 100%; border: 1px solid #344550; background: #14212B; margin-bottom: 14px;'>"
+                + "  <tr style='background: #1D2B35; font-weight: bold;'>"
+                + "    <td style='border: 1px solid #344550; width: 35%;'>Mức ưu tiên</td>"
+                + "    <td style='border: 1px solid #344550;'>Tiêu chí phân định</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #2563EB;'>1. Ưu tiên 1</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b>Tổng điểm số (Score):</b> Điểm cao hơn luôn xếp trên.</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #5BAFF4;'>1. Ưu tiên 1</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b>Tổng điểm số (Score):</b> Điểm cao hơn luôn xếp trên.</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #2563EB;'>2. Ưu tiên 2</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b>Tỉ lệ thắng (Win Rate %):</b> Tỉ lệ % cao hơn xếp trên khi bằng điểm.</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #5BAFF4;'>2. Ưu tiên 2</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b>Tỉ lệ thắng (Win Rate %):</b> Tỉ lệ % cao hơn xếp trên khi bằng điểm.</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #2563EB;'>3. Ưu tiên 3</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b>Số trận thắng (Wins):</b> Người có nhiều trận thắng hơn xếp trên.</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #5BAFF4;'>3. Ưu tiên 3</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b>Số trận thắng (Wins):</b> Người có nhiều trận thắng hơn xếp trên.</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #2563EB;'>4. Ưu tiên 4</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b>Tổng số trận đấu:</b> Người tích cực thi đấu nhiều trận hơn xếp trên.</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #5BAFF4;'>4. Ưu tiên 4</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b>Tổng số trận đấu:</b> Người tích cực thi đấu nhiều trận hơn xếp trên.</td>"
                 + "  </tr>"
                 + "  <tr>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b style='color: #2563EB;'>5. Ưu tiên 5</b></td>"
-                + "    <td style='border: 1px solid #E2E8F0;'><b>Tên người chơi (Username):</b> Xếp theo thứ tự chữ cái A-Z nếu tất cả chỉ số bằng nhau.</td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b style='color: #5BAFF4;'>5. Ưu tiên 5</b></td>"
+                + "    <td style='border: 1px solid #2C3B46;'><b>Tên người chơi (Username):</b> Xếp theo thứ tự chữ cái A-Z nếu tất cả chỉ số bằng nhau.</td>"
                 + "  </tr>"
                 + "</table>"
 
-                + "<h2 style='color: #1D4ED8; margin-top: 10px;'>Vinh danh Top 3 Cao Thủ</h2>"
+                + "<h2 style='color: #F6B842; margin-top: 10px;'>Vinh danh Top 3 Cao Thủ</h2>"
                 + "<ul style='padding-left: 20px; margin-bottom: 8px;'>"
-                + "  <li><b>🥇 Top 1:</b> Quán quân bảng xếp hạng - Huy hiệu và nền Vàng hoàng kim.</li>"
-                + "  <li><b>🥈 Top 2:</b> Á quân bảng xếp hạng - Huy hiệu và nền Bạc ánh kim.</li>"
-                + "  <li><b>🥉 Top 3:</b> Hạng ba bảng xếp hạng - Huy hiệu và nền Đồng ấm áp.</li>"
+                + "  <li><b>Top 1:</b> Quán quân bảng xếp hạng - Huy hiệu và nền Vàng hoàng kim.</li>"
+                + "  <li><b>Top 2:</b> Á quân bảng xếp hạng - Huy hiệu và nền Bạc ánh kim.</li>"
+                + "  <li><b>Top 3:</b> Hạng ba bảng xếp hạng - Huy hiệu và nền Đồng ấm áp.</li>"
                 + "</ul>"
                 + "</body></html>";
 
-        html = html.replace("#1E293B", "#CBD6DC")
-                .replace("#1D4ED8", "#F6B842")
-                .replace("#CBD5E1", "#344550")
-                .replace("#FFFFFF", "#14212B")
-                .replace("#F1F5F9", "#1D2B35")
-                .replace("#E2E8F0", "#2C3B46")
-                .replace("#2563EB", "#5BAFF4");
-        JEditorPane editorPane = new JEditorPane("text/html", html);
-        editorPane.setEditable(false);
-        editorPane.setOpaque(false);
-        editorPane.setBackground(UITheme.BG_PANEL);
-        editorPane.setForeground(UITheme.TEXT_BODY);
-        editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        editorPane.setFont(UITheme.FONT_REGULAR);
-        editorPane.setCaretPosition(0);
-
-        JScrollPane scrollPane = new JScrollPane(editorPane);
-        UITheme.styleScrollPane(scrollPane);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.getViewport().setBackground(UITheme.BG_PANEL);
+        JScrollPane scrollPane = UITheme.createHtmlScrollPane(html);
+        scrollPane.setBorder(new EmptyBorder(10, 14, 10, 14));
         add(scrollPane, BorderLayout.CENTER);
 
         // Footer với nút Đóng

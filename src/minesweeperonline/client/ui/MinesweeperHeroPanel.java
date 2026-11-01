@@ -69,7 +69,7 @@ final class MinesweeperHeroPanel extends JPanel {
         g2.setPaint(new GradientPaint(0, h * 2 / 3, new Color(9, 15, 19, 0), 0, h, new Color(9, 15, 19, 230)));
         g2.fillRect(0, h * 2 / 3, w, h / 3);
         g2.setColor(UITheme.COLOR_PRIMARY);
-        g2.setFont(new Font("Segoe UI", Font.BOLD, Math.max(25, Math.min(38, w / 10))));
+        g2.setFont(UITheme.FONT_BOLD.deriveFont((float) Math.max(25, Math.min(38, w / 10))));
         g2.drawString("MINESWEEPER", 30, h - 87);
         g2.setColor(UITheme.TEXT_TITLE);
         g2.drawString("ONLINE", 30, h - 48);

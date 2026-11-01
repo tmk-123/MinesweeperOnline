@@ -59,7 +59,7 @@ public class MainMenuFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Sảnh Chờ (" + currentUser.getUsername() + ")");
-        setSize(1100, 700);
+        UITheme.configureWindow(this, 1180, 760, 860, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH); // Mở toàn màn hình theo yêu cầu người dùng
@@ -78,9 +78,9 @@ public class MainMenuFrame extends JFrame {
         lblUserInfo = new JLabel("Tài khoản: " + currentUser.getUsername() + "   |   Hạng: " + rank + "   |   Điểm số: " + currentUser.getTotalScore());
         lblUserInfo.setFont(UITheme.FONT_TITLE);
         lblUserInfo.setForeground(UITheme.COLOR_PRIMARY);
-        headerPanel.add(lblUserInfo, BorderLayout.WEST);
+        headerPanel.add(lblUserInfo, BorderLayout.NORTH);
 
-        JPanel rightHeaderBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel rightHeaderBtns = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 6));
         rightHeaderBtns.setOpaque(false);
 
         btnQuickMatch = new JButton("Tìm trận nhanh");
@@ -158,7 +158,7 @@ public class MainMenuFrame extends JFrame {
         rightHeaderBtns.add(btnHelp);
         rightHeaderBtns.add(btnLeaderboard);
         rightHeaderBtns.add(btnLogout);
-        headerPanel.add(rightHeaderBtns, BorderLayout.EAST);
+        headerPanel.add(rightHeaderBtns, BorderLayout.CENTER);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
         // Ở giữa: Chia đôi màn hình - Bên trái là OnlinePlayersPanel, Bên phải là LeaderboardPanel
@@ -167,17 +167,23 @@ public class MainMenuFrame extends JFrame {
 
         onlinePanel = new OnlinePlayersPanel(connection);
         leaderboardPanel = new LeaderboardPanel(connection, currentUser.getUsername());
+        // Allocate by ratio, not by footer text lengths that change on every refresh.
+        onlinePanel.setMinimumSize(new Dimension(0, 0));
+        onlinePanel.setPreferredSize(new Dimension(0, 0));
+        leaderboardPanel.setMinimumSize(new Dimension(0, 0));
+        leaderboardPanel.setPreferredSize(new Dimension(0, 0));
 
         GridBagConstraints left = new GridBagConstraints();
-        left.gridx = 0; left.gridy = 0; left.weightx = 0.55; left.weighty = 1;
+        left.gridx = 0; left.gridy = 0; left.weightx = 0.45; left.weighty = 1;
         left.fill = GridBagConstraints.BOTH; left.insets = new Insets(0, 0, 0, 8);
         centerSplitPanel.add(onlinePanel, left);
         GridBagConstraints right = new GridBagConstraints();
-        right.gridx = 1; right.gridy = 0; right.weightx = 0.45; right.weighty = 1;
+        right.gridx = 1; right.gridy = 0; right.weightx = 0.55; right.weighty = 1;
         right.fill = GridBagConstraints.BOTH; right.insets = new Insets(0, 8, 0, 0);
         centerSplitPanel.add(leaderboardPanel, right);
 
         mainPanel.add(centerSplitPanel, BorderLayout.CENTER);
+        mainPanel.add(new AudioControlsPanel(), BorderLayout.SOUTH);
 
         add(mainPanel);
     }
@@ -198,6 +204,7 @@ public class MainMenuFrame extends JFrame {
 
     @Override
     public void dispose() {
+        if (autoRefreshTimer != null) autoRefreshTimer.stop();
         if (isSearchingMatch) {
             connection.sendMessage(JsonProtocol.createCancelQuickMatch());
             isSearchingMatch = false;

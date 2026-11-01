@@ -35,17 +35,16 @@ public class RegisterFrame extends JFrame {
 
     private void initComponents() {
         setTitle("Minesweeper Online - Đăng ký tài khoản");
-        setSize(920, 600);
+        UITheme.configureWindow(this, 960, 720, 860, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setResizable(false);
         getContentPane().setBackground(UITheme.BG_MAIN);
 
         JPanel mainPanel = new JPanel(new GridLayout(1, 2, 0, 0));
         mainPanel.setBackground(UITheme.BG_MAIN);
         mainPanel.add(new MinesweeperHeroPanel());
         JPanel formArea = new JPanel(new GridBagLayout());
-        formArea.setBorder(BorderFactory.createEmptyBorder(24, 34, 24, 34));
+        formArea.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         formArea.setBackground(UITheme.BG_MAIN);
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new BoxLayout(cardPanel, BoxLayout.Y_AXIS));
@@ -54,7 +53,7 @@ public class RegisterFrame extends JFrame {
                 BorderFactory.createEmptyBorder(25, 30, 25, 30)
         ));
         cardPanel.setBackground(UITheme.BG_CARD);
-        cardPanel.setPreferredSize(new Dimension(370, 455));
+        cardPanel.setPreferredSize(new Dimension(390, 520));
 
         // Header Tiêu đề
         JLabel lblTitle = new JLabel("ĐĂNG KÝ TÀI KHOẢN", SwingConstants.CENTER);
@@ -143,8 +142,12 @@ public class RegisterFrame extends JFrame {
         cardPanel.add(btnBack);
 
         formArea.add(cardPanel);
-        mainPanel.add(formArea);
+        JScrollPane formScroll = new JScrollPane(formArea);
+        UITheme.styleScrollPane(formScroll);
+        formScroll.setBorder(null);
+        mainPanel.add(formScroll);
         add(mainPanel);
+        add(new AudioControlsPanel(), BorderLayout.SOUTH);
 
         btnRegister.addActionListener(e -> performRegister());
         btnBack.addActionListener(e -> {

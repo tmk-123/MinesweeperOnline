@@ -30,7 +30,7 @@ public class ChallengeDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(500, 340);
+        UITheme.configureWindow(this, 560, 400, 520, 370);
         setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout(0, 0));
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -48,7 +48,7 @@ public class ChallengeDialog extends JDialog {
         matchup.setOpaque(false);
         matchup.add(createPlayerBadge(challengerUsername, new Color(78, 164, 231)));
         JLabel vs = new JLabel("VS", SwingConstants.CENTER);
-        vs.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        vs.setFont(UITheme.FONT_BOLD.deriveFont(24f));
         vs.setForeground(UITheme.COLOR_PRIMARY);
         matchup.add(vs);
         matchup.add(createPlayerBadge("Bạn", UITheme.COLOR_SUCCESS));
@@ -57,7 +57,7 @@ public class ChallengeDialog extends JDialog {
         center.add(matchup, BorderLayout.CENTER);
         lblTimer = new JLabel("" + remainingSeconds + " giây còn lại", SwingConstants.CENTER);
         lblTimer.setForeground(UITheme.COLOR_PRIMARY);
-        lblTimer.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTimer.setFont(UITheme.FONT_BOLD.deriveFont(18f));
         center.add(lblTimer, BorderLayout.SOUTH);
         content.add(center, BorderLayout.CENTER);
         add(content, BorderLayout.CENTER);

@@ -68,7 +68,7 @@ public class GameBoardPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
         setBackground(UITheme.BG_MAIN);
 
-        Font cellFont = new Font("Arial", Font.BOLD, 14);
+        Font cellFont = UITheme.FONT_BOLD.deriveFont(16f);
 
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {

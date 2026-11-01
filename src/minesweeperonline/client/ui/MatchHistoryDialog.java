@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Dialog hiển thị lịch sử các trận gần đây và thống kê thành tích của người chơi.
  */
-public class MatchHistoryDialog extends JDialog {
+public class MatchHistoryDialog extends InfoFrame {
 
     private final ServerConnection connection;
     private final int currentUserId;
@@ -29,7 +29,7 @@ public class MatchHistoryDialog extends JDialog {
     private JLabel lblSummary;
 
     public MatchHistoryDialog(Frame owner, ServerConnection connection, int currentUserId) {
-        super(owner, "Lịch Sử Đấu - Minesweeper Online", false);
+        super(owner, "Lịch Sử Đấu - Minesweeper Online");
         this.connection = connection;
         this.currentUserId = currentUserId;
 
@@ -38,8 +38,8 @@ public class MatchHistoryDialog extends JDialog {
     }
 
     private void initComponents() {
-        setSize(860, 530);
-        setLocationRelativeTo(getOwner());
+        UITheme.configureWindow(this, 1080, 640, 780, 500);
+        setLocationRelativeTo(getParentFrame());
         setContentPane(new MinesweeperBackgroundPanel(MinesweeperBackgroundPanel.Scene.LOBBY, new BorderLayout(8, 8)));
 
         // Phần tiêu đề phía trên

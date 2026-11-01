@@ -43,25 +43,18 @@ public class LeaderboardPanel extends GlassPanel {
         };
 
         table = new JTable(tableModel);
-        UITheme.styleTable(table);
+        UITheme.styleCompactTable(table, 48, 112, 102, 52, 55, 55, 63);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        // Độ rộng các cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(82);  // Hạng với huy hiệu Top 3
-        table.getColumnModel().getColumn(1).setPreferredWidth(125); // Tên người chơi
-        table.getColumnModel().getColumn(2).setPreferredWidth(110); // Huy hiệu cấp bậc và tên hạng
-        table.getColumnModel().getColumn(3).setPreferredWidth(65);  // Điểm số
-        table.getColumnModel().getColumn(4).setPreferredWidth(90);  // Trận thắng (không bị cắt chữ)
-        table.getColumnModel().getColumn(5).setPreferredWidth(75);  // Tổng trận
-        table.getColumnModel().getColumn(6).setPreferredWidth(85);  // Tỉ lệ thắng
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
-                setFont(UITheme.FONT_REGULAR);
+                setFont(t.getFont());
+                putClientProperty("html.disable", Boolean.TRUE);
+                setToolTipText(null);
                 setIcon(null);
-                setIconTextGap(5);
+                setIconTextGap(3);
                 setHorizontalAlignment(col == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
 
                 String nameInRow = (String) tableModel.getValueAt(row, 1);
@@ -70,8 +63,8 @@ public class LeaderboardPanel extends GlassPanel {
 
                 // 1. Cột Hạng: giữ huy chương ở dạng chữ, không phụ thuộc font emoji.
                 if (col == 0) {
-                    setFont(UITheme.FONT_BOLD);
-                    setIcon(GameUiIcons.podiumMedalIcon(rank, 20));
+                    setFont(t.getFont().deriveFont(Font.BOLD));
+                    setIcon(GameUiIcons.podiumMedalIcon(rank, 16));
                     if (rank == 1) {
                         setText("01");
                         if (!isSel) c.setForeground(UITheme.COLOR_PRIMARY);
@@ -89,26 +82,28 @@ public class LeaderboardPanel extends GlassPanel {
                     // Cột Tên: gắn thẻ "(Bạn)" nếu là người dùng hiện tại
                     if (isCurrentUser) {
                         setText(nameInRow + " (Bạn)");
-                        setFont(UITheme.FONT_BOLD);
+                        setFont(t.getFont().deriveFont(Font.BOLD));
                     } else {
                         setText(nameInRow);
                     }
+                    // JLabel clips long names with "..."; retain the full model value.
+                    setToolTipText(getText());
                 } else if (col == 2) {
                     // Cột Cấp bậc (Rank Tier)
-                    setFont(UITheme.FONT_SMALL_BOLD);
+                    setFont(t.getFont().deriveFont(Font.BOLD));
                     if (val instanceof String && !isSel) {
                         int score = (int) tableModel.getValueAt(row, 3);
-                        setIcon(GameUiIcons.rankTierIcon(score, 18));
+                        setIcon(GameUiIcons.rankTierIcon(score, 16));
                         setHorizontalAlignment(SwingConstants.LEFT);
                         c.setForeground(UITheme.getRankColor(score));
                     } else if (val instanceof String) {
                         int score = (int) tableModel.getValueAt(row, 3);
-                        setIcon(GameUiIcons.rankTierIcon(score, 18));
+                        setIcon(GameUiIcons.rankTierIcon(score, 16));
                         setHorizontalAlignment(SwingConstants.LEFT);
                     }
                 } else if (col == 3) {
                     // Cột Điểm số
-                    setFont(UITheme.FONT_BOLD);
+                    setFont(t.getFont().deriveFont(Font.BOLD));
                     if (!isSel) c.setForeground(UITheme.COLOR_PRIMARY);
                 } else if (col == 6) {
                     // Cột Tỉ lệ thắng: Hiện "-" nếu chưa đấu trận nào
@@ -143,6 +138,7 @@ public class LeaderboardPanel extends GlassPanel {
         }
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         UITheme.styleScrollPane(scrollPane);
         scrollPane.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1));
         scrollPane.getViewport().setBackground(UITheme.withAlpha(UITheme.BG_PANEL, 158));
@@ -155,7 +151,7 @@ public class LeaderboardPanel extends GlassPanel {
         lblStatus = new JLabel("Đang tải dữ liệu bảng xếp hạng...");
         lblStatus.setFont(UITheme.FONT_SMALL);
         lblStatus.setForeground(UITheme.TEXT_MUTED);
-        actionPanel.add(lblStatus, BorderLayout.WEST);
+        actionPanel.add(lblStatus, BorderLayout.CENTER);
 
         JButton btnHelp = new JButton("? Quy tắc xếp hạng");
         UITheme.styleOutlineButton(btnHelp, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY, UITheme.TEXT_TITLE);

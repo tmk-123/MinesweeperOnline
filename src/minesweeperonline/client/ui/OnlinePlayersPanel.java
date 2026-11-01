@@ -43,27 +43,21 @@ public class OnlinePlayersPanel extends GlassPanel {
         };
 
         table = new JTable(tableModel);
-        UITheme.styleTable(table);
+        UITheme.styleCompactTable(table, 42, 110, 100, 48, 100);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        // Thiết lập độ rộng cột
-        table.getColumnModel().getColumn(0).setPreferredWidth(55);  // ID
-        table.getColumnModel().getColumn(1).setPreferredWidth(130); // Tên
-        table.getColumnModel().getColumn(2).setPreferredWidth(132); // Huy hiệu cấp bậc và tên hạng
-        table.getColumnModel().getColumn(3).setPreferredWidth(75);  // Điểm
-        table.getColumnModel().getColumn(4).setPreferredWidth(125); // Trạng thái
 
         // Custom Cell Renderer đẹp mắt, sử dụng StatusDotIcon thay vì emoji để tránh lỗi ô vuông
         DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
-                setFont(UITheme.FONT_REGULAR);
+                setFont(t.getFont());
+                putClientProperty("html.disable", Boolean.TRUE);
+                setToolTipText(null);
                 setIcon(null);
-                setIconTextGap(5);
+                setIconTextGap(3);
                 setHorizontalAlignment(col == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
-                setIcon(null); // Mặc định không có icon để tránh icon rò rỉ sang cột khác
 
                 // Màu xen kẽ dòng hiện đại
                 if (!isSel) {
@@ -73,14 +67,15 @@ public class OnlinePlayersPanel extends GlassPanel {
 
                 // Cột Tên
                 if (col == 1) {
-                    setFont(UITheme.FONT_BOLD);
+                    setFont(t.getFont().deriveFont(Font.BOLD));
+                    setToolTipText(getText());
                 }
 
                 // Cột Cấp bậc
                 if (col == 2 && val instanceof String) {
-                    setFont(UITheme.FONT_SMALL_BOLD);
+                    setFont(t.getFont().deriveFont(Font.BOLD));
                     int score = (int) tableModel.getValueAt(row, 3);
-                    setIcon(GameUiIcons.rankTierIcon(score, 18));
+                    setIcon(GameUiIcons.rankTierIcon(score, 16));
                     setHorizontalAlignment(SwingConstants.LEFT);
                     if (!isSel) {
                         c.setForeground(UITheme.getRankColor(score));
@@ -89,12 +84,12 @@ public class OnlinePlayersPanel extends GlassPanel {
 
                 // Cột Điểm
                 if (col == 3) {
-                    setFont(UITheme.FONT_BOLD);
+                    setFont(t.getFont().deriveFont(Font.BOLD));
                 }
 
                 // Cột Trạng thái vẽ chấm tròn vector chuẩn AWT (không bao giờ bị lỗi ô vuông font)
                 if (col == 4 && val instanceof String) {
-                    setFont(UITheme.FONT_SMALL_BOLD);
+                    setFont(t.getFont().deriveFont(Font.BOLD));
                     String rawStatus = (String) val;
                     if (Player.STATUS_IDLE.equals(rawStatus) || rawStatus.contains("Sẵn sàng")) {
                         setIcon(new UITheme.StatusDotIcon(UITheme.COLOR_SUCCESS, 8));
@@ -135,16 +130,19 @@ public class OnlinePlayersPanel extends GlassPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         UITheme.styleScrollPane(scrollPane);
         scrollPane.setBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD, 1));
         scrollPane.getViewport().setBackground(UITheme.withAlpha(UITheme.BG_PANEL, 158));
         add(scrollPane, BorderLayout.CENTER);
 
         // Chân bảng: dòng hướng dẫn nháy vào người chơi
-        JPanel actionPanel = new GlassPanel(new FlowLayout(FlowLayout.LEFT, 10, 6), UITheme.BG_CARD, 150);
+        JPanel actionPanel = new GlassPanel(new BorderLayout(), UITheme.BG_CARD, 150);
+        actionPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
         lblHint = new JLabel("• Nháy chuột vào người chơi để gửi lời thách đấu");
         lblHint.setFont(UITheme.FONT_SMALL);
         lblHint.setForeground(UITheme.TEXT_MUTED);
+        lblHint.setToolTipText("Nháy chuột vào người chơi để gửi lời thách đấu");
         actionPanel.add(lblHint);
 
         add(actionPanel, BorderLayout.SOUTH);
