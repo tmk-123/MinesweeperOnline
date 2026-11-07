@@ -14,13 +14,6 @@ public class MineGenerator {
     private static final Random random = new Random();
 
     /**
-     * Sinh mìn không có vùng an toàn (bản cũ/fallback).
-     */
-    public static void generateMines(Cell[][] grid, int rows, int cols, int mineCount) {
-        generateMines(grid, rows, cols, mineCount, -1, -1);
-    }
-
-    /**
      * Đặt ngẫu nhiên đúng số lượng mìn trên lưới, không trùng lặp,
      * đảm bảo ô (safeRow, safeCol) và 8 ô xung quanh nó (vùng 3x3)
      * KHÔNG có mìn, để ô được click đầu tiên có số mìn xung quanh bằng 0.
