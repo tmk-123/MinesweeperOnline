@@ -13,12 +13,14 @@ public class Cell {
     private int adjacentMines;
     private boolean exploded;
 
+    /** Tạo ô tại hàng, cột cho trước rồi đặt trạng thái ban đầu. */
     public Cell(int row, int col) {
         this.row = row;
         this.col = col;
         reset();
     }
 
+    /** Xóa mìn, cờ, trạng thái mở, trạng thái nổ và số mìn lân cận để tái sử dụng ô. */
     public void reset() {
         this.mine = false;
         this.opened = false;

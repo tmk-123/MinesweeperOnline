@@ -22,6 +22,7 @@ public class TestPhase3 {
 
     private static final int TEST_PORT = 2211;
 
+    /** Chạy các bước kiểm tra trong lớp; bật -ea khi chạy Java để các câu lệnh assert có hiệu lực. */
     public static void main(String[] args) throws Exception {
         System.out.println("==================================================");
         System.out.println("       RUNNING PHASE 3 INTEGRATION TEST           ");

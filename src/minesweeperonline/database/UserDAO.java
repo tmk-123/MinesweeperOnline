@@ -245,6 +245,7 @@ public class UserDAO {
         return list;
     }
 
+    /** Chuyển một dòng ResultSet của bảng người dùng thành đối tượng User. */
     private User mapRow(ResultSet rs) throws SQLException {
         User u = new User();
         u.setId(rs.getInt("id"));

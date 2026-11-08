@@ -27,11 +27,13 @@ public class Player implements Serializable {
     private int flagsRemoved;
     private int totalActions;
 
+    /** Khởi tạo thông tin người chơi và các bộ đếm dùng trong trận đấu. */
     public Player() {
         this.status = STATUS_IDLE;
         resetMatchStats();
     }
 
+    /** Khởi tạo thông tin người chơi và các bộ đếm dùng trong trận đấu. */
     public Player(int userId, String username, int totalScore) {
         this.userId = userId;
         this.username = username;
@@ -40,6 +42,7 @@ public class Player implements Serializable {
         resetMatchStats();
     }
 
+    /** Đưa các bộ đếm thao tác và ô an toàn về trạng thái ban đầu cho ván mới. */
     public void resetMatchStats() {
         this.openedSafeCells = 0;
         this.currentFlags = 0;
@@ -88,10 +91,12 @@ public class Player implements Serializable {
         this.openedSafeCells = openedSafeCells;
     }
 
+    /** Tăng bộ đếm ô an toàn đã mở thêm một ô. */
     public void incrementOpenedSafeCells() {
         this.openedSafeCells++;
     }
 
+    /** Cộng số ô an toàn vừa mở, bao gồm các ô mở lan trong cùng thao tác. */
     public void addOpenedSafeCells(int count) {
         this.openedSafeCells += count;
     }
@@ -128,16 +133,19 @@ public class Player implements Serializable {
         this.totalActions = totalActions;
     }
 
+    /** Tăng tổng số thao tác được ghi nhận cho người chơi. */
     public void incrementTotalActions() {
         this.totalActions++;
     }
 
+    /** Tăng số cờ hiện có, tổng lần cắm cờ và tổng thao tác của người chơi. */
     public void placeFlag() {
         this.currentFlags++;
         this.flagsPlaced++;
         this.totalActions++;
     }
 
+    /** Ghi nhận một lần gỡ cờ và điều chỉnh các bộ đếm của người chơi. */
     public void removeFlag() {
         if (this.currentFlags > 0) {
             this.currentFlags--;

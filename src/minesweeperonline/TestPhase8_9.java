@@ -22,6 +22,7 @@ public class TestPhase8_9 {
 
     private static final int TEST_PORT = 2212;
 
+    /** Chạy các bước kiểm tra trong lớp; bật -ea khi chạy Java để các câu lệnh assert có hiệu lực. */
     public static void main(String[] args) throws Exception {
         System.out.println("==================================================");
         System.out.println("       RUNNING PHASE 8 & 9 INTEGRATION TEST       ");

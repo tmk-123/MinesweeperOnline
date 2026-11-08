@@ -28,6 +28,7 @@ public class MinesweeperBackgroundPanel extends JPanel {
         this(scene, new BorderLayout());
     }
 
+    /** Vẽ phần nền hoặc trạng thái của panel bằng Graphics; dữ liệu vẽ lấy từ trạng thái hiện tại của component. */
     @Override
     protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);

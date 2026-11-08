@@ -31,6 +31,7 @@ public class OnlinePlayersPanel extends GlassPanel {
         initComponents();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         setBorder(UITheme.createCardBorder("Người chơi đang online"));
 
@@ -148,6 +149,7 @@ public class OnlinePlayersPanel extends GlassPanel {
         add(actionPanel, BorderLayout.SOUTH);
     }
 
+    /** Lấy người chơi ở dòng được chọn, xác nhận với người dùng rồi gửi lời mời thách đấu. */
     public void performChallengeAtRow(int selectedRow) {
         if (selectedRow < 0 || selectedRow >= tableModel.getRowCount()) {
             return;
@@ -188,6 +190,7 @@ public class OnlinePlayersPanel extends GlassPanel {
         }
     }
 
+    /** Xóa trạng thái đang gửi lời mời để người chơi có thể thao tác thách đấu tiếp. */
     public void resetChallengeState() {
         this.isChallenging = false;
         btnChallenge.setEnabled(true);
@@ -198,10 +201,12 @@ public class OnlinePlayersPanel extends GlassPanel {
         }
     }
 
+    /** Gửi GET_ONLINE_PLAYERS; bảng chỉ thay đổi khi nhận phản hồi từ server. */
     public void refreshOnlinePlayers() {
         connection.sendMessage(JsonProtocol.createGetOnlinePlayers());
     }
 
+    /** Thay danh sách hiển thị bằng dữ liệu người chơi mới nhất do server cung cấp. */
     public void updatePlayers(List<Player> players) {
         tableModel.setRowCount(0);
         if (players != null) {

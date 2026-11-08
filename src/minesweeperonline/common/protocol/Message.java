@@ -23,20 +23,24 @@ public class Message {
     private String gameId;
     private JsonObject payload;
 
+    /** Tạo phong bì message; type xác định cách xử lý, payload chứa dữ liệu của từng yêu cầu. */
     public Message() {
         this.payload = new JsonObject();
     }
 
+    /** Tạo phong bì message; type xác định cách xử lý, payload chứa dữ liệu của từng yêu cầu. */
     public Message(MessageType type) {
         this.type = type;
         this.payload = new JsonObject();
     }
 
+    /** Tạo phong bì message; type xác định cách xử lý, payload chứa dữ liệu của từng yêu cầu. */
     public Message(MessageType type, JsonObject payload) {
         this.type = type;
         this.payload = (payload != null) ? payload : new JsonObject();
     }
 
+    /** Tạo phong bì message; type xác định cách xử lý, payload chứa dữ liệu của từng yêu cầu. */
     public Message(MessageType type, String requestId, String gameId, JsonObject payload) {
         this.type = type;
         this.requestId = requestId;

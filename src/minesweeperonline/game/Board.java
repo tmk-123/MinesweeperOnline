@@ -34,6 +34,7 @@ public class Board {
     private int totalActions;
     private boolean minesGenerated;
 
+    /** Tạo lưới Cell và đặt lại bộ đếm; mìn chỉ được sinh khi mở ô hợp lệ đầu tiên. */
     public Board() {
         this.grid = new Cell[ROWS][COLS];
         for (int r = 0; r < ROWS; r++) {
@@ -63,10 +64,12 @@ public class Board {
         }
     }
 
+    /** Kiểm tra hàng và cột nằm trong lưới; tọa độ ngoài bàn không được truy cập mảng. */
     public boolean isValidCoordinate(int r, int c) {
         return r >= 0 && r < ROWS && c >= 0 && c < COLS;
     }
 
+    /** Lấy ô theo tọa độ; trả về null nếu tọa độ nằm ngoài bàn. */
     public Cell getCell(int r, int c) {
         if (!isValidCoordinate(r, c)) return null;
         return grid[r][c];
@@ -157,6 +160,7 @@ public class Board {
                     if (isValidCoordinate(nr, nc)) {
                         Cell neighbor = grid[nr][nc];
                         if (!neighbor.isOpened() && !neighbor.isFlagged() && !neighbor.isMine()) {
+                            // Đánh dấu ngay khi tìm thấy để các ô lân cận khác không thêm lại và đếm trùng.
                             neighbor.setOpened(true);
                             this.openedSafeCells++;
                             if (openedList != null) openedList.add(neighbor);
@@ -210,6 +214,7 @@ public class Board {
         return true;
     }
 
+    /** Kiểm tra số ô an toàn đã mở đạt tổng số ô an toàn để xét hoàn thành bàn. */
     public boolean isAllSafeCellsOpened() {
         return openedSafeCells >= TOTAL_SAFE_CELLS;
     }

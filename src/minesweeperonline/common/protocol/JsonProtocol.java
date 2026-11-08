@@ -66,6 +66,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo phản hồi đăng ký thành công; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createRegisterSuccess(String message) {
         Message msg = new Message(MessageType.REGISTER_SUCCESS);
         JsonObject p = new JsonObject();
@@ -74,6 +75,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo phản hồi đăng ký thất bại kèm lý do; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createRegisterFailed(String reason) {
         Message msg = new Message(MessageType.REGISTER_FAILED);
         JsonObject p = new JsonObject();
@@ -82,6 +84,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu đăng nhập bằng username và password; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createLogin(String username, String password) {
         Message msg = new Message(MessageType.LOGIN);
         JsonObject p = new JsonObject();
@@ -91,6 +94,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo phản hồi đăng nhập kèm userId, username và tổng điểm; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createLoginSuccess(int userId, String username, int totalScore) {
         Message msg = new Message(MessageType.LOGIN_SUCCESS);
         JsonObject p = new JsonObject();
@@ -101,6 +105,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo phản hồi đăng nhập thất bại kèm lý do; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createLoginFailed(String reason) {
         Message msg = new Message(MessageType.LOGIN_FAILED);
         JsonObject p = new JsonObject();
@@ -109,14 +114,17 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu đăng xuất; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createLogout() {
         return new Message(MessageType.LOGOUT);
     }
 
+    /** Tạo yêu cầu lấy danh sách người chơi online; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createGetOnlinePlayers() {
         return new Message(MessageType.GET_ONLINE_PLAYERS);
     }
 
+    /** Tạo lời mời thách đấu tới tài khoản đích; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createChallenge(int targetUserId, String targetUsername) {
         Message msg = new Message(MessageType.CHALLENGE);
         JsonObject p = new JsonObject();
@@ -126,6 +134,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo thông báo lời mời cho người được thách đấu; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createChallengeRequest(int fromUserId, String fromUsername) {
         Message msg = new Message(MessageType.CHALLENGE_REQUEST);
         JsonObject p = new JsonObject();
@@ -135,6 +144,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu chấp nhận lời mời của người thách đấu; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createAccept(int challengerUserId) {
         Message msg = new Message(MessageType.ACCEPT);
         JsonObject p = new JsonObject();
@@ -143,6 +153,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu từ chối lời mời của người thách đấu; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createReject(int challengerUserId) {
         Message msg = new Message(MessageType.REJECT);
         JsonObject p = new JsonObject();
@@ -151,14 +162,17 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu tham gia hàng đợi tìm trận nhanh; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createQuickMatch() {
         return new Message(MessageType.QUICK_MATCH);
     }
 
+    /** Tạo yêu cầu rời hàng đợi tìm trận nhanh; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createCancelQuickMatch() {
         return new Message(MessageType.CANCEL_QUICK_MATCH);
     }
 
+    /** Tạo yêu cầu mở ô với gameId, row và col; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createOpenCell(String gameId, int row, int col) {
         Message msg = new Message(MessageType.OPEN_CELL);
         msg.setGameId(gameId);
@@ -169,6 +183,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu cắm cờ với gameId, row và col; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createPlaceFlag(String gameId, int row, int col) {
         Message msg = new Message(MessageType.PLACE_FLAG);
         msg.setGameId(gameId);
@@ -179,6 +194,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu gỡ cờ với gameId, row và col; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createRemoveFlag(String gameId, int row, int col) {
         Message msg = new Message(MessageType.REMOVE_FLAG);
         msg.setGameId(gameId);
@@ -189,28 +205,33 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu đầu hàng trong trận được chỉ định; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createForfeit(String gameId) {
         Message msg = new Message(MessageType.FORFEIT);
         msg.setGameId(gameId);
         return msg;
     }
 
+    /** Tạo yêu cầu chơi lại trận; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createPlayAgain(String gameId) {
         Message msg = new Message(MessageType.PLAY_AGAIN);
         msg.setGameId(gameId);
         return msg;
     }
 
+    /** Tạo yêu cầu rời phòng của trận; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createExit(String gameId) {
         Message msg = new Message(MessageType.EXIT);
         msg.setGameId(gameId);
         return msg;
     }
 
+    /** Tạo yêu cầu lấy bảng xếp hạng; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createGetLeaderboard() {
         return new Message(MessageType.GET_LEADERBOARD);
     }
 
+    /** Tạo yêu cầu lấy lịch sử trận đấu; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createGetMatchHistory(int limit) {
         Message msg = new Message(MessageType.GET_MATCH_HISTORY);
         JsonObject p = new JsonObject();
@@ -219,10 +240,12 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo yêu cầu lấy lịch sử trận đấu; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createGetMatchHistory() {
         return createGetMatchHistory(20);
     }
 
+    /** Tạo phản hồi chứa danh sách lịch sử trận; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createMatchHistory(List<MatchHistoryEntry> list) {
         Message msg = new Message(MessageType.MATCH_HISTORY);
         JsonObject p = new JsonObject();
@@ -231,6 +254,7 @@ public class JsonProtocol {
         return msg;
     }
 
+    /** Tạo phản hồi lỗi kèm requestId để đối chiếu yêu cầu; hàm chỉ dựng Message, nơi gọi chịu trách nhiệm gửi qua socket. */
     public static Message createError(String requestId, String errorMessage) {
         Message msg = new Message(MessageType.ERROR);
         msg.setRequestId(requestId);

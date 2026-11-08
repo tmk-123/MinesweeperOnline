@@ -12,8 +12,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/** Chương trình kiểm tra TestReconnection; xem main() để theo dõi dữ liệu đầu vào và các bước xác minh. */
 public class TestReconnection {
 
+    /** Chạy các bước kiểm tra trong lớp; bật -ea khi chạy Java để các câu lệnh assert có hiệu lực. */
     public static void main(String[] args) {
         System.out.println("=== BAT DAU KIEM TRA RECONNECTION / GRACEFUL DISCONNECT ===");
 

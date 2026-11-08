@@ -252,10 +252,12 @@ public class MatchPlayerDAO {
         return list;
     }
 
+    /** Trả về cặp số thắng và tổng số trận lưu trong RAM; chưa có dữ liệu thì dùng hai giá trị 0. */
     public static int[] getFallbackStats(int userId) {
         return fallbackStats.getOrDefault(userId, new int[]{0, 0});
     }
 
+    /** Lưu chi tiết trận vào bộ nhớ dự phòng và cộng thống kê; dữ liệu này chỉ tồn tại trong tiến trình server. */
     public static void recordFallbackMatchDetails(
             String matchId, String reason, long startedAt, long endedAt,
             int u1Id, String u1Name, String r1, int opened1, int actions1, int flags1, int scoreDelta1,
@@ -287,6 +289,7 @@ public class MatchPlayerDAO {
         fallbackMatches.add(rec);
     }
 
+    /** Cộng số trận và số thắng của hai người trong kho thống kê dự phòng trên RAM. */
     public static void recordFallbackMatch(int u1, String r1, int u2, String r2) {
         fallbackStats.compute(u1, (k, v) -> {
             if (v == null) v = new int[]{0, 0};

@@ -17,6 +17,7 @@ public class MainServer {
     private volatile boolean running = true;
     private ServerSocket serverSocket;
 
+    /** Khởi tạo các bộ quản lý kết nối, phiên đấu và ghép trận dùng chung cho server. */
     public MainServer(int port) {
         this.port = port;
         this.clientManager = new ClientManager();
@@ -24,6 +25,7 @@ public class MainServer {
         this.matchmakingManager = new MatchmakingManager(clientManager, gameManager);
     }
 
+    /** Mở ServerSocket và chờ accept(); mỗi kết nối mới được giao cho một ClientHandler trên thread riêng. */
     public void start() {
         System.out.println("==================================================");
         System.out.println("      MINESWEEPER ONLINE - TCP SERVER             ");
@@ -63,6 +65,7 @@ public class MainServer {
         }
     }
 
+    /** Đặt cờ dừng và đóng ServerSocket để giải phóng lệnh accept() đang chờ. */
     public void stop() {
         running = false;
         try {
@@ -83,6 +86,7 @@ public class MainServer {
         return gameManager;
     }
 
+    /** Đọc cổng từ tham số dòng lệnh hoặc dùng cổng mặc định rồi khởi động server. */
     public static void main(String[] args) {
         int port = ServerConfig.DEFAULT_PORT;
         if (args.length > 0) {

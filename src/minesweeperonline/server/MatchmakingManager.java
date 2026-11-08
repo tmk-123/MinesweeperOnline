@@ -19,6 +19,7 @@ public class MatchmakingManager {
     private final ClientManager clientManager;
     private final GameManager gameManager;
 
+    /** Nhận các bộ quản lý dùng chung để kiểm tra người chơi và tạo phiên khi ghép được cặp. */
     public MatchmakingManager(ClientManager clientManager, GameManager gameManager) {
         this.clientManager = clientManager;
         this.gameManager = gameManager;

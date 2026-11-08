@@ -13,6 +13,7 @@ final class MinesweeperHeroPanel extends JPanel {
         setPreferredSize(new Dimension(430, 520));
     }
 
+    /** Vẽ phần nền hoặc trạng thái của panel bằng Graphics; dữ liệu vẽ lấy từ trạng thái hiện tại của component. */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -79,6 +80,7 @@ final class MinesweeperHeroPanel extends JPanel {
         g2.dispose();
     }
 
+    /** Tô đa giác từ các tọa độ đỉnh để dựng chi tiết trang trí. */
     private static void drawPolygon(Graphics2D g, int[] xs, int[] ys, Color color) {
         g.setColor(color);
         g.fillPolygon(xs, ys, xs.length);

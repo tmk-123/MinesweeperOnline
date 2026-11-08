@@ -39,6 +39,7 @@ public class ResultDialog extends JDialog {
         initComponents(titleOutcome, reason, scoreDelta, openedSafe, totalActions, flagsPlaced);
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents(String titleOutcome, String reason, int scoreDelta,
                                 int openedSafe, int totalActions, int flagsPlaced) {
         UITheme.configureWindow(this, 760, 480, 700, 430);
@@ -137,6 +138,7 @@ public class ResultDialog extends JDialog {
         });
     }
 
+    /** Tạo thẻ thống kê kết quả với tiêu đề, giá trị và dòng giải thích. */
     private JPanel createStatCard(String title, String value, String note, Color valueColor) {
         JPanel card = new GlassPanel(new GridLayout(3, 1, 0, 3), UITheme.BG_PANEL, 168);
         card.setBorder(BorderFactory.createCompoundBorder(

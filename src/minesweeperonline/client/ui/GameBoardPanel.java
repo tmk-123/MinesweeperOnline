@@ -25,8 +25,10 @@ public class GameBoardPanel extends JPanel {
     private final ServerConnection connection;
     private final String gameId;
     private final JButton[][] buttons;
+    // Đây là bản sao để hiển thị; bàn cờ thật và kết quả thao tác do server quản lý.
     private final boolean[][] opened;
     private final boolean[][] flagged;
+    // Giữ thứ tự click để xác định ô gây nổ nếu GAME_LOSE đến mà không có CELL_OPENED.
     private final Set<Long> pendingOpenCells = new LinkedHashSet<>();
 
     private boolean interactive = false;
@@ -53,6 +55,7 @@ public class GameBoardPanel extends JPanel {
     private static final Icon MINE_EXPLODED_ICON = new ExplosionIcon();
     private static final Icon CROSSED_MINE_ICON = new CrossedMineIcon();
 
+    /** Tạo lưới nút và trạng thái hiển thị, dùng connection và gameId để gửi thao tác đúng trận. */
     public GameBoardPanel(ServerConnection connection, String gameId) {
         this.connection = connection;
         this.gameId = gameId;
@@ -63,6 +66,7 @@ public class GameBoardPanel extends JPanel {
         initComponents();
     }
 
+    /** Dựng lưới 12x12 và bắt chuột: trái gửi OPEN_CELL, phải gửi PLACE_FLAG hoặc REMOVE_FLAG. */
     private void initComponents() {
         setLayout(new GridLayout(ROWS, COLS, 2, 2));
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
@@ -95,10 +99,12 @@ public class GameBoardPanel extends JPanel {
                         if (SwingUtilities.isLeftMouseButton(e)) {
                             // Click trái -> mở ô
                             if (!flagged[row][col]) {
+                                // Chỉ ghi nhận yêu cầu đang chờ, chưa tự mở ô trước khi server trả lời.
                                 pendingOpenCells.add(cellKey(row, col));
                                 connection.sendMessage(JsonProtocol.createOpenCell(gameId, row, col));
                             }
                         } else if (SwingUtilities.isRightMouseButton(e)) {
+                            // Cờ cũng chỉ đổi hình sau FLAG_PLACED/FLAG_REMOVED để khớp trạng thái server.
                             // Click phải -> bật/tắt cờ
                             if (flagged[row][col]) {
                                 connection.sendMessage(JsonProtocol.createRemoveFlag(gameId, row, col));
@@ -122,6 +128,7 @@ public class GameBoardPanel extends JPanel {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
 
         JButton btn = buttons[r][c];
+        // Phản hồi đã xác nhận ô này nên không còn cần giữ trong danh sách click chờ.
         pendingOpenCells.remove(cellKey(r, c));
         opened[r][c] = true;
         flagged[r][c] = false;
@@ -149,6 +156,7 @@ public class GameBoardPanel extends JPanel {
         }
     }
 
+    /** Áp dụng trạng thái cờ server xác nhận; bỏ qua tọa độ sai hoặc ô đã mở. */
     public void setCellFlagged(int r, int c, boolean isFlagged) {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS || opened[r][c]) return;
 
@@ -165,6 +173,7 @@ public class GameBoardPanel extends JPanel {
         }
     }
 
+    /** Cho phép hoặc khóa việc gửi thao tác chuột trong lúc chuẩn bị, mất kết nối hoặc kết thúc trận. */
     public void setInteractive(boolean interactive) {
         this.interactive = interactive;
     }
@@ -184,6 +193,7 @@ public class GameBoardPanel extends JPanel {
         return null;
     }
 
+    /** Gộp hàng và cột thành khóa duy nhất bằng row * COLS + col để theo dõi các click đang chờ phản hồi. */
     private static long cellKey(int row, int col) {
         return (long) row * COLS + col;
     }

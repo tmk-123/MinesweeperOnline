@@ -12,9 +12,11 @@ public class LeaderboardEntry {
     private int wins;
     private int totalMatches;
 
+    /** Khởi tạo một bản ghi xếp hạng gồm vị trí, tài khoản, điểm và thống kê trận. */
     public LeaderboardEntry() {
     }
 
+    /** Khởi tạo một bản ghi xếp hạng gồm vị trí, tài khoản, điểm và thống kê trận. */
     public LeaderboardEntry(int rank, int userId, String username, int totalScore, int wins, int totalMatches) {
         this.rank = rank;
         this.userId = userId;

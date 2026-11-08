@@ -37,6 +37,7 @@ public class MatchHistoryDialog extends InfoFrame {
         refresh();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         UITheme.configureWindow(this, 1080, 640, 780, 500);
         setLocationRelativeTo(getParentFrame());
@@ -174,6 +175,7 @@ public class MatchHistoryDialog extends InfoFrame {
         add(bottomPanel, BorderLayout.SOUTH);
     }
 
+    /** Gửi yêu cầu lấy lịch sử trận cho tài khoản đang đăng nhập. */
     public void refresh() {
         lblStatus.setText("Đang yêu cầu dữ liệu từ máy chủ...");
         if (connection != null && connection.isConnected()) {
@@ -262,6 +264,7 @@ public class MatchHistoryDialog extends InfoFrame {
         });
     }
 
+    /** Chuyển mã kết quả trận thành nội dung tiếng Việt để hiển thị lịch sử. */
     private String translateOutcome(String reason) {
         if (reason == null || reason.isEmpty()) return "";
         if (reason.contains("MINE")) return "Mở trúng mìn";

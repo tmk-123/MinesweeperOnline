@@ -47,7 +47,9 @@ public class GameSession {
     private int winnerUserId = -1; // -1 = đang đấu, 0 = hòa, >0 = userId người thắng
     private String endReason = "";
 
+    // Hai handler và scheduler cùng truy cập phiên đấu: dùng chung khóa khi sửa trạng thái bàn/trận.
     private final Object gameLock = new Object();
+    // Chỉ một luồng được chốt kết quả và lưu điểm nếu hết giờ, mất mạng và mở mìn xảy ra gần nhau.
     private final AtomicBoolean finished = new AtomicBoolean(false);
     private final Set<Integer> playAgainRequests = ConcurrentHashMap.newKeySet();
 
@@ -56,6 +58,7 @@ public class GameSession {
     private ScheduledFuture<?> disconnectGraceTask;
     private volatile int disconnectedUserId = -1;
 
+    /** Tạo hai bàn cờ độc lập, đặt người chơi vào trạng thái đang đấu và bắt đầu đếm ngược READY. */
     public GameSession(Player player1, ClientHandler handler1, Player player2, ClientHandler handler2) {
         this.gameId = UUID.randomUUID().toString().substring(0, 8);
         this.player1 = player1;
@@ -134,6 +137,7 @@ public class GameSession {
         }, 1, 1, TimeUnit.SECONDS);
     }
 
+    /** Hủy đồng hồ trận, bộ đếm chờ kết nối lại và dừng scheduler của phiên đấu. */
     private void stopTimers() {
         if (matchTimerTask != null) {
             matchTimerTask.cancel(false);
@@ -529,6 +533,7 @@ public class GameSession {
         }
     }
 
+    /** Đóng gói các ô đã mở thành JSON để gửi trạng thái bàn cờ cho client. */
     private JsonArray serializeOpenedCells(List<Cell> cells) {
         JsonArray array = new JsonArray();
         for (Cell c : cells) {

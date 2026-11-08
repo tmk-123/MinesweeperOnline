@@ -14,6 +14,7 @@ public class PlayerInfoPanel extends JPanel {
     private final JLabel lblMatchTimer;
     private final JLabel lblMatchStatus;
 
+    /** Tạo vùng thống kê hai người chơi, trạng thái trận và đồng hồ. */
     public PlayerInfoPanel(String playerName, String opponentName) {
         setLayout(new GridLayout(1, 3, 12, 0));
         setBorder(BorderFactory.createEmptyBorder(5, 6, 5, 6));
@@ -56,6 +57,7 @@ public class PlayerInfoPanel extends JPanel {
         add(opponent);
     }
 
+    /** Ghép tên, vai trò và các chỉ số thành thẻ thông tin người chơi. */
     private JPanel createPlayerCard(String name, Color accent, String role) {
         JPanel card = new GlassPanel(new BorderLayout(12, 0), UITheme.BG_CARD, 164);
         card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(accent, 1, true), BorderFactory.createEmptyBorder(10, 14, 10, 14)));
@@ -85,6 +87,7 @@ public class PlayerInfoPanel extends JPanel {
         return card;
     }
 
+    /** Tạo nhãn thống kê với kiểu chữ và màu dùng chung. */
     private JLabel statLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(UITheme.FONT_SMALL);
@@ -92,12 +95,14 @@ public class PlayerInfoPanel extends JPanel {
         return label;
     }
 
+    /** Thay nội dung đồng hồ hiển thị; không quyết định thời điểm xử thắng thua ở server. */
     public void updateMatchTimer(String text) {
         lblMatchTimer.setText(text.replace("Thời gian: ", ""));
         if (text.contains("00:0")) lblMatchTimer.setForeground(UITheme.COLOR_DANGER);
         else lblMatchTimer.setForeground(UITheme.COLOR_PRIMARY);
     }
 
+    /** Hiển thị thông báo trạng thái ván đấu với màu tương ứng. */
     public void updateMatchStatus(String text, Color color) {
         String value = text.replace("Trạng thái: ", "");
         value = value.replace("ĐANG THI ĐẤU", "ĐANG THI ĐẤU");
@@ -105,16 +110,20 @@ public class PlayerInfoPanel extends JPanel {
         lblMatchStatus.setForeground(color);
     }
 
+    /** Hiển thị số ô an toàn, cờ và thao tác của người chơi hiện tại. */
     public void updateSelfStats(int safeCells, int flags, int actions) {
         lblPlayerSafe.setText("Ô an toàn: " + safeCells + " / 121");
         lblPlayerFlags.setText("Cờ đang cắm: " + flags + " / 23");
         lblPlayerActions.setText("Số thao tác: " + actions);
     }
+    /** Hiển thị số ô an toàn, cờ và thao tác của người chơi hiện tại. */
     public void updateSelfStats(int safeCells, int flags) { updateSelfStats(safeCells, flags, 0); }
+    /** Hiển thị các bộ đếm tiến độ của đối thủ nhận từ server. */
     public void updateOpponentStats(int safeCells, int flags, int actions) {
         lblOpponentSafe.setText("Ô an toàn: " + safeCells + " / 121");
         lblOpponentFlags.setText("Cờ đang cắm: " + flags + " / 23");
         lblOpponentActions.setText("Số thao tác: " + actions);
     }
+    /** Hiển thị các bộ đếm tiến độ của đối thủ nhận từ server. */
     public void updateOpponentStats(int safeCells, int flags) { updateOpponentStats(safeCells, flags, 0); }
 }

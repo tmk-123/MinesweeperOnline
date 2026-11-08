@@ -19,6 +19,7 @@ public class BoardState implements Serializable {
     private int openedSafeCells;
     private int currentFlags;
 
+    /** Tạo trạng thái lưới ô dùng để trao đổi dữ liệu giữa các phần của ứng dụng. */
     public BoardState() {
         this.cells = new CellState[ROWS][COLS];
         for (int r = 0; r < ROWS; r++) {

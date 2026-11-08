@@ -31,6 +31,7 @@ public class LeaderboardDialog extends InfoFrame {
         refresh();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         UITheme.configureWindow(this, 1080, 660, 800, 500);
         setLocationRelativeTo(getParentFrame());
@@ -170,6 +171,7 @@ public class LeaderboardDialog extends InfoFrame {
         add(bottomPanel, BorderLayout.SOUTH);
     }
 
+    /** Tạo phần giao diện trình bày thông tin thứ hạng. */
     private JComponent createRankPanel() {
         JPanel panel = new GlassPanel(new BorderLayout(), UITheme.BG_CARD, 150);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -209,11 +211,13 @@ public class LeaderboardDialog extends InfoFrame {
         return panel;
     }
 
+    /** Gửi yêu cầu tải bảng xếp hạng mới nhất từ server. */
     public void refresh() {
         lblStatus.setText("Đang tải bảng xếp hạng từ máy chủ...");
         connection.sendMessage(JsonProtocol.createGetLeaderboard());
     }
 
+    /** Đưa các bản ghi xếp hạng đã nhận vào thành phần hiển thị. */
     public void updateLeaderboard(List<LeaderboardEntry> list) {
         SwingUtilities.invokeLater(() -> {
             tableModel.setRowCount(0);

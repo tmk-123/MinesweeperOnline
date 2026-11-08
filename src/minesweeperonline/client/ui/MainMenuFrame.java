@@ -57,6 +57,7 @@ public class MainMenuFrame extends JFrame {
         autoRefreshTimer.start();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         setTitle("Minesweeper Online - Sảnh Chờ (" + currentUser.getUsername() + ")");
         UITheme.configureWindow(this, 1180, 760, 860, 600);
@@ -188,6 +189,7 @@ public class MainMenuFrame extends JFrame {
         add(mainPanel);
     }
 
+    /** Bật hoặc hủy tìm trận nhanh, gửi message tương ứng và đổi trạng thái nút trên sảnh. */
     private void toggleQuickMatch() {
         if (!isSearchingMatch) {
             isSearchingMatch = true;
@@ -202,6 +204,7 @@ public class MainMenuFrame extends JFrame {
         }
     }
 
+    /** Dừng tác vụ làm mới và hủy listener mạng của sảnh trước khi đóng cửa sổ. */
     @Override
     public void dispose() {
         if (autoRefreshTimer != null) autoRefreshTimer.stop();
@@ -214,6 +217,7 @@ public class MainMenuFrame extends JFrame {
         super.dispose();
     }
 
+    /** Đăng ký nhận phản hồi từ server và chuyển phần cập nhật giao diện sang EDT bằng invokeLater. */
     private void setupNetworkListener() {
         lobbyListener = message -> {
             SwingUtilities.invokeLater(() -> handleServerMessage(message));
@@ -221,6 +225,7 @@ public class MainMenuFrame extends JFrame {
         connection.addMessageListener(lobbyListener);
     }
 
+    /** Phân loại phản hồi ở sảnh và chuyển tới phần cập nhật danh sách, lời mời, trận đấu hoặc lịch sử. */
     private void handleServerMessage(Message message) {
         if (message == null || message.getType() == null) return;
 
@@ -267,6 +272,7 @@ public class MainMenuFrame extends JFrame {
         }
     }
 
+    /** Chuyển mảng players trong payload thành model Player để cập nhật bảng người chơi online. */
     private void handleOnlinePlayers(Message message) {
         JsonObject payload = message.getPayload();
         List<Player> players = new ArrayList<>();
@@ -289,6 +295,7 @@ public class MainMenuFrame extends JFrame {
         onlinePanel.updatePlayers(players);
     }
 
+    /** Mở hộp thoại nhận lời mời với tên và userId của người thách đấu. */
     private void handleChallengeRequest(Message message) {
         JsonObject payload = message.getPayload();
         int fromUserId = payload.get("fromUserId").getAsInt();
@@ -303,6 +310,7 @@ public class MainMenuFrame extends JFrame {
     private int lastGameExtendedState = Frame.MAXIMIZED_BOTH;
     private Rectangle lastGameBounds = null;
 
+    /** Lưu trạng thái và kích thước cửa sổ trận để dùng lại khi mở trận tiếp theo. */
     public void saveGameWindowState(int extendedState, Rectangle bounds) {
         this.lastGameExtendedState = extendedState;
         if (bounds != null && bounds.width > 200 && bounds.height > 200) {
@@ -310,6 +318,7 @@ public class MainMenuFrame extends JFrame {
         }
     }
 
+    /** Xóa trạng thái tìm trận, đóng cửa sổ ván cũ nếu có rồi mở GameFrame cho trận server vừa tạo. */
     private void handleMatchCreated(Message message) {
         JsonObject payload = message.getPayload();
         String gameId = payload.get("gameId").getAsString();
@@ -339,6 +348,7 @@ public class MainMenuFrame extends JFrame {
         this.setVisible(false);
     }
 
+    /** Tạo lại cửa sổ trận và khôi phục bàn cờ, đồng hồ, thống kê từ payload server. */
     private void handleGameReconnected(Message message) {
         JsonObject payload = message.getPayload();
         String gameId = payload.get("gameId").getAsString();
@@ -369,6 +379,7 @@ public class MainMenuFrame extends JFrame {
         this.setVisible(false);
     }
 
+    /** Thông báo lời mời bị từ chối, trả nút thách đấu về trạng thái sẵn sàng và tải lại danh sách online. */
     private void handleChallengeRejected(Message message) {
         JsonObject payload = message.getPayload();
         String rejectedByName = payload.has("rejectedByUsername") ?
@@ -382,6 +393,7 @@ public class MainMenuFrame extends JFrame {
         onlinePanel.refreshOnlinePlayers();
     }
 
+    /** Chuyển JSON bảng xếp hạng thành các bản ghi rồi cập nhật panel và hộp thoại đang mở. */
     private void handleLeaderboard(Message message) {
         JsonObject payload = message.getPayload();
         List<LeaderboardEntry> list = new ArrayList<>();
@@ -409,6 +421,7 @@ public class MainMenuFrame extends JFrame {
         }
     }
 
+    /** Khi hiện sảnh, phóng to cửa sổ và yêu cầu làm mới người chơi online cùng bảng xếp hạng. */
     @Override
     public void setVisible(boolean b) {
         super.setVisible(b);
@@ -419,6 +432,7 @@ public class MainMenuFrame extends JFrame {
         }
     }
 
+    /** Chuyển phản hồi lịch sử tới hộp thoại nếu hộp thoại đó vẫn đang hiển thị. */
     private void handleMatchHistory(Message message) {
         if (matchHistoryDialog != null && matchHistoryDialog.isDisplayable()) {
             matchHistoryDialog.updateHistoryFromMessage(message);

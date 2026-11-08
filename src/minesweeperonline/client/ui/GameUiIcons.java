@@ -7,24 +7,30 @@ import java.awt.geom.Path2D;
 
 /** Small vector emblems and character portraits for the Minesweeper UI. */
 public final class GameUiIcons {
+    /** Chặn khởi tạo đối tượng: các biểu tượng được tạo qua hàm tĩnh. */
     private GameUiIcons() { }
 
+    /** Tạo biểu tượng bậc xếp hạng với kích thước yêu cầu. */
     public static Icon rankTierIcon(int score, int size) {
         return new RankTierIcon(score, size);
     }
 
+    /** Tạo huy chương hiển thị vị trí trên bảng xếp hạng. */
     public static Icon podiumMedalIcon(int rank, int size) {
         return rank >= 1 && rank <= 3 ? new PodiumMedalIcon(rank, size) : null;
     }
 
+    /** Tạo avatar vẽ bằng vector từ tên và màu đại diện người chơi. */
     public static Icon playerAvatarIcon(String username, Color accent, int size) {
         return playerAvatarIcon(username, accent, size, true);
     }
 
+    /** Tạo avatar vẽ bằng vector từ tên và màu đại diện người chơi. */
     public static Icon playerAvatarIcon(String username, Color accent, int size, boolean showTeamRing) {
         return new PlayerAvatarIcon(username, accent, size, showTeamRing);
     }
 
+    /** Quy đổi tổng điểm sang bậc xếp hạng dùng khi vẽ biểu tượng. */
     private static int tierForScore(int score) {
         if (score >= 1000) return 4;
         if (score >= 500) return 3;
@@ -33,6 +39,7 @@ public final class GameUiIcons {
         return 0;
     }
 
+    /** Chọn màu đại diện cho bậc xếp hạng. */
     private static Color tierColor(int tier) {
         switch (tier) {
             case 4: return UITheme.COLOR_PRIMARY;

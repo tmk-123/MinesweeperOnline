@@ -24,6 +24,7 @@ public class TestLeaderboard {
 
     private static final int TEST_PORT = 2213;
 
+    /** Chạy các bước kiểm tra trong lớp; bật -ea khi chạy Java để các câu lệnh assert có hiệu lực. */
     public static void main(String[] args) throws Exception {
         System.out.println("==================================================");
         System.out.println("       RUNNING LEADERBOARD INTEGRATION TEST       ");

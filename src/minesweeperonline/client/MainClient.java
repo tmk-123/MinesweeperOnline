@@ -16,12 +16,14 @@ public class MainClient {
     private final String host;
     private final int port;
 
+    /** Tạo một kết nối dùng chung cho các màn hình và lưu địa chỉ server cần kết nối. */
     public MainClient(String host, int port) {
         this.connection = new ServerConnection();
         this.host = host;
         this.port = port;
     }
 
+    /** Bật nhạc nền, cài giao diện chung rồi mở màn hình đăng nhập trên luồng Swing (EDT). */
     public void launch() {
         SoundManager.getInstance().startBackgroundMusic();
         SwingUtilities.invokeLater(() -> {
@@ -35,6 +37,7 @@ public class MainClient {
         });
     }
 
+    /** Kết nối TCP tới server; thành công thì mở đăng nhập, thất bại thì cho phép thử lại. */
     private void connectAndOpenLogin() {
         boolean connected = connection.connect(host, port);
         if (connected) {
