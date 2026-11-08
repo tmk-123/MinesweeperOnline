@@ -2,21 +2,55 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Người dùng nhập thông tin và chọn đăng ký.
+Người dùng nhập an_demo, mật khẩu 123456 và xác nhận 123456. Giả sử tên này chưa tồn tại.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-RegisterFrame → REGISTER → ClientHandler → UserDAO → kết quả
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [RegisterFrame.java:161](../../src/minesweeperonline/client/ui/RegisterFrame.java#L161) | `private void performRegister()` | Đọc dữ liệu; chặn rỗng hoặc mật khẩu xác nhận không khớp. Gọi createRegister rồi sendMessage. |
+| 2 | [JsonProtocol.java:60](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L60) | `public static Message createRegister(` | Payload chỉ có username/password; không gửi mật khẩu xác nhận. |
+| 3 | [ClientHandler.java:296](../../src/minesweeperonline/server/ClientHandler.java#L296) | `private void handleRegister(` | Đọc payload, kiểm tra rỗng và gọi userDAO.existsByUsername("an_demo"). |
+| 4 | [UserDAO.java:81](../../src/minesweeperonline/database/UserDAO.java#L81) | `public boolean register(` | INSERT User bằng PreparedStatement, tổng điểm ban đầu bằng 0. |
+| 5 | [JsonProtocol.java:70](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L70) | `public static Message createRegisterSuccess(` | Tạo REGISTER_SUCCESS với payload.message; handler gửi lại client. |
+| 6 | [RegisterFrame.java:198](../../src/minesweeperonline/client/ui/RegisterFrame.java#L198) | `private void setupNetworkListener()` | Nhận phản hồi trên EDT, thành công thì điền sẵn thông tin vào màn hình đăng nhập. |
+
+## Message và kết quả trong tình huống này
+
+Client → server:
+
+```json
+{
+  "type": "REGISTER",
+  "payload": {
+    "username": "an_demo",
+    "password": "123456"
+  }
+}
 ```
+
+Server → client:
+
+```json
+{
+  "type": "REGISTER_SUCCESS",
+  "payload": {
+    "message": "Dang ky tai khoan thanh cong!"
+  }
+}
+```
+
+Tên trùng trả REGISTER_FAILED với payload.reason="Ten dang nhap da ton tai!". Đăng ký thành công chưa phải đăng nhập. Nếu MySQL lỗi, DAO có nhánh lưu dự phòng trong RAM, dữ liệu không bền qua lần tắt server.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Client kiểm tra dữ liệu và gửi REGISTER.
 
-**Code:** [RegisterFrame.java — dòng 159](../../src/minesweeperonline/client/ui/RegisterFrame.java#L159). Tìm `private void performRegister()`.
+**Code:** [RegisterFrame.java — dòng 161](../../src/minesweeperonline/client/ui/RegisterFrame.java#L161). Tìm `private void performRegister()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -49,7 +83,7 @@ private void performRegister() {
 
 ### Bước 2. Server kiểm tra dữ liệu rỗng và trùng tên rồi gọi DAO.
 
-**Code:** [ClientHandler.java — dòng 288](../../src/minesweeperonline/server/ClientHandler.java#L288). Tìm `private void handleRegister(`.
+**Code:** [ClientHandler.java — dòng 296](../../src/minesweeperonline/server/ClientHandler.java#L296). Tìm `private void handleRegister(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -122,7 +156,7 @@ public boolean register(String username, String password) {
 
 ### Bước 4. Client nhận kết quả đăng ký và hiển thị thông báo.
 
-**Code:** [RegisterFrame.java — dòng 194](../../src/minesweeperonline/client/ui/RegisterFrame.java#L194). Tìm `private void setupNetworkListener()`.
+**Code:** [RegisterFrame.java — dòng 198](../../src/minesweeperonline/client/ui/RegisterFrame.java#L198). Tìm `private void setupNetworkListener()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

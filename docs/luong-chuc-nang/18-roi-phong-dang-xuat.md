@@ -2,21 +2,61 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Client gửi EXIT hoặc LOGOUT.
+Sau khi trận kết thúc, A bấm về sảnh ở hộp thoại kết quả. Sau đó A bấm Đăng xuất.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-EXIT → có thể FORFEIT → handleExit; LOGOUT → EXIT → unregisterUser
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [ResultDialog.java:135](../../src/minesweeperonline/client/ui/ResultDialog.java#L135) | `JsonProtocol.createExit(` | Gửi EXIT có mã trận; callback client đóng cửa sổ trận và hiện sảnh. |
+| 2 | [ClientHandler.java:614](../../src/minesweeperonline/server/ClientHandler.java#L614) | `private void handleExit(` | Tìm session; nếu trận chưa kết thúc thì gọi handleForfeit trước, sau đó session.handleExit. |
+| 3 | [GameSession.java:457](../../src/minesweeperonline/server/GameSession.java#L457) | `public void handleExit(` | Bỏ yêu cầu chơi lại của A, báo B đối thủ rời phòng, đặt hai Player IDLE và xóa session. |
+| 4 | [MainMenuFrame.java:130](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L130) | `connection.sendMessage(JsonProtocol.createLogout())` | Khi đăng xuất, gửi LOGOUT, dừng timer sảnh và quay lại LoginFrame. |
+| 5 | [ClientHandler.java:634](../../src/minesweeperonline/server/ClientHandler.java#L634) | `private void handleLogout(` | Hủy lời mời, handleExit để xử lý phiên còn lại; unregisterUser(101), đặt user/player=null. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "EXIT",
+  "gameId": "a1b2c3d4",
+  "payload": {}
+}
 ```
+
+Server → B:
+
+```json
+{
+  "type": "EXIT",
+  "payload": {
+    "message": "Đối thủ đã rời phòng ra sảnh."
+  }
+}
+```
+
+A → server khi đăng xuất:
+
+```json
+{
+  "type": "LOGOUT",
+  "payload": {}
+}
+```
+
+EXIT là rời phòng, không phải đăng xuất. LOGOUT bỏ tài khoản khỏi online nhưng **giữ socket** để đăng nhập lại. Không có LOGOUT_SUCCESS riêng trong protocol hiện tại. Rời trận chưa xong bị xử đầu hàng; rời phòng đã kết thúc không trừ điểm thêm.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Nếu trận chưa kết thúc thì xử đầu hàng trước khi rời.
 
-**Code:** [ClientHandler.java — dòng 595](../../src/minesweeperonline/server/ClientHandler.java#L595). Tìm `private void handleExit(`.
+**Code:** [ClientHandler.java — dòng 614](../../src/minesweeperonline/server/ClientHandler.java#L614). Tìm `private void handleExit(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -40,7 +80,7 @@ private void handleExit(Message message) {
 
 ### Bước 2. Báo đối thủ, trả trạng thái và xóa session.
 
-**Code:** [GameSession.java — dòng 453](../../src/minesweeperonline/server/GameSession.java#L453). Tìm `public void handleExit(`.
+**Code:** [GameSession.java — dòng 457](../../src/minesweeperonline/server/GameSession.java#L457). Tìm `public void handleExit(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -71,7 +111,7 @@ public void handleExit(int userId, GameManager gameManager) {
 
 ### Bước 3. Hủy lời mời, xử lý rời trận rồi bỏ liên kết tài khoản.
 
-**Code:** [ClientHandler.java — dòng 615](../../src/minesweeperonline/server/ClientHandler.java#L615). Tìm `private void handleLogout(`.
+**Code:** [ClientHandler.java — dòng 634](../../src/minesweeperonline/server/ClientHandler.java#L634). Tìm `private void handleLogout(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -89,7 +129,6 @@ private void handleLogout(Message message) {
         player = null;
     }
 }
-
 ```
 
 ## Điểm cần nắm

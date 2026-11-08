@@ -2,21 +2,59 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Client yêu cầu danh sách ở sảnh.
+A là an_demo (101), B là binh_demo (102). Cả hai đã đăng nhập; B đang rảnh. A mở sảnh hoặc bấm Làm mới.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-GET_ONLINE_PLAYERS → ClientManager → ONLINE_PLAYERS → MainMenuFrame
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [MainMenuFrame.java:48](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L48) | `autoRefreshTimer = new Timer(` | Khi sảnh hiện, mỗi 4 giây gọi làm mới online và bảng xếp hạng; nút Làm mới cũng gọi hai tác vụ. |
+| 2 | [OnlinePlayersPanel.java:205](../../src/minesweeperonline/client/ui/OnlinePlayersPanel.java#L205) | `public void refreshOnlinePlayers()` | Gửi createGetOnlinePlayers() qua connection dùng chung. |
+| 3 | [ClientHandler.java:323](../../src/minesweeperonline/server/ClientHandler.java#L323) | `private void handleGetOnlinePlayers(` | Lấy ID 101 từ tài khoản gắn handler, gọi getOnlinePlayers(101). |
+| 4 | [ClientManager.java:89](../../src/minesweeperonline/server/ClientManager.java#L89) | `public List<Player> getOnlinePlayers(` | Duyệt onlineUsers, loại chính A và lấy Player từ các handler còn lại. |
+| 5 | [MainMenuFrame.java:259](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L259) | `private void handleOnlinePlayers(` | Chuyển payload.players thành List<Player>, gọi onlinePanel.updatePlayers(players). |
+| 6 | [OnlinePlayersPanel.java:210](../../src/minesweeperonline/client/ui/OnlinePlayersPanel.java#L210) | `public void updatePlayers(` | Thay các dòng trong bảng bằng dữ liệu mới. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "GET_ONLINE_PLAYERS",
+  "payload": {}
+}
 ```
+
+Server → A:
+
+```json
+{
+  "type": "ONLINE_PLAYERS",
+  "payload": {
+    "players": [
+      {
+        "userId": 102,
+        "username": "binh_demo",
+        "totalScore": 40,
+        "status": "IDLE"
+      }
+    ]
+  }
+}
+```
+
+Nếu B thoát, lượt tải sau không còn B. A không hiện ở bảng của chính mình. Tài khoản chỉ có trong MySQL nhưng chưa đăng nhập không được tính là online. IDLE là trạng thái rảnh để nhận lời mời.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Tạo yêu cầu lấy danh sách.
 
-**Code:** [JsonProtocol.java — dòng 116](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L116). Tìm `public static Message createGetOnlinePlayers()`.
+**Code:** [JsonProtocol.java — dòng 123](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L123). Tìm `public static Message createGetOnlinePlayers()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -28,7 +66,7 @@ public static Message createGetOnlinePlayers() {
 
 ### Bước 2. Server đóng gói userId, tên, điểm và trạng thái.
 
-**Code:** [ClientHandler.java — dòng 314](../../src/minesweeperonline/server/ClientHandler.java#L314). Tìm `private void handleGetOnlinePlayers(`.
+**Code:** [ClientHandler.java — dòng 323](../../src/minesweeperonline/server/ClientHandler.java#L323). Tìm `private void handleGetOnlinePlayers(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -56,13 +94,13 @@ private void handleGetOnlinePlayers(Message message) {
     sendMessage(res);
 }
 
+/** Lấy 10 người đứng đầu qua UserDAO rồi gửi điểm, số trận và tỷ lệ thắng trong LEADERBOARD. */
 private void handleGetLeaderboard(Message message) {
-    List<LeaderboardEntry> list = userDAO.getLeaderboard(10);
 ```
 
 ### Bước 3. Lấy các Player của tài khoản online.
 
-**Code:** [ClientManager.java — dòng 82](../../src/minesweeperonline/server/ClientManager.java#L82). Tìm `public List<Player> getOnlinePlayers(`.
+**Code:** [ClientManager.java — dòng 89](../../src/minesweeperonline/server/ClientManager.java#L89). Tìm `public List<Player> getOnlinePlayers(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -81,7 +119,7 @@ public List<Player> getOnlinePlayers(int excludeUserId) {
 
 ### Bước 4. Client cập nhật danh sách người chơi.
 
-**Code:** [MainMenuFrame.java — dòng 270](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L270). Tìm `private void handleOnlinePlayers(`.
+**Code:** [MainMenuFrame.java — dòng 259](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L259). Tìm `private void handleOnlinePlayers(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

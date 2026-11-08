@@ -27,6 +27,8 @@ public class MineGenerator {
      * @param safeCol cột của lần click đầu tiên (-1 nếu không có vùng an toàn)
      */
     public static void generateMines(Cell[][] grid, int rows, int cols, int mineCount, int safeRow, int safeCol) {
+        
+        // kiểm tra nếu thay đổi kích thước bàn cờ
         int totalCells = rows * cols;
         if (mineCount >= totalCells) {
             throw new IllegalArgumentException("Mine count must be strictly less than total cells.");
@@ -40,7 +42,7 @@ public class MineGenerator {
             }
         }
 
-        // Gom các ô ứng viên nằm ngoài vùng an toàn (ô an toàn + 8 ô xung quanh)
+        // ô đó và 8 ô xung quanh an toàn
         List<int[]> candidates = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {

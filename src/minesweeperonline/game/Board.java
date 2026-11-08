@@ -20,19 +20,20 @@ public class Board {
     public static final int TOTAL_MINES = 23;
     public static final int TOTAL_SAFE_CELLS = TOTAL_CELLS - TOTAL_MINES; // 121
 
+    // kết quả của 1 lần mở ô
     public enum OpenResult {
         INVALID,
         SAFE,
         MINE
     }
 
-    private final Cell[][] grid;
-    private int openedSafeCells;
-    private int currentFlags;
-    private int flagsPlaced;
-    private int flagsRemoved;
-    private int totalActions;
-    private boolean minesGenerated;
+    private final Cell[][] grid; 
+    private int openedSafeCells; // số ô mở an toàn
+    private int currentFlags; // số cờ trên bàn
+    private int flagsPlaced; // tổng số lần đã đặt cờ kể từ đầu ván
+    private int flagsRemoved; // số lần gỡ cờ
+    private int totalActions; // tổng số thao tác hợp lệ
+    private boolean minesGenerated; // mìn đã tạo -> true
 
     /** Tạo lưới Cell và đặt lại bộ đếm; mìn chỉ được sinh khi mở ô hợp lệ đầu tiên. */
     public Board() {

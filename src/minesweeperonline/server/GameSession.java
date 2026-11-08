@@ -166,7 +166,7 @@ public class GameSession {
             if (targetBoard == null || actingPlayer == null) return;
 
             List<Cell> newlyOpened = new ArrayList<>();
-            Board.OpenResult result = targetBoard.openCell(row, col, newlyOpened);
+            Board.OpenResult result = targetBoard.openCell(row, col, newlyOpened); // trả về safe/mine/invalid
 
             if (result == Board.OpenResult.INVALID) {
                 return;
@@ -174,7 +174,7 @@ public class GameSession {
 
             actingPlayer.setOpenedSafeCells(targetBoard.getOpenedSafeCells());
             actingPlayer.setTotalActions(targetBoard.getTotalActions());
-
+ 
             if (result == Board.OpenResult.MINE) {
                 // Mở trúng mìn -> thua ngay lập tức
                 finishGame(opponentPlayer.getUserId(), "CLICKED_MINE");

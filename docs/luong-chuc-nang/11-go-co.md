@@ -2,21 +2,78 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Click phải vào ô có cờ.
+Tiếp luồng 10: ô (3,7) có cờ, totalActions=2. A click phải lần nữa để gỡ.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-REMOVE_FLAG → handleRemoveFlag → Board.removeFlag → FLAG_REMOVED + GAME_UPDATE
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [GameBoardPanel.java:96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96) | `public void mousePressed(` | Nhánh chuột phải chọn createPlaceFlag nếu chưa có cờ, createRemoveFlag nếu đã có cờ; gửi tọa độ (3,7). |
+| 2 | [ClientHandler.java:232](../../src/minesweeperonline/server/ClientHandler.java#L232) | `private void handleRemoveFlag(` | Tra session theo tài khoản và gọi session.handleRemoveFlag(101,3,7). |
+| 3 | [GameSession.java:308](../../src/minesweeperonline/server/GameSession.java#L308) | `public void handleRemoveFlag(` | Khóa gameLock, kiểm tra PLAYING rồi gọi Board.removeFlag(3,7). |
+| 4 | [Board.java:201](../../src/minesweeperonline/game/Board.java#L201) | `public boolean removeFlag(` | Kiểm tra ô có cờ; đặt flagged=false, giảm currentFlags, tăng flagsRemoved và totalActions. Không giảm flagsPlaced. |
+| 5 | [GameSession.java:321](../../src/minesweeperonline/server/GameSession.java#L321) | `Message res = new Message(MessageType.FLAG_REMOVED)` | Gửi FLAG_REMOVED cho A và GAME_UPDATE cho B. |
+| 6 | [GameFrame.java:379](../../src/minesweeperonline/client/ui/GameFrame.java#L379) | `private void onFlagRemoved(` | Gọi boardPanel.setCellFlagged(3,7,false) rồi cập nhật bộ đếm. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "REMOVE_FLAG",
+  "gameId": "a1b2c3d4",
+  "payload": {
+    "row": 3,
+    "col": 7
+  }
+}
 ```
+
+Server → A:
+
+```json
+{
+  "type": "FLAG_REMOVED",
+  "gameId": "a1b2c3d4",
+  "payload": {
+    "row": 3,
+    "col": 7,
+    "currentFlags": 0,
+    "totalActions": 3
+  }
+}
+```
+
+Server → B:
+
+```json
+{
+  "type": "GAME_UPDATE",
+  "gameId": "a1b2c3d4",
+  "payload": {
+    "opponentId": 101,
+    "opponentOpenedSafeCells": 9,
+    "opponentCurrentFlags": 0,
+    "opponentTotalActions": 3,
+    "flagRow": 3,
+    "flagCol": 7,
+    "flagState": false
+  }
+}
+```
+
+Cờ là đánh dấu của người chơi, server không đòi ô phải thực sự có mìn. Chỉ đổi hình sau khi server xác nhận. Board trả false nếu thao tác không hợp lệ: không có gói thành công và không tăng bộ đếm. Mỗi lần cắm/gỡ hợp lệ đều tính một thao tác.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Client gửi yêu cầu gỡ cờ.
 
-**Code:** [GameBoardPanel.java — dòng 104](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L104). Tìm `connection.sendMessage(JsonProtocol.createRemoveFlag`.
+**Code:** [GameBoardPanel.java — dòng 110](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L110). Tìm `connection.sendMessage(JsonProtocol.createRemoveFlag`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -26,7 +83,7 @@ connection.sendMessage(JsonProtocol.createRemoveFlag(gameId, row, col));
 
 ### Bước 2. Chuyển yêu cầu tới session.
 
-**Code:** [ClientHandler.java — dòng 226](../../src/minesweeperonline/server/ClientHandler.java#L226). Tìm `private void handleRemoveFlag(`.
+**Code:** [ClientHandler.java — dòng 232](../../src/minesweeperonline/server/ClientHandler.java#L232). Tìm `private void handleRemoveFlag(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -45,7 +102,7 @@ private void handleRemoveFlag(Message message) {
 
 ### Bước 3. Server xử lý và gửi xác nhận nếu gỡ thành công.
 
-**Code:** [GameSession.java — dòng 304](../../src/minesweeperonline/server/GameSession.java#L304). Tìm `public void handleRemoveFlag(`.
+**Code:** [GameSession.java — dòng 308](../../src/minesweeperonline/server/GameSession.java#L308). Tìm `public void handleRemoveFlag(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -88,7 +145,7 @@ public void handleRemoveFlag(int userId, int row, int col) {
 
 ### Bước 4. Chỉ gỡ ô có cờ; giảm currentFlags, tăng flagsRemoved và totalActions.
 
-**Code:** [Board.java — dòng 197](../../src/minesweeperonline/game/Board.java#L197). Tìm `public boolean removeFlag(`.
+**Code:** [Board.java — dòng 201](../../src/minesweeperonline/game/Board.java#L201). Tìm `public boolean removeFlag(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -112,7 +169,7 @@ public boolean removeFlag(int r, int c) {
 
 ### Bước 5. Client cập nhật ô và số cờ.
 
-**Code:** [GameFrame.java — dòng 367](../../src/minesweeperonline/client/ui/GameFrame.java#L367). Tìm `private void onFlagRemoved(`.
+**Code:** [GameFrame.java — dòng 379](../../src/minesweeperonline/client/ui/GameFrame.java#L379). Tìm `private void onFlagRemoved(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

@@ -2,21 +2,41 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Một nhánh kết thúc gọi finishGame.
+A mở trúng mìn ở lượt sau. A có 60 điểm, B có 40; A mở 23 ô/6 thao tác/1 lần cắm cờ, B mở 9 ô/1 thao tác/0 lần cắm cờ.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-finishGame → saveMatchToDatabase → saveFullMatchTransaction → commit hoặc xử lý lỗi
-```
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [GameSession.java:556](../../src/minesweeperonline/server/GameSession.java#L556) | `public boolean finishGame(` | Nhận winnerUserId=102,reason=CLICKED_MINE; AtomicBoolean chỉ cho một lần chốt/lưu kết quả. |
+| 2 | [GameSession.java:479](../../src/minesweeperonline/server/GameSession.java#L479) | `public void saveMatchToDatabase(` | Xác định A DEFEAT -3, B VICTORY +5; cập nhật Player trong RAM thành 57/45. |
+| 3 | [MatchPlayerDAO.java:71](../../src/minesweeperonline/database/MatchPlayerDAO.java#L71) | `public boolean saveFullMatchTransaction(` | Có overload chuyển tiếp; bản lưu đầy đủ gọi setAutoCommit(false) để gộp thay đổi thành transaction. |
+| 4 | [MatchDAO.java:17](../../src/minesweeperonline/database/MatchDAO.java#L17) | `public boolean insertMatch(` | Thêm Match a1b2c3d4,FINISHED,winnerId=102 và thời gian trận. |
+| 5 | [MatchPlayerDAO.java:51](../../src/minesweeperonline/database/MatchPlayerDAO.java#L51) | `public boolean insertMatchPlayer(` | Thêm hai MatchPlayer: A DEFEAT/-3/23 ô và B VICTORY/+5/9 ô. |
+| 6 | [MatchPlayerDAO.java:112](../../src/minesweeperonline/database/MatchPlayerDAO.java#L112) | `String sqlScore =` | Hai UPDATE User dùng GREATEST(0,totalScore+delta), sau đó commit. |
+
+## Message và kết quả trong tình huống này
+
+Luồng này là **lời gọi nội bộ Java/JDBC trên server**, không có message SAVE_MATCH do client gửi.
+
+| Nơi lưu | Dữ liệu ví dụ |
+|---|---|
+| Match | id=a1b2c3d4, status=FINISHED, winnerId=102, result=CLICKED_MINE |
+| MatchPlayer A | userId=101, result=DEFEAT, openedSafeCells=23, totalActions=6, flagsPlaced=1, score=-3 |
+| MatchPlayer B | userId=102, result=VICTORY, openedSafeCells=9, totalActions=1, flagsPlaced=0, score=5 |
+| User | A.totalScore=57, B.totalScore=45 |
+
+Hòa ghi DRAW/+1 mỗi bên; bỏ cuộc ghi FORFEIT/-5. Lịch sử đọc MatchPlayer.score đã lưu, không tính lại theo cấu hình hôm nay. Nếu MySQL lỗi, code có nhánh cập nhật/lưu dự phòng RAM và rollback kết nối nếu có; dữ liệu RAM không bền qua lần tắt server. Xem đúng catch bên dưới để phân biệt với nhánh commit thành công.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Chốt kết thúc một lần bằng compareAndSet.
 
-**Code:** [GameSession.java — dòng 551](../../src/minesweeperonline/server/GameSession.java#L551). Tìm `public boolean finishGame(`.
+**Code:** [GameSession.java — dòng 556](../../src/minesweeperonline/server/GameSession.java#L556). Tìm `public boolean finishGame(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -38,7 +58,7 @@ public boolean finishGame(int winnerUserId, String reason) {
 
 ### Bước 2. Tính kết quả và điểm mỗi người theo lý do kết thúc.
 
-**Code:** [GameSession.java — dòng 475](../../src/minesweeperonline/server/GameSession.java#L475). Tìm `public void saveMatchToDatabase(`.
+**Code:** [GameSession.java — dòng 479](../../src/minesweeperonline/server/GameSession.java#L479). Tìm `public void saveMatchToDatabase(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -75,12 +95,11 @@ public void saveMatchToDatabase(int winnerId, String reason) {
             player2.getUserId(), player2.getUsername(), res2, board2.getOpenedSafeCells(), board2.getTotalActions(), board2.getFlagsPlaced(), delta2
     );
 }
-
 ```
 
 ### Bước 3. Truyền dữ liệu trận và thống kê hai người vào DAO.
 
-**Code:** [GameSession.java — dòng 501](../../src/minesweeperonline/server/GameSession.java#L501). Tìm `dao.saveFullMatchTransaction(`.
+**Code:** [GameSession.java — dòng 505](../../src/minesweeperonline/server/GameSession.java#L505). Tìm `dao.saveFullMatchTransaction(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -144,7 +163,6 @@ recordFallbackMatchDetails(matchId, outcomeDescription, startedAt, endedAt,
         user1Id, user1Name, res1, opened1, actions1, flags1, scoreDelta1,
         user2Id, user2Name, res2, opened2, actions2, flags2, scoreDelta2);
 return true;
-
 ```
 
 ### Bước 6. Nhánh lỗi có cập nhật fallback và cố rollback.

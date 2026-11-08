@@ -2,21 +2,63 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Người chơi bật hoặc tắt tìm trận nhanh.
+A bấm Tìm trận nhanh khi hàng đợi rỗng; một lúc sau B cũng bấm tìm.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-QUICK_MATCH → joinQueue → chờ hoặc createSession → MATCH_CREATED
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [MainMenuFrame.java:176](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L176) | `private void toggleQuickMatch()` | A gửi QUICK_MATCH và đổi chữ nút sang đang tìm. |
+| 2 | [ClientHandler.java:391](../../src/minesweeperonline/server/ClientHandler.java#L391) | `private void handleQuickMatch(` | Kiểm tra đăng nhập, gọi matchmakingManager.joinQueue(this). |
+| 3 | [MatchmakingManager.java:31](../../src/minesweeperonline/server/MatchmakingManager.java#L31) | `public synchronized void joinQueue(` | Lượt A: chưa có đối thủ nên đặt QUEUED và thêm A. Lượt B: poll A, kiểm tra kết nối và tài khoản còn hợp lệ. |
+| 4 | [GameManager.java:19](../../src/minesweeperonline/server/GameManager.java#L19) | `public GameSession createSession(` | Tạo session cho A/B, hai bàn riêng và ánh xạ hai userId tới mã trận. |
+| 5 | [MainMenuFrame.java:305](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L305) | `private void handleMatchCreated(` | Hai phía nhận mã trận/tên đối thủ và mở GameFrame. |
+| 6 | [MatchmakingManager.java:103](../../src/minesweeperonline/server/MatchmakingManager.java#L103) | `public synchronized void leaveQueue(` | Nếu hủy trước khi ghép, CANCEL_QUICK_MATCH dẫn đến xóa khỏi queue và trả Player về IDLE. |
+
+## Message và kết quả trong tình huống này
+
+Client → server:
+
+```json
+{
+  "type": "QUICK_MATCH",
+  "payload": {}
+}
 ```
+
+Sau khi B vào, server → A:
+
+```json
+{
+  "type": "MATCH_CREATED",
+  "payload": {
+    "gameId": "a1b2c3d4",
+    "opponentId": 102,
+    "opponentUsername": "binh_demo"
+  }
+}
+```
+
+Nếu hủy trong lúc còn chờ, client → server:
+
+```json
+{
+  "type": "CANCEL_QUICK_MATCH",
+  "payload": {}
+}
+```
+
+Khi chưa có đối thủ, code không gửi gói xác nhận QUEUED riêng; client tự hiện trạng thái chờ. joinQueue/leaveQueue dùng synchronized để các thread client không sửa hàng đợi cùng lúc. MATCH_CREATED của B chứa tên/ID của A.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Client gửi tìm hoặc hủy tìm trận.
 
-**Code:** [MainMenuFrame.java — dòng 191](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L191). Tìm `private void toggleQuickMatch()`.
+**Code:** [MainMenuFrame.java — dòng 176](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L176). Tìm `private void toggleQuickMatch()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -34,12 +76,11 @@ private void toggleQuickMatch() {
         connection.sendMessage(JsonProtocol.createCancelQuickMatch());
     }
 }
-
 ```
 
 ### Bước 2. Handler chuyển yêu cầu cho MatchmakingManager.
 
-**Code:** [ClientHandler.java — dòng 379](../../src/minesweeperonline/server/ClientHandler.java#L379). Tìm `private void handleQuickMatch(`.
+**Code:** [ClientHandler.java — dòng 391](../../src/minesweeperonline/server/ClientHandler.java#L391). Tìm `private void handleQuickMatch(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -57,7 +98,7 @@ private void handleQuickMatch(Message message) {
 
 ### Bước 3. Kiểm tra người chơi và tìm đối thủ còn hợp lệ.
 
-**Code:** [MatchmakingManager.java — dòng 30](../../src/minesweeperonline/server/MatchmakingManager.java#L30). Tìm `public synchronized void joinQueue(`.
+**Code:** [MatchmakingManager.java — dòng 31](../../src/minesweeperonline/server/MatchmakingManager.java#L31). Tìm `public synchronized void joinQueue(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -96,7 +137,7 @@ public synchronized void joinQueue(ClientHandler client) {
 
 ### Bước 4. Có đối thủ thì tạo trận và gửi MATCH_CREATED; không có thì đưa vào queue.
 
-**Code:** [MatchmakingManager.java — dòng 59](../../src/minesweeperonline/server/MatchmakingManager.java#L59). Tìm `if (opponent != null)`.
+**Code:** [MatchmakingManager.java — dòng 60](../../src/minesweeperonline/server/MatchmakingManager.java#L60). Tìm `if (opponent != null)`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -130,7 +171,7 @@ if (opponent != null) {
 
 ### Bước 5. Xóa khỏi hàng đợi và trả về IDLE khi phù hợp.
 
-**Code:** [MatchmakingManager.java — dòng 102](../../src/minesweeperonline/server/MatchmakingManager.java#L102). Tìm `public synchronized void leaveQueue(`.
+**Code:** [MatchmakingManager.java — dòng 103](../../src/minesweeperonline/server/MatchmakingManager.java#L103). Tìm `public synchronized void leaveQueue(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
