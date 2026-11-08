@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-/** Modeless information window with native maximize/restore controls and F11. */
+/** Cửa sổ thông tin không khóa cửa sổ chính, hỗ trợ nút phóng to/khôi phục của hệ điều hành và phím F11. */
 public class InfoFrame extends JFrame {
     private final Frame parentFrame;
     private final WindowAdapter parentListener = new WindowAdapter() {

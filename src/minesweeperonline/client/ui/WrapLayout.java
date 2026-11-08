@@ -2,7 +2,7 @@ package minesweeperonline.client.ui;
 
 import java.awt.*;
 
-/** Flow layout whose preferred height includes wrapped rows when a window narrows. */
+/** Bố cục FlowLayout tính chiều cao mong muốn theo cả các hàng xuống dòng khi cửa sổ hẹp. */
 public final class WrapLayout extends FlowLayout {
     /** Cài hướng căn và khoảng cách giữa các component cho bố cục tự xuống dòng. */
     public WrapLayout(int alignment, int horizontalGap, int verticalGap) {

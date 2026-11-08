@@ -60,7 +60,7 @@ public class MatchHistoryDialog extends InfoFrame {
         add(headerPanel, BorderLayout.NORTH);
 
         // Bảng ở giữa
-        String[] columns = {"Thời gian", "Đối thủ", "Kết quả", "Điểm số", "Thời lượng", "Ô an toàn", "Cờ / Thao tác", "Ghi chú"};
+        String[] columns = {"Thời gian", "Đối thủ", "Kết quả", "Điểm số", "Thời lượng", "Ô an toàn /121", "Cờ / Thao tác", "Ghi chú"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -78,7 +78,7 @@ public class MatchHistoryDialog extends InfoFrame {
         table.getColumnModel().getColumn(2).setPreferredWidth(110); // Kết quả (CHIẾN THẮNG)
         table.getColumnModel().getColumn(3).setPreferredWidth(65);  // Điểm số (+5, -3)
         table.getColumnModel().getColumn(4).setPreferredWidth(85);  // Thời lượng
-        table.getColumnModel().getColumn(5).setPreferredWidth(85);  // Ô an toàn (64 / 121)
+        table.getColumnModel().getColumn(5).setPreferredWidth(85);  // Số ô an toàn đã mở, tổng 121 ô ở tiêu đề
         table.getColumnModel().getColumn(6).setPreferredWidth(95);  // Cờ / Thao tác (4 / 10)
         table.getColumnModel().getColumn(7).setPreferredWidth(160); // Ghi chú
 
@@ -242,7 +242,7 @@ public class MatchHistoryDialog extends InfoFrame {
 
                 String scoreDisplay = (e.getScoreDelta() > 0 ? "+" : "") + e.getScoreDelta();
                 String flagsAndActions = e.getFlagsPlaced() + " / " + e.getTotalActions();
-                String safeCells = e.getOpenedSafeCells() + " / 121";
+                String safeCells = String.valueOf(e.getOpenedSafeCells());
 
                 tableModel.addRow(new Object[]{
                         e.getPlayedAt(),

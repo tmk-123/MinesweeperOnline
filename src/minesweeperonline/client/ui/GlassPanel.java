@@ -3,7 +3,7 @@ package minesweeperonline.client.ui;
 import javax.swing.*;
 import java.awt.*;
 
-/** A tinted panel that lets the illustrated scene remain visible beneath its contents. */
+/** Panel có nền phủ màu, cho phép nhìn thấy cảnh minh họa phía sau nội dung. */
 public class GlassPanel extends JPanel {
     private Color tint;
 

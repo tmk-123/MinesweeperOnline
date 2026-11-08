@@ -29,7 +29,6 @@ public class MainMenuFrame extends JFrame {
     private JButton btnQuickMatch;
     private boolean isSearchingMatch = false;
     private Timer autoRefreshTimer;
-    private LeaderboardDialog leaderboardDialog;
     private MatchHistoryDialog matchHistoryDialog;
     private ServerConnection.MessageListener lobbyListener;
 
@@ -121,18 +120,6 @@ public class MainMenuFrame extends JFrame {
             helpDialog.setVisible(true);
         });
 
-        JButton btnLeaderboard = new JButton("Bảng xếp hạng");
-        UITheme.styleOutlineButton(btnLeaderboard, UITheme.BORDER_CARD, UITheme.COLOR_SECONDARY_HOVER, UITheme.TEXT_TITLE);
-        btnLeaderboard.addActionListener(e -> {
-            if (leaderboardDialog == null || !leaderboardDialog.isDisplayable()) {
-                leaderboardDialog = new LeaderboardDialog(this, connection, currentUser.getUsername());
-                leaderboardDialog.setVisible(true);
-            } else {
-                leaderboardDialog.toFront();
-                leaderboardDialog.refresh();
-            }
-        });
-
         JButton btnLogout = new JButton("Đăng xuất");
         UITheme.styleOutlineButton(btnLogout, new Color(113, 55, 59), new Color(67, 36, 41), UITheme.COLOR_DANGER);
         btnLogout.addActionListener(e -> {
@@ -142,9 +129,6 @@ public class MainMenuFrame extends JFrame {
             }
             connection.sendMessage(JsonProtocol.createLogout());
             if (autoRefreshTimer != null) autoRefreshTimer.stop();
-            if (leaderboardDialog != null && leaderboardDialog.isDisplayable()) {
-                leaderboardDialog.dispose();
-            }
             if (matchHistoryDialog != null && matchHistoryDialog.isDisplayable()) {
                 matchHistoryDialog.dispose();
             }
@@ -157,7 +141,6 @@ public class MainMenuFrame extends JFrame {
         rightHeaderBtns.add(btnRefreshAll);
         rightHeaderBtns.add(btnMatchHistory);
         rightHeaderBtns.add(btnHelp);
-        rightHeaderBtns.add(btnLeaderboard);
         rightHeaderBtns.add(btnLogout);
         headerPanel.add(rightHeaderBtns, BorderLayout.CENTER);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
@@ -168,7 +151,7 @@ public class MainMenuFrame extends JFrame {
 
         onlinePanel = new OnlinePlayersPanel(connection);
         leaderboardPanel = new LeaderboardPanel(connection, currentUser.getUsername());
-        // Allocate by ratio, not by footer text lengths that change on every refresh.
+        // Chia không gian theo tỷ lệ để độ dài chữ ở chân bảng thay đổi khi làm mới không làm lệch bố cục.
         onlinePanel.setMinimumSize(new Dimension(0, 0));
         onlinePanel.setPreferredSize(new Dimension(0, 0));
         leaderboardPanel.setMinimumSize(new Dimension(0, 0));
@@ -393,7 +376,7 @@ public class MainMenuFrame extends JFrame {
         onlinePanel.refreshOnlinePlayers();
     }
 
-    /** Chuyển JSON bảng xếp hạng thành các bản ghi rồi cập nhật panel và hộp thoại đang mở. */
+    /** Chuyển JSON bảng xếp hạng thành các bản ghi rồi cập nhật bảng trong sảnh. */
     private void handleLeaderboard(Message message) {
         JsonObject payload = message.getPayload();
         List<LeaderboardEntry> list = new ArrayList<>();
@@ -415,9 +398,6 @@ public class MainMenuFrame extends JFrame {
 
         if (leaderboardPanel != null) {
             leaderboardPanel.updateLeaderboard(list);
-        }
-        if (leaderboardDialog != null && leaderboardDialog.isDisplayable()) {
-            leaderboardDialog.updateLeaderboard(list);
         }
     }
 

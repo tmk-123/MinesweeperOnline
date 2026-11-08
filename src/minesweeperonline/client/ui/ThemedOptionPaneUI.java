@@ -5,7 +5,7 @@ import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicOptionPaneUI;
 import java.awt.*;
 
-/** Apply the same readable buttons to every Swing message and confirmation dialog. */
+/** Áp dụng kiểu nút dễ đọc thống nhất cho mọi hộp thoại thông báo và xác nhận Swing. */
 public final class ThemedOptionPaneUI extends BasicOptionPaneUI {
     /** Cung cấp UI delegate để Swing áp dụng kiểu hộp thoại tùy chỉnh. */
     public static ComponentUI createUI(JComponent component) {

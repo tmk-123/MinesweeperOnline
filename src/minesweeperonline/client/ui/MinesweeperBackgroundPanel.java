@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.Map;
 
-/** Draws a shared minefield scene beneath opaque, readable Swing panels. */
+/** Vẽ cảnh bãi mìn dùng chung phía sau các panel Swing có nền để nội dung dễ đọc. */
 public class MinesweeperBackgroundPanel extends JPanel {
 
     public enum Scene { LOBBY, DUEL, RESULT }

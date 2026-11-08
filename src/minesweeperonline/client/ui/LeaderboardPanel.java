@@ -87,7 +87,7 @@ public class LeaderboardPanel extends GlassPanel {
                     } else {
                         setText(nameInRow);
                     }
-                    // JLabel clips long names with "..."; retain the full model value.
+                    // JLabel rút gọn tên dài bằng "..."; vẫn giữ nguyên giá trị đầy đủ trong mô hình dữ liệu.
                     setToolTipText(getText());
                 } else if (col == 2) {
                     // Cột Cấp bậc (Rank Tier)

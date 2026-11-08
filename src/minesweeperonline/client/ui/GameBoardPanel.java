@@ -33,7 +33,7 @@ public class GameBoardPanel extends JPanel {
 
     private boolean interactive = false;
 
-    // Number colors are checked against OPENED_BG and keep at least 4.5:1 contrast.
+    // Màu chữ số được kiểm tra trên nền OPENED_BG để duy trì độ tương phản tối thiểu 4,5:1.
     private static final Color[] NUMBER_COLORS = {
             UITheme.TEXT_TITLE,
             new Color(29, 78, 216),
@@ -178,7 +178,7 @@ public class GameBoardPanel extends JPanel {
         this.interactive = interactive;
     }
 
-    /** Returns the earliest still-pending clicked cell that the server confirms is a mine. */
+    /** Trả về ô được bấm sớm nhất còn chờ phản hồi mà máy chủ xác nhận có mìn. */
     public int[] getPendingMineCoordinate(List<int[]> mines) {
         if (mines == null || mines.isEmpty() || pendingOpenCells.isEmpty()) return null;
         for (long key : pendingOpenCells) {
@@ -335,7 +335,7 @@ public class GameBoardPanel extends JPanel {
         public int getIconHeight() { return height; }
     }
 
-    /** Larger fireburst marker for the exact mine that ended the game. */
+    /** Biểu tượng vụ nổ lớn hơn, đánh dấu đúng ô mìn khiến trận đấu kết thúc. */
     private static class ExplosionIcon implements Icon {
         private static final int SIZE = 38;
 

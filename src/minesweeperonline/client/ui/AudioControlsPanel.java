@@ -7,7 +7,7 @@ import javax.swing.plaf.basic.BasicSliderUI;
 import java.awt.*;
 import java.beans.PropertyChangeListener;
 
-/** Shared audio controls, synchronized when moving between client screens. */
+/** Bộ điều khiển âm thanh dùng chung, đồng bộ khi chuyển giữa các màn hình. */
 public final class AudioControlsPanel extends JPanel {
     private final SoundManager sound = SoundManager.getInstance();
     private final JButton allSound = new JButton();

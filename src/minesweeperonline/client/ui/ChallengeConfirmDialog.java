@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/** Themed confirmation shown before sending a one-to-one challenge. */
+/** Hộp thoại xác nhận theo giao diện chung, hiển thị trước khi gửi lời mời đấu một đối một. */
 public class ChallengeConfirmDialog extends JDialog {
     private boolean confirmed;
 

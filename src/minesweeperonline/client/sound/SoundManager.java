@@ -42,7 +42,7 @@ public class SoundManager {
 
     private volatile boolean muted = false;
     private volatile boolean musicMuted = false;
-    // 13% is approximately the previous background level of -18 dB.
+    // Âm lượng 13% gần tương đương mức nhạc nền trước đây là -18 dB.
     private volatile int musicVolume = 13;
     private final PropertyChangeSupport settingsChanges = new PropertyChangeSupport(this);
 

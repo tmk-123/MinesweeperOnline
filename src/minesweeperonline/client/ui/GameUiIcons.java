@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 
-/** Small vector emblems and character portraits for the Minesweeper UI. */
+/** Các huy hiệu và chân dung nhân vật dạng vector dùng cho giao diện Minesweeper. */
 public final class GameUiIcons {
     /** Chặn khởi tạo đối tượng: các biểu tượng được tạo qua hàm tĩnh. */
     private GameUiIcons() { }
@@ -218,7 +218,7 @@ public final class GameUiIcons {
             g2.setColor(new Color(255, 255, 255, 25));
             g2.fillOval(9, 7, 42, 18);
 
-            // Armored shoulders and a compact chest plate.
+            // Vẽ giáp vai và tấm giáp ngực nhỏ gọn.
             Path2D torso = new Path2D.Double();
             torso.moveTo(8, 63); torso.lineTo(12, 48); torso.lineTo(22, 43);
             torso.lineTo(42, 43); torso.lineTo(53, 49); torso.lineTo(58, 63); torso.closePath();
@@ -232,7 +232,7 @@ public final class GameUiIcons {
             g2.fillOval(16, 53, 3, 3);
             g2.fillOval(46, 53, 3, 3);
 
-            // Helmet silhouette, faceted cheek guards, and a glowing tactical visor.
+            // Vẽ dáng mũ bảo hộ, giáp má có góc cạnh và kính chiến thuật phát sáng.
             Path2D helmet = new Path2D.Double();
             helmet.moveTo(11, 31); helmet.lineTo(12, 22); helmet.lineTo(19, 14);
             helmet.lineTo(31, 10); helmet.lineTo(45, 13); helmet.lineTo(53, 21);
@@ -272,7 +272,7 @@ public final class GameUiIcons {
             g2.fillOval(20, 37, 5, 7);
             g2.fillOval(39, 37, 5, 7);
 
-            // Side radio and a small headlamp make the two username variants distinct.
+            // Bộ đàm bên hông và đèn nhỏ trên mũ giúp phân biệt hai mẫu avatar theo tên người dùng.
             g2.setColor(armorLight);
             g2.fillRoundRect(alternateArmor ? 8 : 49, 27, 7, 12, 3, 3);
             g2.setColor(accent.brighter());

@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * DAO (Data Access Object) cho entity MatchPlayer.
+ * Lớp truy cập dữ liệu cho thực thể MatchPlayer.
  * Xử lý việc lưu thông tin người chơi trong trận theo transaction, cập nhật điểm user và lấy lịch sử đấu.
  */
 public class MatchPlayerDAO {

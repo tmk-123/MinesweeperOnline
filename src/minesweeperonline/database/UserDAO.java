@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * DAO (Data Access Object) cho entity User.
+ * Lớp truy cập dữ liệu cho thực thể User.
  * Dùng database MySQL thông qua DatabaseConnection.
  * Tự động fallback sang cache trong bộ nhớ nếu MySQL chưa được cấu hình hoặc tạm thời không hoạt động.
  */

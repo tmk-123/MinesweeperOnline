@@ -3,7 +3,7 @@ package minesweeperonline.client.ui;
 import javax.swing.*;
 import java.awt.*;
 
-/** Match header showing both players, live progress, and the shared clock. */
+/** Phần đầu trận đấu hiển thị hai người chơi, tiến độ hiện tại và đồng hồ chung. */
 public class PlayerInfoPanel extends JPanel {
     private final JLabel lblPlayerSafe;
     private final JLabel lblPlayerFlags;

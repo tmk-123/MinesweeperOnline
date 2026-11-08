@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.geom.Path2D;
 import java.util.Random;
 
-/** Lightweight Java2D illustration used on authentication screens. */
+/** Hình minh họa nhẹ vẽ bằng Java2D, dùng trên các màn hình đăng nhập và đăng ký. */
 final class MinesweeperHeroPanel extends JPanel {
     MinesweeperHeroPanel() {
         setOpaque(true);
@@ -23,7 +23,7 @@ final class MinesweeperHeroPanel extends JPanel {
         g2.setPaint(new GradientPaint(0, 0, new Color(23, 38, 47), 0, h, new Color(9, 15, 19)));
         g2.fillRect(0, 0, w, h);
 
-        // Distant minefield ridges
+        // Vẽ các dãy địa hình bãi mìn ở phía xa
         drawPolygon(g2, new int[]{0, w / 3, w / 2, w}, new int[]{h * 3 / 5, h / 3, h / 2, h * 2 / 5}, new Color(35, 49, 55));
         drawPolygon(g2, new int[]{0, w / 4, w / 2, w * 3 / 4, w}, new int[]{h * 3 / 4, h / 2, h * 3 / 5, h * 2 / 5, h * 3 / 5}, new Color(27, 40, 45));
 
@@ -41,7 +41,7 @@ final class MinesweeperHeroPanel extends JPanel {
             g2.drawLine(xs[0], ys[0], xs[1], ys[1]);
         }
 
-        // Glowing flag and base
+        // Vẽ lá cờ phát sáng và phần đế
         int poleX = w * 2 / 3;
         int poleY = h * 2 / 5;
         g2.setColor(new Color(5, 9, 11, 150));
@@ -66,7 +66,7 @@ final class MinesweeperHeroPanel extends JPanel {
         g2.setColor(new Color(246, 184, 66, 35));
         g2.fillOval(poleX - 90, poleY - 86, 175, 175);
 
-        // Branding area over a subtle dark fade
+        // Vùng nhận diện trò chơi trên lớp chuyển màu tối nhẹ
         g2.setPaint(new GradientPaint(0, h * 2 / 3, new Color(9, 15, 19, 0), 0, h, new Color(9, 15, 19, 230)));
         g2.fillRect(0, h * 2 / 3, w, h / 3);
         g2.setColor(UITheme.COLOR_PRIMARY);
