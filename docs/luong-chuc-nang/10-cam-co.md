@@ -8,14 +8,14 @@ A đã mở 9 ô bằng 1 thao tác. Ô (3,7) chưa mở/chưa có cờ; A click
 
 ## Hàm nào gọi hàm nào, ở đâu?
 
-| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
-|---|---|---|---|
-| 1 | [GameBoardPanel.java:96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96) | `public void mousePressed(` | Nhánh chuột phải chọn createPlaceFlag nếu chưa có cờ, createRemoveFlag nếu đã có cờ; gửi tọa độ (3,7). |
-| 2 | [ClientHandler.java:220](../../src/minesweeperonline/server/ClientHandler.java#L220) | `private void handlePlaceFlag(` | Tra session theo tài khoản và gọi session.handlePlaceFlag(101,3,7). |
-| 3 | [GameSession.java:265](../../src/minesweeperonline/server/GameSession.java#L265) | `public void handlePlaceFlag(` | Khóa gameLock, kiểm tra PLAYING rồi gọi Board.placeFlag(3,7). |
-| 4 | [Board.java:184](../../src/minesweeperonline/game/Board.java#L184) | `public boolean placeFlag(` | Kiểm tra tọa độ, ô chưa mở/chưa có cờ, currentFlags<23. Đặt flagged=true, tăng currentFlags,flagsPlaced,totalActions. |
-| 5 | [GameSession.java:278](../../src/minesweeperonline/server/GameSession.java#L278) | `Message res = new Message(MessageType.FLAG_PLACED)` | Gửi FLAG_PLACED cho A và GAME_UPDATE cho B. |
-| 6 | [GameFrame.java:364](../../src/minesweeperonline/client/ui/GameFrame.java#L364) | `private void onFlagPlaced(` | Gọi boardPanel.setCellFlagged(3,7,true) rồi cập nhật bộ đếm. |
+| Bước | Vị trí                                                                               | Hàm / dấu mốc                                       | Dữ liệu và việc thực hiện                                                                                                    |
+| ------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | [GameBoardPanel.java:96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96) | `public void mousePressed(`                          | Nhánh chuột phải chọn createPlaceFlag nếu chưa có cờ, createRemoveFlag nếu đã có cờ; gửi tọa độ (3,7).            |
+| 2      | [ClientHandler.java:220](../../src/minesweeperonline/server/ClientHandler.java#L220)    | `private void handlePlaceFlag(`                      | Tra session theo tài khoản và gọi session.handlePlaceFlag(101,3,7).                                                            |
+| 3      | [GameSession.java:265](../../src/minesweeperonline/server/GameSession.java#L265)        | `public void handlePlaceFlag(`                       | Khóa gameLock, kiểm tra PLAYING rồi gọi Board.placeFlag(3,7).                                                                  |
+| 4      | [Board.java:184](../../src/minesweeperonline/game/Board.java#L184)                      | `public boolean placeFlag(`                          | Kiểm tra tọa độ, ô chưa mở/chưa có cờ, currentFlags<23. Đặt flagged=true, tăng currentFlags,flagsPlaced,totalActions. |
+| 5      | [GameSession.java:278](../../src/minesweeperonline/server/GameSession.java#L278)        | `Message res = new Message(MessageType.FLAG_PLACED)` | Gửi FLAG_PLACED cho A và GAME_UPDATE cho B.                                                                                      |
+| 6      | [GameFrame.java:364](../../src/minesweeperonline/client/ui/GameFrame.java#L364)         | `private void onFlagPlaced(`                         | Gọi boardPanel.setCellFlagged(3,7,true) rồi cập nhật bộ đếm.                                                                |
 
 ## Message và kết quả trong tình huống này
 

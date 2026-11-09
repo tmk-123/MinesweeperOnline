@@ -169,6 +169,11 @@ public class LeaderboardPanel extends GlassPanel {
     }
 
     /** Gửi yêu cầu lấy bảng xếp hạng; dữ liệu hiển thị được cập nhật ở hàm nhận phản hồi. */
+    // Client gửi:
+    // {
+    //  "type": "GET_LEADERBOARD",
+    //  "payload": {}
+    // }
     public void refreshLeaderboard() {
         if (connection != null && connection.isConnected()) {
             lblStatus.setText("Đang làm mới bảng xếp hạng...");

@@ -8,17 +8,17 @@ Tiếp luồng 08: A mở (3,4) lần đầu trên bàn có vành mìn minh họ
 
 ## Hàm nào gọi hàm nào, ở đâu?
 
-| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
-|---|---|---|---|
-| 1 | [GameBoardPanel.java:96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96) | `public void mousePressed(` | Ghi khóa 3*12+4=40 vào pendingOpenCells, gửi OPEN_CELL và chưa tự mở nút. |
-| 2 | [ClientHandler.java:208](../../src/minesweeperonline/server/ClientHandler.java#L208) | `private void handleOpenCell(` | Gọi session.handleOpenCell(101,3,4). |
-| 3 | [GameSession.java:154](../../src/minesweeperonline/server/GameSession.java#L154) | `public void handleOpenCell(` | Tạo newlyOpened rỗng, gọi Board của A.openCell(3,4,newlyOpened). |
-| 4 | [Board.java:109](../../src/minesweeperonline/game/Board.java#L109) | `public OpenResult openCell(` | Sinh mìn như luồng 08, tăng totalActions 0→1; ô tâm có số 0 nên dùng BFS. |
-| 5 | [Board.java:145](../../src/minesweeperonline/game/Board.java#L145) | `Queue<Cell> queue = new ArrayDeque<>();` | Mở tâm, tăng openedSafeCells, thêm vào newlyOpened và queue. |
-| 6 | [Board.java:151](../../src/minesweeperonline/game/Board.java#L151) | `while (!queue.isEmpty())` | poll ô, xét 8 hàng xóm. Đánh dấu mở ngay để tránh đếm trùng; chỉ ô số 0 được thêm queue để lan tiếp. Ô có số được mở nhưng không lan từ nó. |
-| 7 | [GameSession.java:227](../../src/minesweeperonline/server/GameSession.java#L227) | `Message updateSelf = new Message(MessageType.CELL_OPENED)` | Nhận SAFE, chưa đủ 121 ô: gửi CELL_OPENED cho A và GAME_UPDATE cho B. |
-| 8 | [GameFrame.java:333](../../src/minesweeperonline/client/ui/GameFrame.java#L333) | `private void onCellOpened(` | Duyệt openedCells, gọi boardPanel.revealCell cho từng ô, cập nhật thống kê. |
-| 9 | [GameBoardPanel.java:127](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L127) | `public void revealCell(` | Đặt opened=true, xóa trạng thái chờ/cờ, tô nền và hiện số nếu lớn hơn 0. |
+| Bước | Vị trí                                                                                 | Hàm / dấu mốc                                              | Dữ liệu và việc thực hiện                                                                                                                                                |
+| ------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1      | [GameBoardPanel.java:96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96)   | `public void mousePressed(`                                 | Ghi khóa 3*12+4=40 vào pendingOpenCells, gửi OPEN_CELL và chưa tự mở nút.                                                                                              |
+| 2      | [ClientHandler.java:208](../../src/minesweeperonline/server/ClientHandler.java#L208)      | `private void handleOpenCell(`                              | Gọi session.handleOpenCell(101,3,4).                                                                                                                                          |
+| 3      | [GameSession.java:154](../../src/minesweeperonline/server/GameSession.java#L154)          | `public void handleOpenCell(`                               | Tạo newlyOpened rỗng, gọi Board của A.openCell(3,4,newlyOpened).                                                                                                           |
+| 4      | [Board.java:109](../../src/minesweeperonline/game/Board.java#L109)                        | `public OpenResult openCell(`                               | Sinh mìn như luồng 08, tăng totalActions 0→1; ô tâm có số 0 nên dùng BFS.                                                                                           |
+| 5      | [Board.java:145](../../src/minesweeperonline/game/Board.java#L145)                        | `Queue<Cell> queue = new ArrayDeque<>();`                   | Mở tâm, tăng openedSafeCells, thêm vào newlyOpened và queue.                                                                                                             |
+| 6      | [Board.java:151](../../src/minesweeperonline/game/Board.java#L151)                        | `while (!queue.isEmpty())`                                  | poll ô, xét 8 hàng xóm. Đánh dấu mở ngay để tránh đếm trùng; chỉ ô số 0 được thêm queue để lan tiếp. Ô có số được mở nhưng không lan từ nó. |
+| 7      | [GameSession.java:227](../../src/minesweeperonline/server/GameSession.java#L227)          | `Message updateSelf = new Message(MessageType.CELL_OPENED)` | Nhận SAFE, chưa đủ 121 ô: gửi CELL_OPENED cho A và GAME_UPDATE cho B.                                                                                                   |
+| 8      | [GameFrame.java:333](../../src/minesweeperonline/client/ui/GameFrame.java#L333)           | `private void onCellOpened(`                                | Duyệt openedCells, gọi boardPanel.revealCell cho từng ô, cập nhật thống kê.                                                                                            |
+| 9      | [GameBoardPanel.java:127](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L127) | `public void revealCell(`                                   | Đặt opened=true, xóa trạng thái chờ/cờ, tô nền và hiện số nếu lớn hơn 0.                                                                                        |
 
 ## Message và kết quả trong tình huống này
 

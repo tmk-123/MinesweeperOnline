@@ -2,59 +2,15 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Tình huống cụ thể
+## Sự kiện bắt đầu
 
-A/B vừa vào trận a1b2c3d4. Sau 5 giây READY, A mở (3,4) lần đầu. Tọa độ bắt đầu từ 0: đây là hàng thứ 4, cột thứ 5 trên màn hình.
+Tạo trận mới; người chơi mở ô hợp lệ đầu tiên sau đếm ngược.
 
-## Hàm nào gọi hàm nào, ở đâu?
+## Luồng tổng quát
 
-| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
-|---|---|---|---|
-| 1 | [GameManager.java:19](../../src/minesweeperonline/server/GameManager.java#L19) | `public GameSession createSession(` | Gọi new GameSession(A,handlerA,B,handlerB), lưu session và ánh xạ userId. |
-| 2 | [GameSession.java:62](../../src/minesweeperonline/server/GameSession.java#L62) | `public GameSession(` | Tạo board1/board2 bằng new Board(), đặt READY và gọi startReadyCountdown(). |
-| 3 | [Board.java:52](../../src/minesweeperonline/game/Board.java#L52) | `public final void initialize()` | Đặt minesGenerated=false, chưa mở/chưa có mìn; không gọi generateMines lúc tạo bàn. |
-| 4 | [GameSession.java:87](../../src/minesweeperonline/server/GameSession.java#L87) | `private void startReadyCountdown()` | Sau 5 giây đặt PLAYING, gửi GAME_START có durationSeconds=300 rồi chạy đồng hồ server. |
-| 5 | [GameBoardPanel.java:96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96) | `public void mousePressed(` | Click trái (3,4), gọi createOpenCell("a1b2c3d4",3,4) và sendMessage qua TCP. |
-| 6 | [ClientHandler.java:208](../../src/minesweeperonline/server/ClientHandler.java#L208) | `private void handleOpenCell(` | Tra session của userId=101, đọc row=3/col=4 rồi gọi session.handleOpenCell(101,3,4). |
-| 7 | [GameSession.java:154](../../src/minesweeperonline/server/GameSession.java#L154) | `public void handleOpenCell(` | Chọn Board của A, gọi targetBoard.openCell(3,4,newlyOpened). |
-| 8 | [Board.java:109](../../src/minesweeperonline/game/Board.java#L109) | `public OpenResult openCell(` | Kiểm tra tọa độ/cờ/đã mở, thấy minesGenerated=false nên gọi generateMines(grid,12,12,23,3,4). |
-| 9 | [MineGenerator.java:29](../../src/minesweeperonline/game/MineGenerator.java#L29) | `public static void generateMines(` | Xóa dữ liệu mìn cũ, tạo candidates, loại vùng an toàn, xáo trộn rồi đặt mìn ở 23 vị trí đầu. |
-| 10 | [MineGenerator.java:80](../../src/minesweeperonline/game/MineGenerator.java#L80) | `public static boolean isInSafeZone(` | Loại mọi ô hàng 2–4, cột 3–5: cách tâm (3,4) không quá 1 theo mỗi chiều. |
-| 11 | [MineGenerator.java:90](../../src/minesweeperonline/game/MineGenerator.java#L90) | `public static void calculateAdjacentMines(` | Đếm tối đa 8 hàng xóm cho mỗi ô an toàn, ghi adjacentMines. |
-| 12 | [Board.java:122](../../src/minesweeperonline/game/Board.java#L122) | `this.minesGenerated = true` | Quay lại Board.openCell, đặt cờ đã sinh mìn rồi tiếp tục mở tâm và BFS. |
-
-## Message và kết quả trong tình huống này
-
-Server → hai client khi hết READY:
-
-```json
-{
-  "type": "GAME_START",
-  "gameId": "a1b2c3d4",
-  "payload": {
-    "durationSeconds": 300
-  }
-}
+```text
+createSession → new Board → READY → GAME_START → OPEN_CELL → Board.openCell → generateMines
 ```
-
-A → server khi bấm lần đầu:
-
-```json
-{
-  "type": "OPEN_CELL",
-  "gameId": "a1b2c3d4",
-  "payload": {
-    "row": 3,
-    "col": 4
-  }
-}
-```
-
-**Một kết quả xáo trộn minh họa có thể xảy ra:** 16 mìn trên vành hình vuông hàng 1–5, cột 2–6; 7 mìn còn lại ở (10,0) đến (10,6). Vùng hàng 2–4, cột 3–5 không có mìn. Tâm (3,4) có số 0; các ô sát tâm có số 3 hoặc 5. Không phải mọi ván đều có bố trí này. [Luồng 09 có JSON đủ 9 ô mở](09-mo-o-va-bfs.md).
-
-Lần mở tiếp theo minesGenerated=true nên **không sinh mìn lại**. B có Board riêng: nếu B chưa mở ô thì bàn B chưa sinh mìn dù A đã mở. Cắm cờ không sinh mìn. Click vào ô đã mở/cắm cờ không được tính là lần mở hợp lệ đầu tiên.
-
-Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
@@ -74,6 +30,7 @@ public GameSession createSession(Player p1, ClientHandler h1, Player p2, ClientH
             " for [" + p1.getUsername() + "] vs [" + p2.getUsername() + "]");
     return session;
 }
+
 ```
 
 ### Bước 2. Tạo hai Board riêng, đặt READY và bắt đầu đếm ngược.
@@ -220,25 +177,25 @@ private void onGameStart() {
 Trích đoạn bắt đầu tại vị trí trên:
 
 ```java
-public void mousePressed(MouseEvent e) {
-    if (!interactive || opened[row][col]) return;
+    public void mousePressed(MouseEvent e) {
+        if (!interactive || opened[row][col]) return;
 
-    if (SwingUtilities.isLeftMouseButton(e)) {
-        // Click trái -> mở ô
-        if (!flagged[row][col]) {
-            // Chỉ ghi nhận yêu cầu đang chờ, chưa tự mở ô trước khi server trả lời.
-            pendingOpenCells.add(cellKey(row, col));
-            connection.sendMessage(JsonProtocol.createOpenCell(gameId, row, col));
-        }
-    } else if (SwingUtilities.isRightMouseButton(e)) {
-        // Cờ cũng chỉ đổi hình sau FLAG_PLACED/FLAG_REMOVED để khớp trạng thái server.
-        // Click phải -> bật/tắt cờ
-        if (flagged[row][col]) {
-            connection.sendMessage(JsonProtocol.createRemoveFlag(gameId, row, col));
-        } else {
-            connection.sendMessage(JsonProtocol.createPlaceFlag(gameId, row, col));
+        if (SwingUtilities.isLeftMouseButton(e)) {
+            // Click trái -> mở ô
+            if (!flagged[row][col]) {
+                pendingOpenCells.add(cellKey(row, col));
+                connection.sendMessage(JsonProtocol.createOpenCell(gameId, row, col));
+            }
+        } else if (SwingUtilities.isRightMouseButton(e)) {
+            // Click phải -> bật/tắt cờ
+            if (flagged[row][col]) {
+                connection.sendMessage(JsonProtocol.createRemoveFlag(gameId, row, col));
+            } else {
+                connection.sendMessage(JsonProtocol.createPlaceFlag(gameId, row, col));
+            }
         }
     }
+});
 ```
 
 ### Bước 8. Server lấy tọa độ và tìm session theo user của kết nối.
@@ -282,7 +239,7 @@ public void handleOpenCell(int userId, int row, int col) {
         if (targetBoard == null || actingPlayer == null) return;
 
         List<Cell> newlyOpened = new ArrayList<>();
-        Board.OpenResult result = targetBoard.openCell(row, col, newlyOpened); // trả về safe/mine/invalid
+        Board.OpenResult result = targetBoard.openCell(row, col, newlyOpened);
 
         if (result == Board.OpenResult.INVALID) {
 ```
@@ -308,8 +265,6 @@ Trích đoạn bắt đầu tại vị trí trên:
 
 ```java
 public static void generateMines(Cell[][] grid, int rows, int cols, int mineCount, int safeRow, int safeCol) {
-
-    // kiểm tra nếu thay đổi kích thước bàn cờ
     int totalCells = rows * cols;
     if (mineCount >= totalCells) {
         throw new IllegalArgumentException("Mine count must be strictly less than total cells.");
@@ -323,18 +278,20 @@ public static void generateMines(Cell[][] grid, int rows, int cols, int mineCoun
         }
     }
 
-    // ô đó và 8 ô xung quanh an toàn
+    // Gom các ô ứng viên nằm ngoài vùng an toàn (ô an toàn + 8 ô xung quanh)
     List<int[]> candidates = new ArrayList<>();
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < cols; c++) {
             if (!isInSafeZone(r, c, safeRow, safeCol)) {
                 candidates.add(new int[]{r, c});
             }
+        }
+    }
 ```
 
 ### Bước 12. Xáo trộn, chọn 23 vị trí đầu làm mìn và tính số lân cận.
 
-**Code:** [MineGenerator.java — dòng 60](../../src/minesweeperonline/game/MineGenerator.java#L60). Tìm `Collections.shuffle(candidates, random)`.
+**Code:** [MineGenerator.java — dòng 58](../../src/minesweeperonline/game/MineGenerator.java#L58). Tìm `Collections.shuffle(candidates, random)`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -374,9 +331,9 @@ while (!queue.isEmpty()) {
             if (isValidCoordinate(nr, nc)) {
                 Cell neighbor = grid[nr][nc];
                 if (!neighbor.isOpened() && !neighbor.isFlagged() && !neighbor.isMine()) {
-                    // Đánh dấu ngay khi tìm thấy để các ô lân cận khác không thêm lại và đếm trùng.
                     neighbor.setOpened(true);
                     this.openedSafeCells++;
+                    if (openedList != null) openedList.add(neighbor);
 ```
 
 ### Bước 14. Client nhận danh sách ô đã mở để cập nhật giao diện.

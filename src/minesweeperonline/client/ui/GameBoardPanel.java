@@ -73,7 +73,8 @@ public class GameBoardPanel extends JPanel {
         setBackground(UITheme.BG_MAIN);
 
         Font cellFont = UITheme.FONT_BOLD.deriveFont(16f);
-
+        
+        // tạo mỗi nút cho mỗi tọa độ
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 final int row = r;
@@ -90,7 +91,8 @@ public class GameBoardPanel extends JPanel {
                 btn.setOpaque(true);
                 btn.setBackground(HIDDEN_BG);
                 btn.setBorder(BorderFactory.createRaisedBevelBorder());
-
+                
+                // xử lý khi nhấn chuột
                 btn.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mousePressed(MouseEvent e) {
@@ -122,7 +124,7 @@ public class GameBoardPanel extends JPanel {
     }
 
     /**
-     * Cập nhật và hiển thị một ô sau khi nhận xác nhận từ Server.
+     * Cập nhật và hiển thị một ô sau khi nhận xác nhận từ Server.  
      */
     public void revealCell(int r, int c, int adjacentMines, boolean isMine, boolean isExploded) {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
@@ -135,13 +137,13 @@ public class GameBoardPanel extends JPanel {
 
         btn.setRolloverEnabled(false);
         btn.setBorder(BorderFactory.createLineBorder(OPENED_BORDER, 1));
-
+        
         if (isMine) {
             Icon mIcon = isExploded ? MINE_EXPLODED_ICON : MINE_NORMAL_ICON;
             btn.setIcon(mIcon);
             btn.setDisabledIcon(mIcon);
             btn.setText("");
-            btn.setBackground(isExploded ? new Color(126, 35, 34) : new Color(211, 151, 151));
+            btn.setBackground(isExploded ? new Color(126, 35, 34) : new Color(211, 151, 151)); // hiện mìn ấn trúng và không ấn trúng
         } else {
             btn.setIcon(null);
             btn.setDisabledIcon(null);
@@ -151,12 +153,12 @@ public class GameBoardPanel extends JPanel {
                 int colorIdx = Math.min(adjacentMines, NUMBER_COLORS.length - 1);
                 btn.setForeground(NUMBER_COLORS[colorIdx]);
             } else {
-                btn.setText("");
+                btn.setText(""); // không có mìn xung quanh thì rỗng
             }
         }
     }
 
-    /** Áp dụng trạng thái cờ server xác nhận; bỏ qua tọa độ sai hoặc ô đã mở. */
+    // set flag
     public void setCellFlagged(int r, int c, boolean isFlagged) {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS || opened[r][c]) return;
 

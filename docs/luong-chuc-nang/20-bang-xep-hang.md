@@ -8,15 +8,15 @@ A mở sảnh hoặc bấm Làm mới. Giả sử chỉ có A:60 điểm,3 thắ
 
 ## Hàm nào gọi hàm nào, ở đâu?
 
-| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
-|---|---|---|---|
-| 1 | [MainMenuFrame.java:48](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L48) | `autoRefreshTimer = new Timer(` | Khi sảnh hiện, mỗi 4 giây gọi refreshLeaderboard; nút Làm mới cũng gọi. |
-| 2 | [LeaderboardPanel.java:172](../../src/minesweeperonline/client/ui/LeaderboardPanel.java#L172) | `public void refreshLeaderboard()` | Gửi GET_LEADERBOARD qua kết nối dùng chung. |
-| 3 | [ClientHandler.java:347](../../src/minesweeperonline/server/ClientHandler.java#L347) | `private void handleGetLeaderboard(` | Gọi userDAO.getLeaderboard(10), giới hạn Top 10 do server quyết định. |
-| 4 | [UserDAO.java:158](../../src/minesweeperonline/database/UserDAO.java#L158) | `public List<LeaderboardEntry> getLeaderboard(` | LEFT JOIN User/MatchPlayer, GROUP BY tài khoản, ORDER BY điểm/tỷ lệ thắng/số thắng/số trận/tên. |
-| 5 | [ClientHandler.java:366](../../src/minesweeperonline/server/ClientHandler.java#L366) | `payload.add("leaderboard", array)` | Mỗi dòng có rank,userId,username,totalScore,wins,totalMatches,winRate; gửi LEADERBOARD. |
-| 6 | [MainMenuFrame.java:380](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L380) | `private void handleLeaderboard(` | Giải mã thành LeaderboardEntry, gọi leaderboardPanel.updateLeaderboard(list). |
-| 7 | [LeaderboardPanel.java:180](../../src/minesweeperonline/client/ui/LeaderboardPanel.java#L180) | `public void updateLeaderboard(` | Đưa lên EDT, thay dòng bảng và tính cấp bậc theo điểm. |
+| Bước | Vị trí                                                                                     | Hàm / dấu mốc                                  | Dữ liệu và việc thực hiện                                                                             |
+| ------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 1      | [MainMenuFrame.java:48](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L48)         | `autoRefreshTimer = new Timer(`                 | Khi sảnh hiện, mỗi 4 giây gọi refreshLeaderboard; nút Làm mới cũng gọi.                           |
+| 2      | [LeaderboardPanel.java:172](../../src/minesweeperonline/client/ui/LeaderboardPanel.java#L172) | `public void refreshLeaderboard()`              | Gửi GET_LEADERBOARD qua kết nối dùng chung.                                                             |
+| 3      | [ClientHandler.java:347](../../src/minesweeperonline/server/ClientHandler.java#L347)          | `private void handleGetLeaderboard(`            | Gọi userDAO.getLeaderboard(10), giới hạn Top 10 do server quyết định.                                 |
+| 4      | [UserDAO.java:158](../../src/minesweeperonline/database/UserDAO.java#L158)                    | `public List<LeaderboardEntry> getLeaderboard(` | LEFT JOIN User/MatchPlayer, GROUP BY tài khoản, ORDER BY điểm/tỷ lệ thắng/số thắng/số trận/tên. |
+| 5      | [ClientHandler.java:366](../../src/minesweeperonline/server/ClientHandler.java#L366)          | `payload.add("leaderboard", array)`             | Mỗi dòng có rank,userId,username,totalScore,wins,totalMatches,winRate; gửi LEADERBOARD.                 |
+| 6      | [MainMenuFrame.java:380](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L380)       | `private void handleLeaderboard(`               | Giải mã thành LeaderboardEntry, gọi leaderboardPanel.updateLeaderboard(list).                           |
+| 7      | [LeaderboardPanel.java:180](../../src/minesweeperonline/client/ui/LeaderboardPanel.java#L180) | `public void updateLeaderboard(`                | Đưa lên EDT, thay dòng bảng và tính cấp bậc theo điểm.                                           |
 
 ## Message và kết quả trong tình huống này
 

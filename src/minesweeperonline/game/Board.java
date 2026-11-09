@@ -108,11 +108,12 @@ public class Board {
      * @return OpenResult (INVALID, SAFE hoặc MINE)
      */
     public OpenResult openCell(int r, int c, List<Cell> openedList) {
-        if (!isValidCoordinate(r, c)) {
+        if (!isValidCoordinate(r, c)) { // tọa độ không hợp lệ
             return OpenResult.INVALID;
         }
 
         Cell target = grid[r][c];
+        // kiểm tra ô đã mở hoặc đang cắm cờ
         if (target.isOpened() || target.isFlagged()) {
             return OpenResult.INVALID;
         }
@@ -221,8 +222,9 @@ public class Board {
     }
 
     /**
-     * Chuyển bàn cờ này sang model BoardState.
-     *
+     * Chuyển bàn cờ này sang model BoardState.(chưa dùng đến)
+     * Hàm này được viết để lấy một bản dữ liệu bàn cờ đem đi sử dụng, 
+     * chẳng hạn gửi cho client hiển thị hoặc khôi phục màn chơi khi kết nối lại.
      * @param maskMines nếu true thì ẩn vị trí mìn của các ô chưa mở (góc nhìn của đối thủ)
      */
     public BoardState toBoardState(boolean maskMines) {

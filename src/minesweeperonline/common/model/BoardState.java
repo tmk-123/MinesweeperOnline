@@ -3,6 +3,7 @@ package minesweeperonline.common.model;
 import java.io.Serializable;
 
 /**
+ * BoardState là một bản chụp dữ liệu bàn cờ tại một thời điểm.
  * Đại diện cho toàn bộ trạng thái hiển thị được của bàn cờ Minesweeper 12x12.
  */
 public class BoardState implements Serializable {

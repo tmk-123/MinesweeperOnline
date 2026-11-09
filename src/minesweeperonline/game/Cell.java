@@ -10,8 +10,8 @@ public class Cell {
     private boolean mine;
     private boolean opened;
     private boolean flagged;
-    private int adjacentMines;
-    private boolean exploded;
+    private int adjacentMines; // số quả mìn ở các ô xung quanh
+    private boolean exploded; // hiện biểu tượng quả mìn nếu đã nổ
 
     /** Tạo ô tại hàng, cột cho trước rồi đặt trạng thái ban đầu. */
     public Cell(int row, int col) {

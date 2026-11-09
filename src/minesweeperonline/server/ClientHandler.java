@@ -96,11 +96,13 @@ public class ClientHandler implements Runnable {
                 if (line.isEmpty()) {
                     continue;
                 }
-
+                
+                // deserialize nghĩa là chuyển dữ liệu đã nhận về lại thành đối tượng Java
                 Message message = JsonProtocol.deserialize(line);
                 if (message != null) {
                     // Payload sai định dạng (vd: thiếu "row") không được làm chết kết nối
                     try {
+                        // đưa đối tượng đó vào hàm handleMessage để chọn cách xử lý dựa trên loại tin nhắn.
                         handleMessage(message);
                     } catch (RuntimeException e) {
                         System.err.println("[ClientHandler] Error handling " + message.getType() + ": " + e);
@@ -178,7 +180,7 @@ public class ClientHandler implements Runnable {
                 break;
 
             case GET_LEADERBOARD:
-                handleGetLeaderboard(message);
+                handleGetLeaderboard(message); // chuyển xuống dưới hàm này
                 break;
 
             case GET_MATCH_HISTORY:
@@ -346,10 +348,12 @@ public class ClientHandler implements Runnable {
     /** Lấy 10 người đứng đầu qua UserDAO rồi gửi điểm, số trận và tỷ lệ thắng trong LEADERBOARD. */
     private void handleGetLeaderboard(Message message) {
         List<LeaderboardEntry> list = userDAO.getLeaderboard(10);
+        // Tạo message phản hồi tên res, loại LEADERBOARD. 
+        // Client nhìn loại này để biết đây là kết quả bảng xếp hạng.
         Message res = new Message(MessageType.LEADERBOARD);
         res.setRequestId(message.getRequestId());
-        JsonObject payload = new JsonObject();
-        JsonArray array = new JsonArray();
+        JsonObject payload = new JsonObject(); // Tạo đối tượng JSON để chứa nội dung phản hồi
+        JsonArray array = new JsonArray(); // Tạo mảng JSON để chứa các dòng xếp hạng:
 
         for (LeaderboardEntry e : list) {
             JsonObject item = new JsonObject();

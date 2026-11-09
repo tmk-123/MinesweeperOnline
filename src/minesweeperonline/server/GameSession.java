@@ -160,12 +160,13 @@ public class GameSession {
             Board targetBoard = getBoardForPlayer(userId);
             Player actingPlayer = getPlayer(userId);
             Player opponentPlayer = getOpponent(userId);
-            ClientHandler actingHandler = (userId == player1.getUserId()) ? handler1 : handler2;
+            ClientHandler actingHandler = (userId ==     player1.getUserId()) ? handler1 : handler2;
             ClientHandler opponentHandler = (userId == player1.getUserId()) ? handler2 : handler1;
 
             if (targetBoard == null || actingPlayer == null) return;
 
             List<Cell> newlyOpened = new ArrayList<>();
+            // newlyOpened là danh sách các ô vừa được mở trong một lần thao tác, kể cả các ô mở lan bằng BFS.
             Board.OpenResult result = targetBoard.openCell(row, col, newlyOpened); // trả về safe/mine/invalid
 
             if (result == Board.OpenResult.INVALID) {
@@ -267,14 +268,20 @@ public class GameSession {
             if (finished.get() || state != GameState.PLAYING || disconnectedUserId >= 0) return;
             Board targetBoard = getBoardForPlayer(userId);
             Player actingPlayer = getPlayer(userId);
+            // xác định bàn cờ và người chơi
             ClientHandler actingHandler = (userId == player1.getUserId()) ? handler1 : handler2;
             ClientHandler opponentHandler = (userId == player1.getUserId()) ? handler2 : handler1;
-
+            
+            // cắm cờ, Phần bên trong chỉ chạy khi:
+            // 1. Tìm thấy bàn cờ.
+            // 2. placeFlag(row, col) trả về true, nghĩa là thao tác cắm cờ thành công.
             if (targetBoard != null && targetBoard.placeFlag(row, col)) {
+                // cập nhật các chỉ số tương ứng vào Player
                 actingPlayer.setCurrentFlags(targetBoard.getCurrentFlags());
                 actingPlayer.setFlagsPlaced(targetBoard.getFlagsPlaced());
                 actingPlayer.setTotalActions(targetBoard.getTotalActions());
-
+                
+                // Tạo thông điệp FLAG_PLACED, gắn mã trận đấu và payload 
                 Message res = new Message(MessageType.FLAG_PLACED);
                 res.setGameId(gameId);
                 JsonObject p = new JsonObject();
