@@ -2,21 +2,44 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Đồng hồ server giảm về 0.
+Đồng hồ server về 0 sau 300 giây PLAYING. A mở 40 ô, 10 thao tác, cắm cờ 2 lần; B mở 40 ô, 12 thao tác, cắm cờ 5 lần.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-startPlayingTimer → handleTimeout → arbitrateTimeout → finishGame → kết quả
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [GameSession.java:119](../../src/minesweeperonline/server/GameSession.java#L119) | `private void startPlayingTimer()` | Scheduler giảm remainingSeconds mỗi giây nếu không chờ kết nối lại; về 0 gọi handleTimeout(). |
+| 2 | [GameSession.java:351](../../src/minesweeperonline/server/GameSession.java#L351) | `private void handleTimeout()` | Gọi GameRules.arbitrateTimeout(player1,player2); không có message TIMEOUT do client gửi. |
+| 3 | [GameRules.java:21](../../src/minesweeperonline/game/GameRules.java#L21) | `public static int arbitrateTimeout(` | Ô an toàn 40=40; thao tác 10<12 nên A thắng, trả 101. Chưa cần xét cờ. |
+| 4 | [GameSession.java:353](../../src/minesweeperonline/server/GameSession.java#L353) | `finishGame(winner, "TIMEOUT")` | Chốt kết quả và lưu A VICTORY +5, B DEFEAT -3. |
+| 5 | [GameFrame.java:200](../../src/minesweeperonline/client/ui/GameFrame.java#L200) | `private void handleServerGameMessage(` | Nhận GAME_WIN/GAME_LOSE/GAME_DRAW, gọi onGameEnd để khóa bàn và hiện kết quả. |
+
+## Message và kết quả trong tình huống này
+
+Phần cố định server gửi A; còn có mines nếu bàn đã sinh:
+
+```json
+{
+  "type": "GAME_WIN",
+  "gameId": "a1b2c3d4",
+  "payload": {
+    "reason": "Het gio! Ban thang nho chi so vuot troi.",
+    "scoreDelta": 5
+  }
+}
 ```
+
+Nếu số ô và thao tác bằng nhau, xét **flagsPlaced** lớn hơn: tổng số lần cắm cờ, không phải số cờ đang có hay số cờ đúng. Nếu cả ba bằng nhau, arbitrateTimeout trả 0, lưu DRAW và gửi GAME_DRAW với scoreDelta=1 cho mỗi bên. Ví dụ cả hai không thao tác đến hết giờ thì hòa +1. Đồng hồ client chỉ hiển thị; server quyết định kết quả.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Timer giảm thời gian định kỳ, tạm không trừ khi đang chờ kết nối lại.
 
-**Code:** [GameSession.java — dòng 116](../../src/minesweeperonline/server/GameSession.java#L116). Tìm `private void startPlayingTimer()`.
+**Code:** [GameSession.java — dòng 119](../../src/minesweeperonline/server/GameSession.java#L119). Tìm `private void startPlayingTimer()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -42,14 +65,14 @@ private void startPlayingTimer() {
     }, 1, 1, TimeUnit.SECONDS);
 }
 
+/** Hủy đồng hồ trận, bộ đếm chờ kết nối lại và dừng scheduler của phiên đấu. */
 private void stopTimers() {
     if (matchTimerTask != null) {
-        matchTimerTask.cancel(false);
 ```
 
 ### Bước 2. Phân xử và gửi hòa hoặc thắng/thua.
 
-**Code:** [GameSession.java — dòng 347](../../src/minesweeperonline/server/GameSession.java#L347). Tìm `private void handleTimeout()`.
+**Code:** [GameSession.java — dòng 351](../../src/minesweeperonline/server/GameSession.java#L351). Tìm `private void handleTimeout()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -120,7 +143,7 @@ Trích đoạn bắt đầu tại vị trí trên:
 
 ### Bước 4. Client hiển thị kết quả phân xử.
 
-**Code:** [GameFrame.java — dòng 408](../../src/minesweeperonline/client/ui/GameFrame.java#L408). Tìm `private void onGameEnd(`.
+**Code:** [GameFrame.java — dòng 422](../../src/minesweeperonline/client/ui/GameFrame.java#L422). Tìm `private void onGameEnd(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

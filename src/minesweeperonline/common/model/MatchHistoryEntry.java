@@ -20,9 +20,11 @@ public class MatchHistoryEntry implements Serializable {
     private String playedAt;          // chuỗi ngày/giờ đã định dạng, vd: "05/10/2026 23:45:00"
     private String outcomeReason;     // vd: "Đối thủ mở trúng mìn", "Hết giờ", v.v.
 
+    /** Khởi tạo dữ liệu một trận trong lịch sử của người chơi. */
     public MatchHistoryEntry() {
     }
 
+    /** Khởi tạo dữ liệu một trận trong lịch sử của người chơi. */
     public MatchHistoryEntry(String matchId, String opponentName, String result, int scoreDelta,
                              int openedSafeCells, int flagsPlaced, int totalActions,
                              int durationSeconds, String playedAt, String outcomeReason) {

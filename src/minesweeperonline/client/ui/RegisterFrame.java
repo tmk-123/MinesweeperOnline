@@ -33,6 +33,7 @@ public class RegisterFrame extends JFrame {
         setupNetworkListener();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         setTitle("Minesweeper Online - Đăng ký tài khoản");
         UITheme.configureWindow(this, 960, 720, 860, 600);
@@ -156,6 +157,7 @@ public class RegisterFrame extends JFrame {
         });
     }
 
+    /** Kiểm tra thông tin trên biểu mẫu rồi gửi REGISTER để server quyết định việc tạo tài khoản. */
     private void performRegister() {
         String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
@@ -185,12 +187,14 @@ public class RegisterFrame extends JFrame {
         connection.sendMessage(registerMsg);
     }
 
+    /** Hủy listener nhận phản hồi đăng ký trước khi giải phóng cửa sổ. */
     @Override
     public void dispose() {
         connection.removeMessageListener(registerListener);
         super.dispose();
     }
 
+    /** Đăng ký nhận phản hồi từ server và chuyển phần cập nhật giao diện sang EDT bằng invokeLater. */
     private void setupNetworkListener() {
         registerListener = message -> {
             SwingUtilities.invokeLater(() -> {

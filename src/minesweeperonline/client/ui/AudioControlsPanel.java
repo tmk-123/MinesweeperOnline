@@ -7,7 +7,7 @@ import javax.swing.plaf.basic.BasicSliderUI;
 import java.awt.*;
 import java.beans.PropertyChangeListener;
 
-/** Shared audio controls, synchronized when moving between client screens. */
+/** Bộ điều khiển âm thanh dùng chung, đồng bộ khi chuyển giữa các màn hình. */
 public final class AudioControlsPanel extends JPanel {
     private final SoundManager sound = SoundManager.getInstance();
     private final JButton allSound = new JButton();
@@ -20,6 +20,7 @@ public final class AudioControlsPanel extends JPanel {
         else SwingUtilities.invokeLater(this::refresh);
     };
 
+    /** Tạo nút bật/tắt âm thanh và thanh âm lượng, liên kết chúng với SoundManager dùng chung. */
     public AudioControlsPanel() {
         super(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         setOpaque(false);
@@ -70,6 +71,7 @@ public final class AudioControlsPanel extends JPanel {
         refresh();
     }
 
+    /** Đọc cài đặt chung để cập nhật nút và slider; cờ refreshing tránh việc cập nhật slider gửi ngược thay đổi. */
     private void refresh() {
         refreshing = true;
         try {
@@ -82,12 +84,14 @@ public final class AudioControlsPanel extends JPanel {
         }
     }
 
+    /** Đăng ký theo dõi cài đặt âm thanh khi panel được gắn vào cây component. */
     @Override public void addNotify() {
         super.addNotify();
         sound.addSettingsListener(settingsListener);
         refresh();
     }
 
+    /** Hủy theo dõi cài đặt âm thanh khi panel rời cây component để tránh giữ listener thừa. */
     @Override public void removeNotify() {
         sound.removeSettingsListener(settingsListener);
         super.removeNotify();

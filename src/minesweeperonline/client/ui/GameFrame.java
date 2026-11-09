@@ -55,10 +55,12 @@ public class GameFrame extends JFrame {
 
     private Rectangle normalBounds;
 
+    /** Gắn thông tin trận, dựng các panel, đăng ký nhận message và hiển thị đếm ngược chuẩn bị. */
     public GameFrame(ServerConnection connection, User currentUser, String opponentName, String gameId, JFrame parentLobby) {
         this(connection, currentUser, opponentName, gameId, parentLobby, Frame.MAXIMIZED_BOTH, null);
     }
 
+    /** Gắn thông tin trận, dựng các panel, đăng ký nhận message và hiển thị đếm ngược chuẩn bị. */
     public GameFrame(ServerConnection connection, User currentUser, String opponentName, String gameId, JFrame parentLobby,
                      int initialExtendedState, Rectangle initialNormalBounds) {
         this.connection = connection;
@@ -72,6 +74,7 @@ public class GameFrame extends JFrame {
         startReadyCountdownVisual();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents(int initialExtendedState, Rectangle initialNormalBounds) {
         setTitle("Minesweeper Online - Trận đấu [" + gameId + "] (" + currentUser.getUsername() + " vs " + opponentName + ")");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -184,13 +187,16 @@ public class GameFrame extends JFrame {
         disconnectOverlay.setVisible(false);
     }
 
+    /** Đăng ký nhận phản hồi từ server và chuyển phần cập nhật giao diện sang EDT bằng invokeLater. */
     private void setupNetworkListener() {
         gameMessageListener = message -> {
+            // Listener chạy trên thread mạng; mọi thay đổi Swing phải được chuyển về EDT.
             SwingUtilities.invokeLater(() -> handleServerGameMessage(message));
         };
         connection.addMessageListener(gameMessageListener);
     }
 
+    /** Phân luồng message trận đấu tới hàm cập nhật tương ứng; được gọi trên EDT từ listener mạng. */
     private void handleServerGameMessage(Message message) {
         if (message == null || message.getType() == null) return;
 
@@ -268,6 +274,7 @@ public class GameFrame extends JFrame {
         }
     }
 
+    /** Hiển thị đếm ngược chuẩn bị ở client; quyền mở bàn cờ vẫn chờ GAME_START từ server. */
     private void startReadyCountdownVisual() {
         readySeconds = 5;
         setGameStatus("Trạng thái: CHUẨN BỊ (Bắt đầu sau " + readySeconds + "s...)", UITheme.COLOR_WARNING);
@@ -286,6 +293,7 @@ public class GameFrame extends JFrame {
         readyCountdownTimer.start();
     }
 
+    /** Đồng bộ nội dung và màu trạng thái ở nhãn dưới bàn cờ và panel thông tin. */
     private void setGameStatus(String text, Color color) {
         if (lblStatus != null) {
             lblStatus.setText(text);
@@ -296,6 +304,7 @@ public class GameFrame extends JFrame {
         }
     }
 
+    /** Nhận GAME_START, mở quyền tương tác và chạy đồng hồ hiển thị của ván đấu. */
     private void onGameStart() {
         if (readyCountdownTimer != null) {
             readyCountdownTimer.stop();
@@ -320,6 +329,7 @@ public class GameFrame extends JFrame {
         gameClock.start();
     }
 
+    /** Áp dụng danh sách ô server xác nhận đã mở, kể cả các ô mở lan, rồi cập nhật thống kê. */
     private void onCellOpened(JsonObject p) {
         boolean exploded = false;
         if (p.has("openedCells")) {
@@ -350,6 +360,7 @@ public class GameFrame extends JFrame {
         }
     }
 
+    /** Chỉ hiển thị cờ và cập nhật bộ đếm sau khi server xác nhận FLAG_PLACED. */
     private void onFlagPlaced(JsonObject p) {
         int r = p.get("row").getAsInt();
         int c = p.get("col").getAsInt();
@@ -364,6 +375,7 @@ public class GameFrame extends JFrame {
         SoundManager.getInstance().playFlag();
     }
 
+    /** Xóa cờ trên giao diện và cập nhật bộ đếm theo phản hồi FLAG_REMOVED của server. */
     private void onFlagRemoved(JsonObject p) {
         int r = p.get("row").getAsInt();
         int c = p.get("col").getAsInt();
@@ -378,6 +390,7 @@ public class GameFrame extends JFrame {
         SoundManager.getInstance().playFlag();
     }
 
+    /** Cập nhật tiến độ và bàn cờ thu nhỏ của đối thủ từ dữ liệu server gửi. */
     private void onGameUpdate(JsonObject p) {
         if (p.has("opponentOpenedSafeCells")) {
             oppSafeCells = p.get("opponentOpenedSafeCells").getAsInt();
@@ -405,6 +418,7 @@ public class GameFrame extends JFrame {
         }
     }
 
+    /** Chặn xử lý kết thúc lặp, dừng timer, khóa bàn cờ, hiện mìn và mở hộp thoại kết quả. */
     private void onGameEnd(String titleOutcome, JsonObject p, boolean isWin) {
         if (gameEnded) return;
         gameEnded = true;
@@ -466,6 +480,7 @@ public class GameFrame extends JFrame {
         activeResultDialog.setVisible(true);
     }
 
+    /** Chuẩn hóa lý do thua để nhận diện mở trúng mìn từ mã server hoặc chuỗi tiếng Việt. */
     private boolean isMineClickLoss(String reason) {
         if (reason == null) return false;
         String normalized = java.text.Normalizer.normalize(reason, java.text.Normalizer.Form.NFD)
@@ -473,6 +488,7 @@ public class GameFrame extends JFrame {
         return normalized.contains("phai min") || normalized.contains("clicked_mine");
     }
 
+    /** Phát tiếng nổ tối đa một lần trong ván dù có nhiều message liên quan đến kết thúc. */
     private void playExplosionOnce() {
         if (!explosionPlayed) {
             explosionPlayed = true;
@@ -480,6 +496,7 @@ public class GameFrame extends JFrame {
         }
     }
 
+    /** Hiện cửa sổ và áp dụng lại chế độ phóng to đã lưu nếu cần. */
     @Override
     public void setVisible(boolean b) {
         super.setVisible(b);
@@ -488,6 +505,7 @@ public class GameFrame extends JFrame {
         }
     }
 
+    /** Chỉ ghi kích thước cửa sổ ở chế độ thường để khôi phục đúng sau khi phóng to hoặc thu nhỏ. */
     private void updateNormalBounds() {
         if (isVisible()) {
             int state = getExtendedState();
@@ -519,6 +537,7 @@ public class GameFrame extends JFrame {
         return getBounds();
     }
 
+    /** Tạm khóa bàn cờ và dừng đồng hồ hiển thị trong lúc chờ đối thủ kết nối lại; kết quả do server quyết định. */
     private void startOpponentDisconnectCountdown(int seconds, String dcName) {
         opponentDisconnectSeconds = seconds;
         setGameStatus("Trạng thái: ĐỐI THỦ MẤT KẾT NỐI (Chờ " + opponentDisconnectSeconds + "s...)", UITheme.COLOR_DANGER);
@@ -553,10 +572,12 @@ public class GameFrame extends JFrame {
         opponentDisconnectTimer.start();
     }
 
+    /** Tạm khóa bàn cờ và dừng đồng hồ hiển thị trong lúc chờ đối thủ kết nối lại; kết quả do server quyết định. */
     private void startOpponentDisconnectCountdown(int seconds) {
         startOpponentDisconnectCountdown(seconds, opponentName);
     }
 
+    /** Ẩn lớp phủ chờ mạng, mở lại bàn cờ và tiếp tục đồng hồ hiển thị khi đối thủ đã trở lại. */
     private void onOpponentReconnected(JsonObject p) {
         if (opponentDisconnectTimer != null) {
             opponentDisconnectTimer.stop();
@@ -581,6 +602,7 @@ public class GameFrame extends JFrame {
                 "Thông báo", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /** Ẩn lớp phủ chặn thao tác khi không còn chờ đối thủ kết nối lại. */
     private void hideDisconnectOverlay() {
         if (disconnectOverlay != null && disconnectOverlay.isVisible()) {
             disconnectOverlay.setVisible(false);
@@ -768,6 +790,7 @@ public class GameFrame extends JFrame {
                 "Khôi phục trận đấu", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    /** Dừng các timer, đóng hộp thoại kết quả và hủy listener mạng trước khi giải phóng cửa sổ. */
     @Override
     public void dispose() {
         if (readyCountdownTimer != null) {

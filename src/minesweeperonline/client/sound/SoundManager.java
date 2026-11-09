@@ -29,6 +29,7 @@ public class SoundManager {
 
     private static final SoundManager INSTANCE = new SoundManager();
 
+    /** Trả về SoundManager dùng chung để các màn hình đồng bộ cài đặt âm thanh. */
     public static SoundManager getInstance() {
         return INSTANCE;
     }
@@ -41,7 +42,7 @@ public class SoundManager {
 
     private volatile boolean muted = false;
     private volatile boolean musicMuted = false;
-    // 13% is approximately the previous background level of -18 dB.
+    // Âm lượng 13% gần tương đương mức nhạc nền trước đây là -18 dB.
     private volatile int musicVolume = 13;
     private final PropertyChangeSupport settingsChanges = new PropertyChangeSupport(this);
 
@@ -66,6 +67,7 @@ public class SoundManager {
     private Clip backgroundMusic;
     private boolean backgroundMusicEnabled;
 
+    /** Khởi tạo bộ âm thanh dùng chung và chuẩn bị các hiệu ứng để phát trong game. */
     private SoundManager() {
         try {
             synthesizeAllSounds();
@@ -94,6 +96,7 @@ public class SoundManager {
         settingsChanges.firePropertyChange("muted", previous, muted);
     }
 
+    /** Đảo trạng thái tắt toàn bộ âm thanh và trả về trạng thái mới. */
     public boolean toggleMute() {
         setMuted(!muted);
         return this.muted;
@@ -121,10 +124,12 @@ public class SoundManager {
         settingsChanges.firePropertyChange("musicVolume", previous, musicVolume);
     }
 
+    /** Đăng ký nhận thay đổi cài đặt để các bộ điều khiển âm thanh cập nhật đồng bộ. */
     public void addSettingsListener(PropertyChangeListener listener) {
         settingsChanges.addPropertyChangeListener(listener);
     }
 
+    /** Hủy listener cài đặt khi component không còn được sử dụng. */
     public void removeSettingsListener(PropertyChangeListener listener) {
         settingsChanges.removePropertyChangeListener(listener);
     }
@@ -140,6 +145,7 @@ public class SoundManager {
         });
     }
 
+    /** Dừng phát nhạc nền nếu clip đã được nạp. */
     public void stopBackgroundMusic() {
         soundPool.submit(() -> {
             backgroundMusicEnabled = false;
@@ -147,6 +153,7 @@ public class SoundManager {
         });
     }
 
+    /** Đồng bộ việc phát nhạc với trạng thái tắt âm thanh, tắt nhạc riêng và mức âm lượng. */
     private void updateBackgroundMusic() {
         if (backgroundMusic == null) return;
         applyMusicVolume();
@@ -160,6 +167,7 @@ public class SoundManager {
         }
     }
 
+    /** Đổi mức âm lượng nhạc sang giá trị điều khiển mà clip hỗ trợ. */
     private void applyMusicVolume() {
         if (backgroundMusic == null || musicVolume == 0) return;
         if (backgroundMusic.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
@@ -172,6 +180,7 @@ public class SoundManager {
         }
     }
 
+    /** Đọc tài nguyên nhạc nền và tạo Clip; xử lý trường hợp thiếu file hoặc thiết bị âm thanh. */
     private Clip loadBackgroundMusic() {
         URL resource = SoundManager.class.getResource(BACKGROUND_MUSIC_RESOURCE);
         if (resource == null) {
@@ -212,26 +221,32 @@ public class SoundManager {
         });
     }
 
+    /** Phát hiệu ứng cắm hoặc gỡ cờ qua bộ phát âm thanh dùng chung. */
     public void playFlag() {
         playClip(clipFlag);
     }
 
+    /** Phát hiệu ứng nổ khi người chơi mở trúng mìn. */
     public void playExplosion() {
         playClip(clipExplosion);
     }
 
+    /** Phát tiếng nhịp dùng cho các bộ đếm ngược. */
     public void playTick() {
         playClip(clipTick);
     }
 
+    /** Phát giai điệu báo chiến thắng. */
     public void playVictory() {
         playClip(clipVictory);
     }
 
+    /** Phát giai điệu báo thất bại. */
     public void playDefeat() {
         playClip(clipDefeat);
     }
 
+    /** Đưa việc phát clip sang hàng đợi âm thanh để tránh chặn luồng giao diện. */
     private void playClip(Clip clip) {
         if (muted || clip == null) return;
         soundPool.submit(() -> {
@@ -246,6 +261,7 @@ public class SoundManager {
         });
     }
 
+    /** Dừng clip nếu clip đã được khởi tạo. */
     private void stopClip(Clip clip) {
         if (clip != null && clip.isRunning()) clip.stop();
     }
@@ -261,6 +277,7 @@ public class SoundManager {
         dataDefeat = synthesizeDefeat();
     }
 
+    /** Chuyển dữ liệu PCM của các hiệu ứng đã tổng hợp thành Clip có thể phát. */
     private void initClips() {
         for (int i = 0; i < clickClips.length; i++) {
             clickClips[i] = createClipFromBytes(dataClick);
@@ -272,6 +289,7 @@ public class SoundManager {
         clipDefeat = createClipFromBytes(dataDefeat);
     }
 
+    /** Mở Clip từ mảng byte PCM theo AUDIO_FORMAT; trả về null nếu không tạo được. */
     private Clip createClipFromBytes(byte[] audioData) {
         if (audioData == null || audioData.length == 0) return null;
         try {
@@ -462,6 +480,7 @@ public class SoundManager {
         return bytes;
     }
 
+    /** Ghi một mẫu âm thanh vào bộ đệm PCM 16 bit theo định dạng dùng chung. */
     private void writeSample(byte[] buffer, int offset, double sample) {
         if (sample > 1.0) sample = 1.0;
         if (sample < -1.0) sample = -1.0;

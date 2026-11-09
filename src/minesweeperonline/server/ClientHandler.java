@@ -60,6 +60,7 @@ public class ClientHandler implements Runnable {
 
     private final UserDAO userDAO = new UserDAO();
 
+    /** Gắn socket của một client với các bộ quản lý dùng chung; luồng đọc được chạy sau qua run(). */
     public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager, MatchmakingManager matchmakingManager) {
         this.socket = socket;
         this.clientManager = clientManager;
@@ -67,6 +68,7 @@ public class ClientHandler implements Runnable {
         this.matchmakingManager = matchmakingManager;
     }
 
+    /** Gắn socket của một client với các bộ quản lý dùng chung; luồng đọc được chạy sau qua run(). */
     public ClientHandler(Socket socket, ClientManager clientManager, GameManager gameManager) {
         this(socket, clientManager, gameManager, null);
     }
@@ -75,6 +77,7 @@ public class ClientHandler implements Runnable {
         return running && socket != null && !socket.isClosed();
     }
 
+    /** Đọc từng dòng JSON từ socket, phân tích message rồi chuyển tới handleMessage; luôn dọn kết nối khi vòng đọc kết thúc. */
     @Override
     public void run() {
         try {
@@ -93,11 +96,13 @@ public class ClientHandler implements Runnable {
                 if (line.isEmpty()) {
                     continue;
                 }
-
+                
+                // deserialize nghĩa là chuyển dữ liệu đã nhận về lại thành đối tượng Java
                 Message message = JsonProtocol.deserialize(line);
                 if (message != null) {
                     // Payload sai định dạng (vd: thiếu "row") không được làm chết kết nối
                     try {
+                        // đưa đối tượng đó vào hàm handleMessage để chọn cách xử lý dựa trên loại tin nhắn.
                         handleMessage(message);
                     } catch (RuntimeException e) {
                         System.err.println("[ClientHandler] Error handling " + message.getType() + ": " + e);
@@ -175,7 +180,7 @@ public class ClientHandler implements Runnable {
                 break;
 
             case GET_LEADERBOARD:
-                handleGetLeaderboard(message);
+                handleGetLeaderboard(message); // chuyển xuống dưới hàm này
                 break;
 
             case GET_MATCH_HISTORY:
@@ -201,6 +206,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Lấy tọa độ từ payload và chuyển thao tác mở ô tới GameSession của tài khoản đã đăng nhập. */
     private void handleOpenCell(Message message) {
         if (user == null) return;
         GameSession session = gameManager.getSessionByUserId(user.getId());
@@ -212,6 +218,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Chuyển yêu cầu cắm cờ tới phiên đấu; GameSession chịu trách nhiệm kiểm tra luật và gửi kết quả. */
     private void handlePlaceFlag(Message message) {
         if (user == null) return;
         GameSession session = gameManager.getSessionByUserId(user.getId());
@@ -223,6 +230,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Chuyển yêu cầu gỡ cờ tới phiên đấu của người gửi, không sửa bàn cờ ngay tại handler. */
     private void handleRemoveFlag(Message message) {
         if (user == null) return;
         GameSession session = gameManager.getSessionByUserId(user.getId());
@@ -234,6 +242,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Xác thực tài khoản, gắn người chơi với kết nối và thử khôi phục phiên đấu còn dở sau khi mất mạng. */
     private void handleLogin(Message message) {
         JsonObject payload = message.getPayload();
         String username = payload.has("username") ? payload.get("username").getAsString() : "";
@@ -285,6 +294,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Kiểm tra thông tin và tên trùng, tạo tài khoản qua UserDAO rồi trả kết quả đăng ký cho client. */
     private void handleRegister(Message message) {
         JsonObject payload = message.getPayload();
         String username = payload.has("username") ? payload.get("username").getAsString() : "";
@@ -311,6 +321,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Đóng gói danh sách người chơi online, loại người gửi yêu cầu và giữ requestId để client đối chiếu phản hồi. */
     private void handleGetOnlinePlayers(Message message) {
         int currentUserId = (user != null) ? user.getId() : -1;
         List<Player> onlineList = clientManager.getOnlinePlayers(currentUserId);
@@ -334,12 +345,15 @@ public class ClientHandler implements Runnable {
         sendMessage(res);
     }
 
+    /** Lấy 10 người đứng đầu qua UserDAO rồi gửi điểm, số trận và tỷ lệ thắng trong LEADERBOARD. */
     private void handleGetLeaderboard(Message message) {
         List<LeaderboardEntry> list = userDAO.getLeaderboard(10);
+        // Tạo message phản hồi tên res, loại LEADERBOARD. 
+        // Client nhìn loại này để biết đây là kết quả bảng xếp hạng.
         Message res = new Message(MessageType.LEADERBOARD);
         res.setRequestId(message.getRequestId());
-        JsonObject payload = new JsonObject();
-        JsonArray array = new JsonArray();
+        JsonObject payload = new JsonObject(); // Tạo đối tượng JSON để chứa nội dung phản hồi
+        JsonArray array = new JsonArray(); // Tạo mảng JSON để chứa các dòng xếp hạng:
 
         for (LeaderboardEntry e : list) {
             JsonObject item = new JsonObject();
@@ -358,6 +372,7 @@ public class ClientHandler implements Runnable {
         sendMessage(res);
     }
 
+    /** Lấy lịch sử của tài khoản hiện tại; giới hạn số bản ghi trong khoảng 1–100 trước khi truy vấn. */
     private void handleGetMatchHistory(Message message) {
         if (user == null) return;
         int limit = 20;
@@ -376,6 +391,7 @@ public class ClientHandler implements Runnable {
         sendMessage(res);
     }
 
+    /** Chỉ cho tài khoản đã đăng nhập tham gia hàng đợi ghép trận nhanh. */
     private void handleQuickMatch(Message message) {
         if (user == null || player == null) {
             sendMessage(JsonProtocol.createError(message.getRequestId(), "Vui lòng đăng nhập trước khi tìm trận!"));
@@ -386,12 +402,14 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Rút kết nối hiện tại khỏi hàng đợi tìm trận nhanh nếu có bộ quản lý ghép trận. */
     private void handleCancelQuickMatch(Message message) {
         if (matchmakingManager != null) {
             matchmakingManager.leaveQueue(this);
         }
     }
 
+    /** Kiểm tra cả hai người đang rảnh, giữ trạng thái lời mời dưới khóa chung và đặt lịch hết hạn ở server. */
     private void handleChallenge(Message message) {
         if (user == null || player == null) {
             sendMessage(JsonProtocol.createError(message.getRequestId(), "Ban chua dang nhap!"));
@@ -473,6 +491,7 @@ public class ClientHandler implements Runnable {
         sendMessage(rejMsg);
     }
 
+    /** Xử lý chấp nhận lời mời; kiểm tra trạng thái lời mời trước khi tạo phiên đấu cho hai người. */
     private void handleAccept(Message message) {
         if (user == null || player == null) return;
 
@@ -523,6 +542,7 @@ public class ClientHandler implements Runnable {
         this.sendMessage(matchCreatedP2);
     }
 
+    /** Xử lý từ chối lời mời và giải phóng trạng thái chờ thách đấu của hai người. */
     private void handleReject(Message message) {
         if (user == null || player == null) return;
         JsonObject payload = message.getPayload();
@@ -556,6 +576,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Chuyển yêu cầu đầu hàng tới GameSession để server quyết định kết quả trận. */
     private void handleForfeit(Message message) {
         if (user == null) return;
         GameSession session = gameManager.getSessionByUserId(user.getId());
@@ -584,6 +605,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Chuyển yêu cầu chơi lại tới phiên đấu để phối hợp sự đồng ý của hai người. */
     private void handlePlayAgain(Message message) {
         if (user == null) return;
         GameSession session = gameManager.getSessionByUserId(user.getId());
@@ -592,6 +614,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Xử lý người chơi rời phiên đấu và cập nhật trạng thái liên quan ở server. */
     private void handleExit(Message message) {
         if (user != null) {
             GameSession session = gameManager.getSessionByUserId(user.getId());
@@ -637,6 +660,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /** Dừng handler và đóng socket; vòng đọc đang chờ dữ liệu sẽ thoát để thực hiện cleanup. */
     public synchronized void close() {
         running = false;
         try {

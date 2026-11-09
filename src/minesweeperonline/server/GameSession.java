@@ -47,7 +47,9 @@ public class GameSession {
     private int winnerUserId = -1; // -1 = đang đấu, 0 = hòa, >0 = userId người thắng
     private String endReason = "";
 
+    // Hai handler và scheduler cùng truy cập phiên đấu: dùng chung khóa khi sửa trạng thái bàn/trận.
     private final Object gameLock = new Object();
+    // Chỉ một luồng được chốt kết quả và lưu điểm nếu hết giờ, mất mạng và mở mìn xảy ra gần nhau.
     private final AtomicBoolean finished = new AtomicBoolean(false);
     private final Set<Integer> playAgainRequests = ConcurrentHashMap.newKeySet();
 
@@ -56,6 +58,7 @@ public class GameSession {
     private ScheduledFuture<?> disconnectGraceTask;
     private volatile int disconnectedUserId = -1;
 
+    /** Tạo hai bàn cờ độc lập, đặt người chơi vào trạng thái đang đấu và bắt đầu đếm ngược READY. */
     public GameSession(Player player1, ClientHandler handler1, Player player2, ClientHandler handler2) {
         this.gameId = UUID.randomUUID().toString().substring(0, 8);
         this.player1 = player1;
@@ -134,6 +137,7 @@ public class GameSession {
         }, 1, 1, TimeUnit.SECONDS);
     }
 
+    /** Hủy đồng hồ trận, bộ đếm chờ kết nối lại và dừng scheduler của phiên đấu. */
     private void stopTimers() {
         if (matchTimerTask != null) {
             matchTimerTask.cancel(false);
@@ -156,13 +160,14 @@ public class GameSession {
             Board targetBoard = getBoardForPlayer(userId);
             Player actingPlayer = getPlayer(userId);
             Player opponentPlayer = getOpponent(userId);
-            ClientHandler actingHandler = (userId == player1.getUserId()) ? handler1 : handler2;
+            ClientHandler actingHandler = (userId ==     player1.getUserId()) ? handler1 : handler2;
             ClientHandler opponentHandler = (userId == player1.getUserId()) ? handler2 : handler1;
 
             if (targetBoard == null || actingPlayer == null) return;
 
             List<Cell> newlyOpened = new ArrayList<>();
-            Board.OpenResult result = targetBoard.openCell(row, col, newlyOpened);
+            // newlyOpened là danh sách các ô vừa được mở trong một lần thao tác, kể cả các ô mở lan bằng BFS.
+            Board.OpenResult result = targetBoard.openCell(row, col, newlyOpened); // trả về safe/mine/invalid
 
             if (result == Board.OpenResult.INVALID) {
                 return;
@@ -170,7 +175,7 @@ public class GameSession {
 
             actingPlayer.setOpenedSafeCells(targetBoard.getOpenedSafeCells());
             actingPlayer.setTotalActions(targetBoard.getTotalActions());
-
+ 
             if (result == Board.OpenResult.MINE) {
                 // Mở trúng mìn -> thua ngay lập tức
                 finishGame(opponentPlayer.getUserId(), "CLICKED_MINE");
@@ -263,14 +268,20 @@ public class GameSession {
             if (finished.get() || state != GameState.PLAYING || disconnectedUserId >= 0) return;
             Board targetBoard = getBoardForPlayer(userId);
             Player actingPlayer = getPlayer(userId);
+            // xác định bàn cờ và người chơi
             ClientHandler actingHandler = (userId == player1.getUserId()) ? handler1 : handler2;
             ClientHandler opponentHandler = (userId == player1.getUserId()) ? handler2 : handler1;
-
+            
+            // cắm cờ, Phần bên trong chỉ chạy khi:
+            // 1. Tìm thấy bàn cờ.
+            // 2. placeFlag(row, col) trả về true, nghĩa là thao tác cắm cờ thành công.
             if (targetBoard != null && targetBoard.placeFlag(row, col)) {
+                // cập nhật các chỉ số tương ứng vào Player
                 actingPlayer.setCurrentFlags(targetBoard.getCurrentFlags());
                 actingPlayer.setFlagsPlaced(targetBoard.getFlagsPlaced());
                 actingPlayer.setTotalActions(targetBoard.getTotalActions());
-
+                
+                // Tạo thông điệp FLAG_PLACED, gắn mã trận đấu và payload 
                 Message res = new Message(MessageType.FLAG_PLACED);
                 res.setGameId(gameId);
                 JsonObject p = new JsonObject();
@@ -529,6 +540,7 @@ public class GameSession {
         }
     }
 
+    /** Đóng gói các ô đã mở thành JSON để gửi trạng thái bàn cờ cho client. */
     private JsonArray serializeOpenedCells(List<Cell> cells) {
         JsonArray array = new JsonArray();
         for (Cell c : cells) {

@@ -20,20 +20,22 @@ public class Board {
     public static final int TOTAL_MINES = 23;
     public static final int TOTAL_SAFE_CELLS = TOTAL_CELLS - TOTAL_MINES; // 121
 
+    // kết quả của 1 lần mở ô
     public enum OpenResult {
         INVALID,
         SAFE,
         MINE
     }
 
-    private final Cell[][] grid;
-    private int openedSafeCells;
-    private int currentFlags;
-    private int flagsPlaced;
-    private int flagsRemoved;
-    private int totalActions;
-    private boolean minesGenerated;
+    private final Cell[][] grid; 
+    private int openedSafeCells; // số ô mở an toàn
+    private int currentFlags; // số cờ trên bàn
+    private int flagsPlaced; // tổng số lần đã đặt cờ kể từ đầu ván
+    private int flagsRemoved; // số lần gỡ cờ
+    private int totalActions; // tổng số thao tác hợp lệ
+    private boolean minesGenerated; // mìn đã tạo -> true
 
+    /** Tạo lưới Cell và đặt lại bộ đếm; mìn chỉ được sinh khi mở ô hợp lệ đầu tiên. */
     public Board() {
         this.grid = new Cell[ROWS][COLS];
         for (int r = 0; r < ROWS; r++) {
@@ -63,10 +65,12 @@ public class Board {
         }
     }
 
+    /** Kiểm tra hàng và cột nằm trong lưới; tọa độ ngoài bàn không được truy cập mảng. */
     public boolean isValidCoordinate(int r, int c) {
         return r >= 0 && r < ROWS && c >= 0 && c < COLS;
     }
 
+    /** Lấy ô theo tọa độ; trả về null nếu tọa độ nằm ngoài bàn. */
     public Cell getCell(int r, int c) {
         if (!isValidCoordinate(r, c)) return null;
         return grid[r][c];
@@ -104,11 +108,12 @@ public class Board {
      * @return OpenResult (INVALID, SAFE hoặc MINE)
      */
     public OpenResult openCell(int r, int c, List<Cell> openedList) {
-        if (!isValidCoordinate(r, c)) {
+        if (!isValidCoordinate(r, c)) { // tọa độ không hợp lệ
             return OpenResult.INVALID;
         }
 
         Cell target = grid[r][c];
+        // kiểm tra ô đã mở hoặc đang cắm cờ
         if (target.isOpened() || target.isFlagged()) {
             return OpenResult.INVALID;
         }
@@ -157,6 +162,7 @@ public class Board {
                     if (isValidCoordinate(nr, nc)) {
                         Cell neighbor = grid[nr][nc];
                         if (!neighbor.isOpened() && !neighbor.isFlagged() && !neighbor.isMine()) {
+                            // Đánh dấu ngay khi tìm thấy để các ô lân cận khác không thêm lại và đếm trùng.
                             neighbor.setOpened(true);
                             this.openedSafeCells++;
                             if (openedList != null) openedList.add(neighbor);
@@ -210,13 +216,15 @@ public class Board {
         return true;
     }
 
+    /** Kiểm tra số ô an toàn đã mở đạt tổng số ô an toàn để xét hoàn thành bàn. */
     public boolean isAllSafeCellsOpened() {
         return openedSafeCells >= TOTAL_SAFE_CELLS;
     }
 
     /**
-     * Chuyển bàn cờ này sang model BoardState.
-     *
+     * Chuyển bàn cờ này sang model BoardState.(chưa dùng đến)
+     * Hàm này được viết để lấy một bản dữ liệu bàn cờ đem đi sử dụng, 
+     * chẳng hạn gửi cho client hiển thị hoặc khôi phục màn chơi khi kết nối lại.
      * @param maskMines nếu true thì ẩn vị trí mìn của các ô chưa mở (góc nhìn của đối thủ)
      */
     public BoardState toBoardState(boolean maskMines) {

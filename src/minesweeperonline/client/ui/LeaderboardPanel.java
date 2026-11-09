@@ -30,6 +30,7 @@ public class LeaderboardPanel extends GlassPanel {
         initComponents();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         setBorder(UITheme.createCardBorder("Bảng xếp hạng cao thủ (Top 10)"));
 
@@ -86,7 +87,7 @@ public class LeaderboardPanel extends GlassPanel {
                     } else {
                         setText(nameInRow);
                     }
-                    // JLabel clips long names with "..."; retain the full model value.
+                    // JLabel rút gọn tên dài bằng "..."; vẫn giữ nguyên giá trị đầy đủ trong mô hình dữ liệu.
                     setToolTipText(getText());
                 } else if (col == 2) {
                     // Cột Cấp bậc (Rank Tier)
@@ -167,6 +168,12 @@ public class LeaderboardPanel extends GlassPanel {
         add(actionPanel, BorderLayout.SOUTH);
     }
 
+    /** Gửi yêu cầu lấy bảng xếp hạng; dữ liệu hiển thị được cập nhật ở hàm nhận phản hồi. */
+    // Client gửi:
+    // {
+    //  "type": "GET_LEADERBOARD",
+    //  "payload": {}
+    // }
     public void refreshLeaderboard() {
         if (connection != null && connection.isConnected()) {
             lblStatus.setText("Đang làm mới bảng xếp hạng...");
@@ -174,6 +181,7 @@ public class LeaderboardPanel extends GlassPanel {
         }
     }
 
+    /** Đưa các bản ghi xếp hạng đã nhận vào thành phần hiển thị. */
     public void updateLeaderboard(List<LeaderboardEntry> list) {
         SwingUtilities.invokeLater(() -> {
             tableModel.setRowCount(0);

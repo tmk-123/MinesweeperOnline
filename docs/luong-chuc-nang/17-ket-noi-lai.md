@@ -2,21 +2,134 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Người chơi đăng nhập lại trong lúc session vẫn chờ.
+A đăng nhập lại trong hạn 15 giây bằng socket mới. B vẫn chờ. Bàn A có 9 ô mở như luồng BFS, không cờ, 1 thao tác; còn 240 giây.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-LOGIN → activeSession → handlePlayerReconnect → GAME_RECONNECTED → restoreGameState
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [ServerConnection.java:67](../../src/minesweeperonline/client/network/ServerConnection.java#L67) | `public synchronized boolean connect(` | Mở TCP mới rồi gửi LOGIN bằng tài khoản cũ. |
+| 2 | [ClientHandler.java:244](../../src/minesweeperonline/server/ClientHandler.java#L244) | `private void handleLogin(` | Xác thực, đăng ký handler mới, gửi LOGIN_SUCCESS rồi tra session chưa kết thúc của A. |
+| 3 | [GameSession.java:671](../../src/minesweeperonline/server/GameSession.java#L671) | `public boolean handlePlayerReconnect(` | Chỉ nhận khi chưa finished và disconnectedUserId=101; hủy lịch hết hạn, đặt -1 và thay handler1/handler2 tương ứng. |
+| 4 | [GameSession.java:692](../../src/minesweeperonline/server/GameSession.java#L692) | `Message oppMsg = new Message(MessageType.OPPONENT_RECONNECTED)` | B nhận thông báo A đã trở lại để bỏ lớp phủ và chạy tiếp đồng hồ. |
+| 5 | [GameSession.java:702](../../src/minesweeperonline/server/GameSession.java#L702) | `Message recMsg = new Message(MessageType.GAME_RECONNECTED)` | Đọc Board đang giữ trên server, đóng gói đồng hồ, thống kê, ô mở/cờ và tọa độ tiến độ đối thủ. |
+| 6 | [MainMenuFrame.java:335](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L335) | `private void handleGameReconnected(` | A tạo GameFrame theo mã trận cũ và gọi restoreGameState(payload). |
+| 7 | [GameFrame.java:710](../../src/minesweeperonline/client/ui/GameFrame.java#L710) | `public void restoreGameState(` | Khôi phục đồng hồ, revealCell/setCellFlagged trên bàn mình và dựng bàn thu nhỏ đối thủ. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "LOGIN",
+  "payload": {
+    "username": "an_demo",
+    "password": "123456"
+  }
+}
 ```
+
+Sau LOGIN_SUCCESS, server → A:
+
+```json
+{
+  "type": "GAME_RECONNECTED",
+  "gameId": "a1b2c3d4",
+  "payload": {
+    "gameId": "a1b2c3d4",
+    "opponentId": 102,
+    "opponentUsername": "binh_demo",
+    "remainingSeconds": 240,
+    "mySafeCells": 9,
+    "myFlags": 0,
+    "myActions": 1,
+    "oppSafeCells": 0,
+    "oppFlags": 0,
+    "oppActions": 0,
+    "myOpenedCells": [
+      {
+        "row": 3,
+        "col": 4,
+        "adjacentMines": 0,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 2,
+        "col": 3,
+        "adjacentMines": 5,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 2,
+        "col": 4,
+        "adjacentMines": 3,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 2,
+        "col": 5,
+        "adjacentMines": 5,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 3,
+        "col": 3,
+        "adjacentMines": 3,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 3,
+        "col": 5,
+        "adjacentMines": 3,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 4,
+        "col": 3,
+        "adjacentMines": 5,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 4,
+        "col": 4,
+        "adjacentMines": 3,
+        "isMine": false,
+        "isExploded": false
+      },
+      {
+        "row": 4,
+        "col": 5,
+        "adjacentMines": 5,
+        "isMine": false,
+        "isExploded": false
+      }
+    ],
+    "myFlaggedCells": [],
+    "oppOpenedCoords": [],
+    "oppFlaggedCoords": []
+  }
+}
+```
+
+Không gửi vị trí mìn chưa lộ, không gọi generateMines lại. Server phải còn chạy và giữ session trong RAM; khởi động lại server làm mất ván dở. Nếu quá hạn/session bị xóa, LOGIN chỉ đưa A về sảnh. ServerConnection hiện không tự nối lại khi mất mạng: cần bước mở kết nối và đăng nhập lại.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Sau đăng nhập, tìm session chưa kết thúc.
 
-**Code:** [ClientHandler.java — dòng 282](../../src/minesweeperonline/server/ClientHandler.java#L282). Tìm `GameSession activeSession = gameManager.getSessionByUserId`.
+**Code:** [ClientHandler.java — dòng 289](../../src/minesweeperonline/server/ClientHandler.java#L289). Tìm `GameSession activeSession = gameManager.getSessionByUserId`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -29,7 +142,7 @@ if (activeSession != null && !activeSession.isFinished()) {
 
 ### Bước 2. Kiểm tra đúng người, hủy timer chờ và gắn handler mới.
 
-**Code:** [GameSession.java — dòng 666](../../src/minesweeperonline/server/GameSession.java#L666). Tìm `public boolean handlePlayerReconnect(`.
+**Code:** [GameSession.java — dòng 671](../../src/minesweeperonline/server/GameSession.java#L671). Tìm `public boolean handlePlayerReconnect(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -63,7 +176,7 @@ public boolean handlePlayerReconnect(int userId, ClientHandler newHandler, Playe
 
 ### Bước 3. Đóng gói thời gian, thống kê, ô mở và cờ để khôi phục.
 
-**Code:** [GameSession.java — dòng 697](../../src/minesweeperonline/server/GameSession.java#L697). Tìm `Message recMsg = new Message(MessageType.GAME_RECONNECTED)`.
+**Code:** [GameSession.java — dòng 702](../../src/minesweeperonline/server/GameSession.java#L702). Tìm `Message recMsg = new Message(MessageType.GAME_RECONNECTED)`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -107,7 +220,7 @@ for (int r = 0; r < 12; r++) {
 
 ### Bước 4. Client mở lại giao diện trận.
 
-**Code:** [MainMenuFrame.java — dòng 342](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L342). Tìm `private void handleGameReconnected(`.
+**Code:** [MainMenuFrame.java — dòng 335](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L335). Tìm `private void handleGameReconnected(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -141,7 +254,7 @@ private void handleGameReconnected(Message message) {
 
 ### Bước 5. Dựng lại các ô và cờ từ dữ liệu server.
 
-**Code:** [GameFrame.java — dòng 688](../../src/minesweeperonline/client/ui/GameFrame.java#L688). Tìm `public void restoreGameState(`.
+**Code:** [GameFrame.java — dòng 710](../../src/minesweeperonline/client/ui/GameFrame.java#L710). Tìm `public void restoreGameState(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

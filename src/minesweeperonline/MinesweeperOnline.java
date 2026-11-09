@@ -1,8 +1,10 @@
 
 package minesweeperonline;
 
+/** Điểm chạy các chương trình kiểm tra từ project NetBeans. */
 public class MinesweeperOnline {
 
+    /** Chạy tuần tự các chương trình kiểm tra của project NetBeans; chạy MainServer/MainClient riêng để chơi. */
     public static void main(String[] args) throws Exception {
         System.out.println(">>> Chay MinesweeperOnline (Main Class cua Project NetBeans) <<<");
         TestPhase1.main(args);

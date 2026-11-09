@@ -35,7 +35,7 @@ public GameSession createSession(Player p1, ClientHandler h1, Player p2, ClientH
 
 ### Bước 2. Tạo hai Board riêng, đặt READY và bắt đầu đếm ngược.
 
-**Code:** [GameSession.java — dòng 59](../../src/minesweeperonline/server/GameSession.java#L59). Tìm `public GameSession(`.
+**Code:** [GameSession.java — dòng 62](../../src/minesweeperonline/server/GameSession.java#L62). Tìm `public GameSession(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -65,7 +65,7 @@ public GameSession(Player player1, ClientHandler handler1, Player player2, Clien
 
 ### Bước 3. Tạo lưới và từng Cell rồi gọi initialize.
 
-**Code:** [Board.java — dòng 37](../../src/minesweeperonline/game/Board.java#L37). Tìm `public Board()`.
+**Code:** [Board.java — dòng 38](../../src/minesweeperonline/game/Board.java#L38). Tìm `public Board()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -83,7 +83,7 @@ public Board() {
 
 ### Bước 4. Reset trạng thái, đặt minesGenerated=false; chưa sinh mìn.
 
-**Code:** [Board.java — dòng 51](../../src/minesweeperonline/game/Board.java#L51). Tìm `public final void initialize()`.
+**Code:** [Board.java — dòng 52](../../src/minesweeperonline/game/Board.java#L52). Tìm `public final void initialize()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -105,7 +105,7 @@ public final void initialize() {
 
 ### Bước 5. Hết READY thì chuyển PLAYING, gửi GAME_START và chạy timer trận.
 
-**Code:** [GameSession.java — dòng 84](../../src/minesweeperonline/server/GameSession.java#L84). Tìm `private void startReadyCountdown()`.
+**Code:** [GameSession.java — dòng 87](../../src/minesweeperonline/server/GameSession.java#L87). Tìm `private void startReadyCountdown()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -142,7 +142,7 @@ private void startReadyCountdown() {
 
 ### Bước 6. Client xử lý sự kiện bắt đầu, cho phép chơi theo logic giao diện.
 
-**Code:** [GameFrame.java — dòng 299](../../src/minesweeperonline/client/ui/GameFrame.java#L299). Tìm `private void onGameStart()`.
+**Code:** [GameFrame.java — dòng 308](../../src/minesweeperonline/client/ui/GameFrame.java#L308). Tìm `private void onGameStart()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -172,7 +172,7 @@ private void onGameStart() {
 
 ### Bước 7. Click trái gửi OPEN_CELL với tọa độ ô.
 
-**Code:** [GameBoardPanel.java — dòng 92](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L92). Tìm `public void mousePressed(`.
+**Code:** [GameBoardPanel.java — dòng 96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96). Tìm `public void mousePressed(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -200,7 +200,7 @@ Trích đoạn bắt đầu tại vị trí trên:
 
 ### Bước 8. Server lấy tọa độ và tìm session theo user của kết nối.
 
-**Code:** [ClientHandler.java — dòng 204](../../src/minesweeperonline/server/ClientHandler.java#L204). Tìm `private void handleOpenCell(`.
+**Code:** [ClientHandler.java — dòng 208](../../src/minesweeperonline/server/ClientHandler.java#L208). Tìm `private void handleOpenCell(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -219,7 +219,7 @@ private void handleOpenCell(Message message) {
 
 ### Bước 9. Kiểm tra trạng thái trận và chọn Board của người đang thao tác.
 
-**Code:** [GameSession.java — dòng 150](../../src/minesweeperonline/server/GameSession.java#L150). Tìm `public void handleOpenCell(`.
+**Code:** [GameSession.java — dòng 154](../../src/minesweeperonline/server/GameSession.java#L154). Tìm `public void handleOpenCell(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -246,7 +246,7 @@ public void handleOpenCell(int userId, int row, int col) {
 
 ### Bước 10. Đây là chỗ thực sự sinh mìn: truyền 6 tham số, sau đó đặt minesGenerated=true.
 
-**Code:** [Board.java — dòng 117](../../src/minesweeperonline/game/Board.java#L117). Tìm `if (!this.minesGenerated)`.
+**Code:** [Board.java — dòng 120](../../src/minesweeperonline/game/Board.java#L120). Tìm `if (!this.minesGenerated)`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -308,7 +308,7 @@ calculateAdjacentMines(grid, rows, cols);
 
 ### Bước 13. Sau khi sinh mìn, ô đầu có số 0 nên Board tiếp tục mở lan BFS.
 
-**Code:** [Board.java — dòng 142](../../src/minesweeperonline/game/Board.java#L142). Tìm `Queue<Cell> queue = new ArrayDeque<>();`.
+**Code:** [Board.java — dòng 145](../../src/minesweeperonline/game/Board.java#L145). Tìm `Queue<Cell> queue = new ArrayDeque<>();`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -334,12 +334,11 @@ while (!queue.isEmpty()) {
                     neighbor.setOpened(true);
                     this.openedSafeCells++;
                     if (openedList != null) openedList.add(neighbor);
-
 ```
 
 ### Bước 14. Client nhận danh sách ô đã mở để cập nhật giao diện.
 
-**Code:** [GameFrame.java — dòng 323](../../src/minesweeperonline/client/ui/GameFrame.java#L323). Tìm `private void onCellOpened(`.
+**Code:** [GameFrame.java — dòng 333](../../src/minesweeperonline/client/ui/GameFrame.java#L333). Tìm `private void onCellOpened(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

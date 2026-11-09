@@ -15,21 +15,25 @@ public class User implements Serializable {
     private int totalScore;
     private String createdAt;
 
+    /** Khởi tạo dữ liệu tài khoản theo thông tin có ở nơi gọi. */
     public User() {
     }
 
+    /** Khởi tạo dữ liệu tài khoản theo thông tin có ở nơi gọi. */
     public User(String username, String password) {
         this.username = username;
         this.password = password;
         this.totalScore = 0;
     }
 
+    /** Khởi tạo dữ liệu tài khoản theo thông tin có ở nơi gọi. */
     public User(int id, String username, int totalScore) {
         this.id = id;
         this.username = username;
         this.totalScore = totalScore;
     }
 
+    /** Khởi tạo dữ liệu tài khoản theo thông tin có ở nơi gọi. */
     public User(int id, String username, String password, int totalScore, String createdAt) {
         this.id = id;
         this.username = username;

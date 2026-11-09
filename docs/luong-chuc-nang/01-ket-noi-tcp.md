@@ -2,21 +2,33 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Chạy server, sau đó client kết nối.
+Khởi động server tại 127.0.0.1:2209, sau đó chạy một client trên cùng máy.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-MainServer.start → accept → ClientHandler.run ↔ ServerConnection
-```
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [MainServer.java:90](../../src/minesweeperonline/server/MainServer.java#L90) | `public static void main(` | Đọc cổng, gọi new MainServer(2209).start(). |
+| 2 | [MainServer.java:29](../../src/minesweeperonline/server/MainServer.java#L29) | `public void start()` | new ServerSocket(port) mở cổng; accept() chờ kết nối TCP. |
+| 3 | [MainClient.java:27](../../src/minesweeperonline/client/MainClient.java#L27) | `public void launch()` | Khởi tạo giao diện rồi gọi connectAndOpenLogin(). |
+| 4 | [MainClient.java:41](../../src/minesweeperonline/client/MainClient.java#L41) | `private void connectAndOpenLogin()` | Gọi connection.connect("127.0.0.1",2209). |
+| 5 | [ServerConnection.java:67](../../src/minesweeperonline/client/network/ServerConnection.java#L67) | `public synchronized boolean connect(` | Tạo Socket, kết nối với hạn chờ 5 giây, tạo reader/writer UTF-8 và chạy luồng nhận. |
+| 6 | [MainServer.java:44](../../src/minesweeperonline/server/MainServer.java#L44) | `Socket clientSocket = serverSocket.accept()` | Trả Socket mới, tạo ClientHandler và chạy trên thread riêng. |
+| 7 | [ClientHandler.java:82](../../src/minesweeperonline/server/ClientHandler.java#L82) | `public void run()` | Tạo reader/writer, addClient(this) rồi chờ reader.readLine(). |
+
+## Message và kết quả trong tình huống này
+
+Bước này **chưa có JSON nghiệp vụ**. Kết nối TCP thành công rồi client mới mở LoginFrame. Kết nối chưa đưa tài khoản vào danh sách online: phải LOGIN thành công. Nếu server chưa chạy hoặc sai địa chỉ, client báo lỗi và cho phép thử lại.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Server tạo ServerSocket và chờ client.
 
-**Code:** [MainServer.java — dòng 27](../../src/minesweeperonline/server/MainServer.java#L27). Tìm `public void start()`.
+**Code:** [MainServer.java — dòng 29](../../src/minesweeperonline/server/MainServer.java#L29). Tìm `public void start()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -43,7 +55,7 @@ public void start() {
 
 ### Bước 2. Mỗi socket mới được giao cho một ClientHandler chạy trên thread riêng.
 
-**Code:** [MainServer.java — dòng 42](../../src/minesweeperonline/server/MainServer.java#L42). Tìm `Socket clientSocket = serverSocket.accept()`.
+**Code:** [MainServer.java — dòng 44](../../src/minesweeperonline/server/MainServer.java#L44). Tìm `Socket clientSocket = serverSocket.accept()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -78,7 +90,7 @@ connected = true;
 
 ### Bước 4. Server tạo reader/writer UTF-8 và đọc dữ liệu theo dòng.
 
-**Code:** [ClientHandler.java — dòng 79](../../src/minesweeperonline/server/ClientHandler.java#L79). Tìm `public void run()`.
+**Code:** [ClientHandler.java — dòng 82](../../src/minesweeperonline/server/ClientHandler.java#L82). Tìm `public void run()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

@@ -2,21 +2,54 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Người chơi gửi FORFEIT.
+A đang đấu với B, bấm Đầu hàng rồi xác nhận. A có 60 điểm và B có 40 điểm.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-FORFEIT → handleForfeit → finishGame → GAME_WIN/GAME_LOSE
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [GameFrame.java:164](../../src/minesweeperonline/client/ui/GameFrame.java#L164) | `btnForfeit.addActionListener(` | Sau khi xác nhận, gửi createForfeit(gameId) qua TCP. |
+| 2 | [ClientHandler.java:576](../../src/minesweeperonline/server/ClientHandler.java#L576) | `private void handleForfeit(` | Tìm session theo tài khoản A; nếu chưa kết thúc thì lấy B làm người thắng. |
+| 3 | [GameSession.java:556](../../src/minesweeperonline/server/GameSession.java#L556) | `public boolean finishGame(` | Nhận winner=102,reason=FORFEIT; compareAndSet ngăn chốt/lưu hai lần. |
+| 4 | [GameSession.java:479](../../src/minesweeperonline/server/GameSession.java#L479) | `public void saveMatchToDatabase(` | A FORFEIT -5, B VICTORY +5: điểm thành 55 và 45. |
+| 5 | [ClientHandler.java:595](../../src/minesweeperonline/server/ClientHandler.java#L595) | `p.addProperty("reason", "Ban da dau hang!")` | Gửi GAME_LOSE cho A và GAME_WIN cho B; nhánh này không đặt gameId ngoài payload của phản hồi. |
+| 6 | [GameFrame.java:422](../../src/minesweeperonline/client/ui/GameFrame.java#L422) | `private void onGameEnd(` | Dừng ván, khóa thao tác và hiển thị kết quả. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "FORFEIT",
+  "gameId": "a1b2c3d4",
+  "payload": {}
+}
 ```
+
+Phần cố định server gửi A; có thêm mines nếu bàn đã sinh:
+
+```json
+{
+  "type": "GAME_LOSE",
+  "payload": {
+    "reason": "Ban da dau hang!",
+    "scoreDelta": -5
+  }
+}
+```
+
+Đầu hàng -5 khác thua vì mìn/hết giờ -3. Điểm tổng chặn ở 0: người chỉ có 2 điểm bị đầu hàng còn 0, nhưng lịch sử vẫn ghi mức thay đổi theo luật là -5. Yêu cầu đầu hàng sau khi trận kết thúc không ghi thêm một trận.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Tạo message yêu cầu đầu hàng.
 
-**Code:** [JsonProtocol.java — dòng 192](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L192). Tìm `public static Message createForfeit(`.
+**Code:** [JsonProtocol.java — dòng 209](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L209). Tìm `public static Message createForfeit(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -30,7 +63,7 @@ public static Message createForfeit(String gameId) {
 
 ### Bước 2. Lấy session và cho đối thủ thắng; chỉ báo kết quả khi chốt thành công.
 
-**Code:** [ClientHandler.java — dòng 559](../../src/minesweeperonline/server/ClientHandler.java#L559). Tìm `private void handleForfeit(`.
+**Code:** [ClientHandler.java — dòng 576](../../src/minesweeperonline/server/ClientHandler.java#L576). Tìm `private void handleForfeit(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -66,7 +99,7 @@ private void handleForfeit(Message message) {
 
 ### Bước 3. Dừng timer và lưu kết quả.
 
-**Code:** [GameSession.java — dòng 551](../../src/minesweeperonline/server/GameSession.java#L551). Tìm `public boolean finishGame(`.
+**Code:** [GameSession.java — dòng 556](../../src/minesweeperonline/server/GameSession.java#L556). Tìm `public boolean finishGame(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -88,7 +121,7 @@ public boolean finishGame(int winnerUserId, String reason) {
 
 ### Bước 4. Client xử lý thông báo kết thúc.
 
-**Code:** [GameFrame.java — dòng 408](../../src/minesweeperonline/client/ui/GameFrame.java#L408). Tìm `private void onGameEnd(`.
+**Code:** [GameFrame.java — dòng 422](../../src/minesweeperonline/client/ui/GameFrame.java#L422). Tìm `private void onGameEnd(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

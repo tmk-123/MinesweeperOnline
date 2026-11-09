@@ -2,21 +2,61 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Mở trúng mìn hoặc mở đủ 121 ô an toàn.
+Một ván khác với luồng BFS: A đã mở lần đầu ở (0,0), mìn sinh ra có một quả ở (3,4). A bấm (3,4) ở lượt sau. Trước khi chốt kết quả, A có 60 điểm, B có 40.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-Board → GameSession → finishGame → GAME_WIN/GAME_LOSE → onGameEnd
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [GameBoardPanel.java:96](../../src/minesweeperonline/client/ui/GameBoardPanel.java#L96) | `public void mousePressed(` | Gửi OPEN_CELL với row=3,col=4, giữ click trong pendingOpenCells. |
+| 2 | [ClientHandler.java:208](../../src/minesweeperonline/server/ClientHandler.java#L208) | `private void handleOpenCell(` | Chuyển tới session.handleOpenCell(101,3,4). |
+| 3 | [GameSession.java:154](../../src/minesweeperonline/server/GameSession.java#L154) | `public void handleOpenCell(` | Gọi Board.openCell rồi nhận OpenResult.MINE. |
+| 4 | [Board.java:129](../../src/minesweeperonline/game/Board.java#L129) | `if (target.isMine())` | Đặt exploded=true,opened=true; tăng thao tác, không tăng ô an toàn và trả MINE. |
+| 5 | [GameSession.java:180](../../src/minesweeperonline/server/GameSession.java#L180) | `finishGame(opponentPlayer.getUserId(), "CLICKED_MINE")` | Chốt B (102) thắng, dừng timer và lưu trận. A 60→57, B 40→45. |
+| 6 | [GameSession.java:521](../../src/minesweeperonline/server/GameSession.java#L521) | `public void attachMines(` | Lấy danh sách mìn của từng bàn để gắn vào gói gửi riêng cho chủ bàn đó. |
+| 7 | [GameFrame.java:422](../../src/minesweeperonline/client/ui/GameFrame.java#L422) | `private void onGameEnd(` | Khóa bàn, dừng timer, hiện ResultDialog; đối chiếu click chờ để vẽ ô nổ của A. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "OPEN_CELL",
+  "gameId": "a1b2c3d4",
+  "payload": {
+    "row": 3,
+    "col": 4
+  }
+}
 ```
+
+Phần cố định server gửi A; gói thực tế còn có payload.mines đầy đủ:
+
+```json
+{
+  "type": "GAME_LOSE",
+  "gameId": "a1b2c3d4",
+  "payload": {
+    "reason": "Ban da mo phai min tai (3, 4)!",
+    "scoreDelta": -3
+  }
+}
+```
+
+`mines` có dạng `[{"r":3,"c":4}, ...]` với đủ 23 tọa độ nếu bàn đã sinh mìn. Dấu ... ở câu này là phần mô tả, không phải nội dung JSON thật. B nhận GAME_WIN, scoreDelta=5 và danh sách mìn **bàn B** nếu đã sinh.
+
+Nhánh MINE gửi gói kết thúc, không gửi CELL_OPENED trước. Nếu A mở đủ 121 ô an toàn thì người thắng là A, reason lưu CLEARED_ALL_SAFE_CELLS. Lần mở đầu ở (3,4) không thể trúng mìn vì vùng 3×3 được bảo vệ.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Đánh dấu ô mìn nổ và trả MINE.
 
-**Code:** [Board.java — dòng 126](../../src/minesweeperonline/game/Board.java#L126). Tìm `if (target.isMine())`.
+**Code:** [Board.java — dòng 129](../../src/minesweeperonline/game/Board.java#L129). Tìm `if (target.isMine())`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -31,7 +71,7 @@ if (target.isMine()) {
 
 ### Bước 2. Cho đối thủ thắng và gửi thông báo kết thúc tới hai bên.
 
-**Code:** [GameSession.java — dòng 174](../../src/minesweeperonline/server/GameSession.java#L174). Tìm `if (result == Board.OpenResult.MINE)`.
+**Code:** [GameSession.java — dòng 178](../../src/minesweeperonline/server/GameSession.java#L178). Tìm `if (result == Board.OpenResult.MINE)`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -65,7 +105,7 @@ if (result == Board.OpenResult.MINE) {
 
 ### Bước 3. Người mở hết ô an toàn thắng trận.
 
-**Code:** [GameSession.java — dòng 200](../../src/minesweeperonline/server/GameSession.java#L200). Tìm `if (targetBoard.isAllSafeCellsOpened())`.
+**Code:** [GameSession.java — dòng 204](../../src/minesweeperonline/server/GameSession.java#L204). Tìm `if (targetBoard.isAllSafeCellsOpened())`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -99,7 +139,7 @@ if (targetBoard.isAllSafeCellsOpened()) {
 
 ### Bước 4. Chỉ nhánh đổi được AtomicBoolean mới chốt và lưu kết quả.
 
-**Code:** [GameSession.java — dòng 551](../../src/minesweeperonline/server/GameSession.java#L551). Tìm `public boolean finishGame(`.
+**Code:** [GameSession.java — dòng 556](../../src/minesweeperonline/server/GameSession.java#L556). Tìm `public boolean finishGame(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -121,7 +161,7 @@ public boolean finishGame(int winnerUserId, String reason) {
 
 ### Bước 5. Client xử lý kết quả và danh sách mìn kèm theo.
 
-**Code:** [GameFrame.java — dòng 408](../../src/minesweeperonline/client/ui/GameFrame.java#L408). Tìm `private void onGameEnd(`.
+**Code:** [GameFrame.java — dòng 422](../../src/minesweeperonline/client/ui/GameFrame.java#L422). Tìm `private void onGameEnd(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

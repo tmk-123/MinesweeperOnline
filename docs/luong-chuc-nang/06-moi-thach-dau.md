@@ -2,21 +2,81 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Người chơi chọn đối thủ để gửi lời mời.
+A (101, an_demo) chọn B (102, binh_demo) đang IDLE và xác nhận thách đấu. Sau đó B chấp nhận.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-CHALLENGE → CHALLENGE_REQUEST → ACCEPT/REJECT → MATCH_CREATED hoặc hủy
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [OnlinePlayersPanel.java:153](../../src/minesweeperonline/client/ui/OnlinePlayersPanel.java#L153) | `public void performChallengeAtRow(` | Lấy B ở dòng được chọn, mở ChallengeConfirmDialog; đồng ý thì gọi createChallenge(102,"binh_demo"). |
+| 2 | [ClientHandler.java:409](../../src/minesweeperonline/server/ClientHandler.java#L409) | `private void handleChallenge(` | Kiểm tra không tự mời, hai bên đều rảnh; khóa clientManager để đặt CHALLENGING và các ID lời mời đang chờ. |
+| 3 | [ClientHandler.java:453](../../src/minesweeperonline/server/ClientHandler.java#L453) | `CHALLENGE_TIMER.schedule(` | Hẹn hết hạn lời mời sau 30 giây theo cấu hình, chuyển CHALLENGE_REQUEST cho B. |
+| 4 | [MainMenuFrame.java:282](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L282) | `private void handleChallengeRequest(` | Client B lấy fromUserId/fromUsername và mở ChallengeDialog. |
+| 5 | [ChallengeDialog.java:113](../../src/minesweeperonline/client/ui/ChallengeDialog.java#L113) | `private synchronized void acceptChallenge()` | B gửi ACCEPT với challengerUserId=101. |
+| 6 | [ClientHandler.java:491](../../src/minesweeperonline/server/ClientHandler.java#L491) | `private void handleAccept(` | Kiểm tra lời mời còn khớp ở cả hai handler; gọi gameManager.createSession(A,handlerA,B,handlerB). |
+| 7 | [MainMenuFrame.java:305](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L305) | `private void handleMatchCreated(` | Hai client nhận MATCH_CREATED, mở GameFrame và ẩn sảnh. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "CHALLENGE",
+  "payload": {
+    "targetUserId": 102,
+    "targetUsername": "binh_demo"
+  }
+}
 ```
+
+Server → B:
+
+```json
+{
+  "type": "CHALLENGE_REQUEST",
+  "payload": {
+    "fromUserId": 101,
+    "fromUsername": "an_demo"
+  }
+}
+```
+
+B → server:
+
+```json
+{
+  "type": "ACCEPT",
+  "payload": {
+    "challengerUserId": 101
+  }
+}
+```
+
+Server → A (B nhận gói tương ứng với thông tin đối thủ là A):
+
+```json
+{
+  "type": "MATCH_CREATED",
+  "payload": {
+    "gameId": "a1b2c3d4",
+    "opponentId": 102,
+    "opponentUsername": "binh_demo"
+  }
+}
+```
+
+Nếu B từ chối, B gửi REJECT với challengerUserId=101; server gửi REJECT cho A với rejectedByUserId=102 và rejectedByUsername="binh_demo". Nếu quá hạn, expireChallenge(token) hủy lời mời còn khớp và giải phóng trạng thái. Token ngăn timer cũ hủy nhầm lời mời mới.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Server kiểm tra người mời, đối thủ và trạng thái.
 
-**Code:** [ClientHandler.java — dòng 395](../../src/minesweeperonline/server/ClientHandler.java#L395). Tìm `private void handleChallenge(`.
+**Code:** [ClientHandler.java — dòng 409](../../src/minesweeperonline/server/ClientHandler.java#L409). Tìm `private void handleChallenge(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -49,7 +109,7 @@ private void handleChallenge(Message message) {
 
 ### Bước 2. Lập lịch hết hạn và gửi lời mời tới đối thủ.
 
-**Code:** [ClientHandler.java — dòng 438](../../src/minesweeperonline/server/ClientHandler.java#L438). Tìm `long token = pendingChallengeToken;`.
+**Code:** [ClientHandler.java — dòng 452](../../src/minesweeperonline/server/ClientHandler.java#L452). Tìm `long token = pendingChallengeToken;`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -68,7 +128,7 @@ Trích đoạn bắt đầu tại vị trí trên:
 
 ### Bước 3. Client hiển thị lời mời.
 
-**Code:** [MainMenuFrame.java — dòng 292](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L292). Tìm `private void handleChallengeRequest(`.
+**Code:** [MainMenuFrame.java — dòng 282](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L282). Tìm `private void handleChallengeRequest(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -89,7 +149,7 @@ private int lastGameExtendedState = Frame.MAXIMIZED_BOTH;
 
 ### Bước 4. Xác minh lời mời còn hợp lệ rồi tạo trận.
 
-**Code:** [ClientHandler.java — dòng 476](../../src/minesweeperonline/server/ClientHandler.java#L476). Tìm `private void handleAccept(`.
+**Code:** [ClientHandler.java — dòng 491](../../src/minesweeperonline/server/ClientHandler.java#L491). Tìm `private void handleAccept(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -133,7 +193,7 @@ private void handleAccept(Message message) {
 
 ### Bước 5. Từ chối và dọn trạng thái lời mời.
 
-**Code:** [ClientHandler.java — dòng 526](../../src/minesweeperonline/server/ClientHandler.java#L526). Tìm `private void handleReject(`.
+**Code:** [ClientHandler.java — dòng 542](../../src/minesweeperonline/server/ClientHandler.java#L542). Tìm `private void handleReject(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -162,7 +222,7 @@ private void handleReject(Message message) {
 
 ### Bước 6. Timer hủy lời mời vẫn ứng với token đang chờ.
 
-**Code:** [ClientHandler.java — dòng 451](../../src/minesweeperonline/server/ClientHandler.java#L451). Tìm `private void expireChallenge(`.
+**Code:** [ClientHandler.java — dòng 465](../../src/minesweeperonline/server/ClientHandler.java#L465). Tìm `private void expireChallenge(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

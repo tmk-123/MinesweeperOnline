@@ -3,8 +3,10 @@ package minesweeperonline;
 import minesweeperonline.common.model.*;
 import minesweeperonline.common.protocol.*;
 
+/** Chương trình kiểm tra TestPhase1; xem main() để theo dõi dữ liệu đầu vào và các bước xác minh. */
 public class TestPhase1 {
 
+    /** Chạy các bước kiểm tra trong lớp; bật -ea khi chạy Java để các câu lệnh assert có hiệu lực. */
     public static void main(String[] args) {
         System.out.println("============================================");
         System.out.println("       RUNNING PHASE 1 VERIFICATION         ");

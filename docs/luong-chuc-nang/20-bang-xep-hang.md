@@ -2,21 +2,72 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Người dùng yêu cầu bảng xếp hạng ở sảnh.
+A mở sảnh hoặc bấm Làm mới. Giả sử chỉ có A:60 điểm,3 thắng/5 trận và B:40 điểm,1 thắng/2 trận trong dữ liệu ví dụ.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-GET_LEADERBOARD → UserDAO.getLeaderboard → LEADERBOARD → MainMenuFrame
+| Bước | Vị trí                                                                                     | Hàm / dấu mốc                                  | Dữ liệu và việc thực hiện                                                                             |
+| ------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 1      | [MainMenuFrame.java:48](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L48)         | `autoRefreshTimer = new Timer(`                 | Khi sảnh hiện, mỗi 4 giây gọi refreshLeaderboard; nút Làm mới cũng gọi.                           |
+| 2      | [LeaderboardPanel.java:172](../../src/minesweeperonline/client/ui/LeaderboardPanel.java#L172) | `public void refreshLeaderboard()`              | Gửi GET_LEADERBOARD qua kết nối dùng chung.                                                             |
+| 3      | [ClientHandler.java:347](../../src/minesweeperonline/server/ClientHandler.java#L347)          | `private void handleGetLeaderboard(`            | Gọi userDAO.getLeaderboard(10), giới hạn Top 10 do server quyết định.                                 |
+| 4      | [UserDAO.java:158](../../src/minesweeperonline/database/UserDAO.java#L158)                    | `public List<LeaderboardEntry> getLeaderboard(` | LEFT JOIN User/MatchPlayer, GROUP BY tài khoản, ORDER BY điểm/tỷ lệ thắng/số thắng/số trận/tên. |
+| 5      | [ClientHandler.java:366](../../src/minesweeperonline/server/ClientHandler.java#L366)          | `payload.add("leaderboard", array)`             | Mỗi dòng có rank,userId,username,totalScore,wins,totalMatches,winRate; gửi LEADERBOARD.                 |
+| 6      | [MainMenuFrame.java:380](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L380)       | `private void handleLeaderboard(`               | Giải mã thành LeaderboardEntry, gọi leaderboardPanel.updateLeaderboard(list).                           |
+| 7      | [LeaderboardPanel.java:180](../../src/minesweeperonline/client/ui/LeaderboardPanel.java#L180) | `public void updateLeaderboard(`                | Đưa lên EDT, thay dòng bảng và tính cấp bậc theo điểm.                                           |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "GET_LEADERBOARD",
+  "payload": {}
+}
 ```
+
+Server → A:
+
+```json
+{
+  "type": "LEADERBOARD",
+  "payload": {
+    "leaderboard": [
+      {
+        "rank": 1,
+        "userId": 101,
+        "username": "an_demo",
+        "totalScore": 60,
+        "wins": 3,
+        "totalMatches": 5,
+        "winRate": 60.0
+      },
+      {
+        "rank": 2,
+        "userId": 102,
+        "username": "binh_demo",
+        "totalScore": 40,
+        "wins": 1,
+        "totalMatches": 2,
+        "winRate": 50.0
+      }
+    ]
+  }
+}
+```
+
+winRate trong message là **phần trăm**: 3/5 thành 60.0. Bảng bao gồm cả tài khoản offline. Hiện chỉ giữ bảng trong sảnh; nút mở LeaderboardDialog đã bỏ. Hòa tăng 1 điểm, tăng số trận nhưng không tăng số thắng. Nếu có hơn 10 người, hạng 11 trở xuống không được gửi ở yêu cầu này.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Tạo yêu cầu.
 
-**Code:** [JsonProtocol.java — dòng 210](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L210). Tìm `public static Message createGetLeaderboard()`.
+**Code:** [JsonProtocol.java — dòng 230](../../src/minesweeperonline/common/protocol/JsonProtocol.java#L230). Tìm `public static Message createGetLeaderboard()`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -28,7 +79,7 @@ public static Message createGetLeaderboard() {
 
 ### Bước 2. Lấy top 10 và đóng gói dữ liệu thống kê.
 
-**Code:** [ClientHandler.java — dòng 337](../../src/minesweeperonline/server/ClientHandler.java#L337). Tìm `private void handleGetLeaderboard(`.
+**Code:** [ClientHandler.java — dòng 347](../../src/minesweeperonline/server/ClientHandler.java#L347). Tìm `private void handleGetLeaderboard(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -98,7 +149,7 @@ public List<LeaderboardEntry> getLeaderboard(int limit) {
 
 ### Bước 4. Client hiển thị kết quả.
 
-**Code:** [MainMenuFrame.java — dòng 385](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L385). Tìm `private void handleLeaderboard(`.
+**Code:** [MainMenuFrame.java — dòng 380](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L380). Tìm `private void handleLeaderboard(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -125,8 +176,7 @@ private void handleLeaderboard(Message message) {
     if (leaderboardPanel != null) {
         leaderboardPanel.updateLeaderboard(list);
     }
-    if (leaderboardDialog != null && leaderboardDialog.isDisplayable()) {
-        leaderboardDialog.updateLeaderboard(list);
+}
 ```
 
 ## Điểm cần nắm

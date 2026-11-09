@@ -11,7 +11,9 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Dialog bảng xếp hạng cao thủ, hiển thị cố định thứ hạng theo điểm số và số trận thắng.
+ * không dùng nữa
+ * Dialog bảng xếp hạng cao thủ, hiển thị cố định thứ hạng theo điểm số và số
+ * trận thắng.
  */
 public class LeaderboardDialog extends InfoFrame {
 
@@ -31,6 +33,7 @@ public class LeaderboardDialog extends InfoFrame {
         refresh();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         UITheme.configureWindow(this, 1080, 660, 800, 500);
         setLocationRelativeTo(getParentFrame());
@@ -48,7 +51,7 @@ public class LeaderboardDialog extends InfoFrame {
         add(headerPanel, BorderLayout.NORTH);
 
         // Bảng ở giữa: Thêm cột "Cấp bậc"
-        String[] columns = {"Hạng", "Tên người chơi", "Cấp bậc", "Điểm số", "Trận thắng", "Tổng trận", "Tỉ lệ thắng"};
+        String[] columns = { "Hạng", "Tên người chơi", "Cấp bậc", "Điểm số", "Trận thắng", "Tổng trận", "Tỉ lệ thắng" };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -63,7 +66,8 @@ public class LeaderboardDialog extends InfoFrame {
         // Cell renderer cố định theo thứ hạng chuẩn
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus, int row, int col) {
+            public Component getTableCellRendererComponent(JTable t, Object val, boolean isSel, boolean hasFocus,
+                    int row, int col) {
                 Component c = super.getTableCellRendererComponent(t, val, isSel, hasFocus, row, col);
                 setFont(t.getFont());
                 putClientProperty("html.disable", Boolean.TRUE);
@@ -81,7 +85,10 @@ public class LeaderboardDialog extends InfoFrame {
                     setFont(getFont().deriveFont(Font.BOLD));
                     setText(String.format("%02d", rank));
                     setIcon(GameUiIcons.podiumMedalIcon(rank, 16));
-                    if (!isSel) c.setForeground(rank == 1 ? UITheme.COLOR_PRIMARY : rank == 2 ? UITheme.COLOR_SILVER : rank == 3 ? UITheme.COLOR_BRONZE : UITheme.TEXT_MUTED);
+                    if (!isSel)
+                        c.setForeground(rank == 1 ? UITheme.COLOR_PRIMARY
+                                : rank == 2 ? UITheme.COLOR_SILVER
+                                        : rank == 3 ? UITheme.COLOR_BRONZE : UITheme.TEXT_MUTED);
                 } else if (col == 1) {
                     if (isCurrentUser) {
                         setText(nameInRow + " (Bạn)");
@@ -96,11 +103,13 @@ public class LeaderboardDialog extends InfoFrame {
                         int score = (int) tableModel.getValueAt(row, 3);
                         setIcon(GameUiIcons.rankTierIcon(score, 16));
                         setHorizontalAlignment(SwingConstants.LEFT);
-                        if (!isSel) c.setForeground(UITheme.getRankColor(score));
+                        if (!isSel)
+                            c.setForeground(UITheme.getRankColor(score));
                     }
                 } else if (col == 3) {
                     setFont(getFont().deriveFont(Font.BOLD));
-                    if (!isSel) c.setForeground(UITheme.COLOR_PRIMARY);
+                    if (!isSel)
+                        c.setForeground(UITheme.COLOR_PRIMARY);
                 } else if (col == 6) {
                     Object totalObj = tableModel.getValueAt(row, 5);
                     int total = totalObj instanceof Number ? ((Number) totalObj).intValue() : 0;
@@ -112,9 +121,13 @@ public class LeaderboardDialog extends InfoFrame {
                 }
 
                 if (!isSel) {
-                    Color rowColor = rank == 1 ? new Color(53, 47, 34) : rank == 2 ? new Color(35, 46, 54) : rank == 3 ? new Color(49, 40, 35) : (row % 2 == 0 ? UITheme.BG_PANEL : UITheme.BG_CARD);
+                    Color rowColor = rank == 1 ? new Color(53, 47, 34)
+                            : rank == 2 ? new Color(35, 46, 54)
+                                    : rank == 3 ? new Color(49, 40, 35)
+                                            : (row % 2 == 0 ? UITheme.BG_PANEL : UITheme.BG_CARD);
                     c.setBackground(UITheme.withAlpha(rowColor, rank <= 3 ? 198 : 178));
-                    if (isCurrentUser && col == 1) c.setForeground(UITheme.COLOR_BLUE);
+                    if (isCurrentUser && col == 1)
+                        c.setForeground(UITheme.COLOR_BLUE);
                 }
                 return c;
             }
@@ -170,10 +183,12 @@ public class LeaderboardDialog extends InfoFrame {
         add(bottomPanel, BorderLayout.SOUTH);
     }
 
+    /** Tạo phần giao diện trình bày thông tin thứ hạng. */
     private JComponent createRankPanel() {
         JPanel panel = new GlassPanel(new BorderLayout(), UITheme.BG_CARD, 150);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD), BorderFactory.createEmptyBorder(12, 12, 12, 12)));
+        panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD),
+                BorderFactory.createEmptyBorder(12, 12, 12, 12)));
         panel.setPreferredSize(new Dimension(210, 0));
         JLabel title = new JLabel("HỆ THỐNG CẤP BẬC");
         title.setFont(UITheme.FONT_BOLD);
@@ -181,11 +196,13 @@ public class LeaderboardDialog extends InfoFrame {
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(title);
         panel.add(Box.createVerticalStrut(12));
-        String[][] ranks = {{"Tập sự", "0 – 49 điểm"}, {"Bình nhì", "50 – 199 điểm"}, {"Chiến binh", "200 – 499 điểm"}, {"Cao thủ", "500 – 999 điểm"}, {"Huyền thoại", "1000+ điểm"}};
-        int[] scores = {0, 50, 200, 500, 1000};
+        String[][] ranks = { { "Tập sự", "0 – 49 điểm" }, { "Bình nhì", "50 – 199 điểm" },
+                { "Chiến binh", "200 – 499 điểm" }, { "Cao thủ", "500 – 999 điểm" }, { "Huyền thoại", "1000+ điểm" } };
+        int[] scores = { 0, 50, 200, 500, 1000 };
         for (int i = 0; i < ranks.length; i++) {
             JPanel row = new GlassPanel(new BorderLayout(9, 0), UITheme.BG_PANEL, 174);
-            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD), BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+            row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD),
+                    BorderFactory.createEmptyBorder(6, 8, 6, 8)));
             row.setAlignmentX(Component.LEFT_ALIGNMENT);
             row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
             JLabel emblem = new JLabel(GameUiIcons.rankTierIcon(scores[i], 34));
@@ -209,11 +226,13 @@ public class LeaderboardDialog extends InfoFrame {
         return panel;
     }
 
+    /** Gửi yêu cầu tải bảng xếp hạng mới nhất từ server. */
     public void refresh() {
         lblStatus.setText("Đang tải bảng xếp hạng từ máy chủ...");
         connection.sendMessage(JsonProtocol.createGetLeaderboard());
     }
 
+    /** Đưa các bản ghi xếp hạng đã nhận vào thành phần hiển thị. */
     public void updateLeaderboard(List<LeaderboardEntry> list) {
         SwingUtilities.invokeLater(() -> {
             tableModel.setRowCount(0);
@@ -224,7 +243,7 @@ public class LeaderboardDialog extends InfoFrame {
 
             for (LeaderboardEntry e : list) {
                 String rankTitle = UITheme.getRankTitle(e.getTotalScore());
-                tableModel.addRow(new Object[]{
+                tableModel.addRow(new Object[] {
                         e.getRank(),
                         e.getUsername(),
                         rankTitle,

@@ -14,6 +14,7 @@ public class LeaderboardRulesDialog extends InfoFrame {
         initComponents();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         UITheme.configureWindow(this, 860, 640, 660, 480);
         setLocationRelativeTo(getParentFrame());

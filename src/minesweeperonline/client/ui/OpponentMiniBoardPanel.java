@@ -24,6 +24,7 @@ public class OpponentMiniBoardPanel extends JPanel {
     private int highlightCol = -1;
     private Timer highlightTimer;
 
+    /** Tạo bàn cờ thu nhỏ và khởi tạo trạng thái các ô chưa mở. */
     public OpponentMiniBoardPanel() {
         setPreferredSize(new Dimension(COLS * CELL_SIZE + 24, ROWS * CELL_SIZE + 45));
         setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(UITheme.BORDER_CARD),
@@ -32,6 +33,7 @@ public class OpponentMiniBoardPanel extends JPanel {
         setBackground(UITheme.BG_CARD);
     }
 
+    /** Xóa trạng thái các ô trên bàn cờ thu nhỏ để hiển thị một ván mới. */
     public void resetBoard() {
         if (highlightTimer != null && highlightTimer.isRunning()) {
             highlightTimer.stop();
@@ -46,6 +48,7 @@ public class OpponentMiniBoardPanel extends JPanel {
         repaint();
     }
 
+    /** Đánh dấu ô đối thủ đã mở trên bàn cờ thu nhỏ; không tiết lộ số mìn lân cận. */
     public void revealCell(int r, int c) {
         if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
             cellStates[r][c] = STATE_OPENED;
@@ -84,6 +87,7 @@ public class OpponentMiniBoardPanel extends JPanel {
         }
     }
 
+    /** Vẽ phần nền hoặc trạng thái của panel bằng Graphics; dữ liệu vẽ lấy từ trạng thái hiện tại của component. */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

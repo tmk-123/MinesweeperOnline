@@ -9,10 +9,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+/** Chương trình kiểm tra TestQuickMatch; xem main() để theo dõi dữ liệu đầu vào và các bước xác minh. */
 public class TestQuickMatch {
 
     private static final int TEST_PORT = 2212;
 
+    /** Chạy các bước kiểm tra trong lớp; bật -ea khi chạy Java để các câu lệnh assert có hiệu lực. */
     public static void main(String[] args) throws Exception {
         System.out.println("==================================================");
         System.out.println("          RUNNING QUICK MATCH TEST                ");

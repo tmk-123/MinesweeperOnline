@@ -25,13 +25,15 @@ public class GameBoardPanel extends JPanel {
     private final ServerConnection connection;
     private final String gameId;
     private final JButton[][] buttons;
+    // Đây là bản sao để hiển thị; bàn cờ thật và kết quả thao tác do server quản lý.
     private final boolean[][] opened;
     private final boolean[][] flagged;
+    // Giữ thứ tự click để xác định ô gây nổ nếu GAME_LOSE đến mà không có CELL_OPENED.
     private final Set<Long> pendingOpenCells = new LinkedHashSet<>();
 
     private boolean interactive = false;
 
-    // Number colors are checked against OPENED_BG and keep at least 4.5:1 contrast.
+    // Màu chữ số được kiểm tra trên nền OPENED_BG để duy trì độ tương phản tối thiểu 4,5:1.
     private static final Color[] NUMBER_COLORS = {
             UITheme.TEXT_TITLE,
             new Color(29, 78, 216),
@@ -53,6 +55,7 @@ public class GameBoardPanel extends JPanel {
     private static final Icon MINE_EXPLODED_ICON = new ExplosionIcon();
     private static final Icon CROSSED_MINE_ICON = new CrossedMineIcon();
 
+    /** Tạo lưới nút và trạng thái hiển thị, dùng connection và gameId để gửi thao tác đúng trận. */
     public GameBoardPanel(ServerConnection connection, String gameId) {
         this.connection = connection;
         this.gameId = gameId;
@@ -63,13 +66,15 @@ public class GameBoardPanel extends JPanel {
         initComponents();
     }
 
+    /** Dựng lưới 12x12 và bắt chuột: trái gửi OPEN_CELL, phải gửi PLACE_FLAG hoặc REMOVE_FLAG. */
     private void initComponents() {
         setLayout(new GridLayout(ROWS, COLS, 2, 2));
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
         setBackground(UITheme.BG_MAIN);
 
         Font cellFont = UITheme.FONT_BOLD.deriveFont(16f);
-
+        
+        // tạo mỗi nút cho mỗi tọa độ
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 final int row = r;
@@ -86,7 +91,8 @@ public class GameBoardPanel extends JPanel {
                 btn.setOpaque(true);
                 btn.setBackground(HIDDEN_BG);
                 btn.setBorder(BorderFactory.createRaisedBevelBorder());
-
+                
+                // xử lý khi nhấn chuột
                 btn.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mousePressed(MouseEvent e) {
@@ -95,10 +101,12 @@ public class GameBoardPanel extends JPanel {
                         if (SwingUtilities.isLeftMouseButton(e)) {
                             // Click trái -> mở ô
                             if (!flagged[row][col]) {
+                                // Chỉ ghi nhận yêu cầu đang chờ, chưa tự mở ô trước khi server trả lời.
                                 pendingOpenCells.add(cellKey(row, col));
                                 connection.sendMessage(JsonProtocol.createOpenCell(gameId, row, col));
                             }
                         } else if (SwingUtilities.isRightMouseButton(e)) {
+                            // Cờ cũng chỉ đổi hình sau FLAG_PLACED/FLAG_REMOVED để khớp trạng thái server.
                             // Click phải -> bật/tắt cờ
                             if (flagged[row][col]) {
                                 connection.sendMessage(JsonProtocol.createRemoveFlag(gameId, row, col));
@@ -116,25 +124,26 @@ public class GameBoardPanel extends JPanel {
     }
 
     /**
-     * Cập nhật và hiển thị một ô sau khi nhận xác nhận từ Server.
+     * Cập nhật và hiển thị một ô sau khi nhận xác nhận từ Server.  
      */
     public void revealCell(int r, int c, int adjacentMines, boolean isMine, boolean isExploded) {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
 
         JButton btn = buttons[r][c];
+        // Phản hồi đã xác nhận ô này nên không còn cần giữ trong danh sách click chờ.
         pendingOpenCells.remove(cellKey(r, c));
         opened[r][c] = true;
         flagged[r][c] = false;
 
         btn.setRolloverEnabled(false);
         btn.setBorder(BorderFactory.createLineBorder(OPENED_BORDER, 1));
-
+        
         if (isMine) {
             Icon mIcon = isExploded ? MINE_EXPLODED_ICON : MINE_NORMAL_ICON;
             btn.setIcon(mIcon);
             btn.setDisabledIcon(mIcon);
             btn.setText("");
-            btn.setBackground(isExploded ? new Color(126, 35, 34) : new Color(211, 151, 151));
+            btn.setBackground(isExploded ? new Color(126, 35, 34) : new Color(211, 151, 151)); // hiện mìn ấn trúng và không ấn trúng
         } else {
             btn.setIcon(null);
             btn.setDisabledIcon(null);
@@ -144,11 +153,12 @@ public class GameBoardPanel extends JPanel {
                 int colorIdx = Math.min(adjacentMines, NUMBER_COLORS.length - 1);
                 btn.setForeground(NUMBER_COLORS[colorIdx]);
             } else {
-                btn.setText("");
+                btn.setText(""); // không có mìn xung quanh thì rỗng
             }
         }
     }
 
+    // set flag
     public void setCellFlagged(int r, int c, boolean isFlagged) {
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS || opened[r][c]) return;
 
@@ -165,11 +175,12 @@ public class GameBoardPanel extends JPanel {
         }
     }
 
+    /** Cho phép hoặc khóa việc gửi thao tác chuột trong lúc chuẩn bị, mất kết nối hoặc kết thúc trận. */
     public void setInteractive(boolean interactive) {
         this.interactive = interactive;
     }
 
-    /** Returns the earliest still-pending clicked cell that the server confirms is a mine. */
+    /** Trả về ô được bấm sớm nhất còn chờ phản hồi mà máy chủ xác nhận có mìn. */
     public int[] getPendingMineCoordinate(List<int[]> mines) {
         if (mines == null || mines.isEmpty() || pendingOpenCells.isEmpty()) return null;
         for (long key : pendingOpenCells) {
@@ -184,6 +195,7 @@ public class GameBoardPanel extends JPanel {
         return null;
     }
 
+    /** Gộp hàng và cột thành khóa duy nhất bằng row * COLS + col để theo dõi các click đang chờ phản hồi. */
     private static long cellKey(int row, int col) {
         return (long) row * COLS + col;
     }
@@ -325,7 +337,7 @@ public class GameBoardPanel extends JPanel {
         public int getIconHeight() { return height; }
     }
 
-    /** Larger fireburst marker for the exact mine that ended the game. */
+    /** Biểu tượng vụ nổ lớn hơn, đánh dấu đúng ô mìn khiến trận đấu kết thúc. */
     private static class ExplosionIcon implements Icon {
         private static final int SIZE = 38;
 

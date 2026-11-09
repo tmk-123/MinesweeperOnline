@@ -19,8 +19,9 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.HierarchyEvent;
 
-/** Shared dark steel and gold presentation for the Minesweeper client. */
+/** Giao diện màu thép tối và vàng dùng chung cho ứng dụng Minesweeper phía người chơi. */
 public final class UITheme {
+    /** Chặn khởi tạo đối tượng: lớp này chỉ cung cấp hằng số và các hàm định dạng tĩnh. */
     private UITheme() { }
 
     public static final Color COLOR_PRIMARY = new Color(246, 184, 66);
@@ -47,7 +48,7 @@ public final class UITheme {
     public static final Color COLOR_SILVER = new Color(177, 192, 201);
     public static final Color COLOR_BRONZE = new Color(216, 137, 83);
 
-    /** Returns a tinted color for translucent cards and table rows. */
+    /** Trả về màu có độ trong suốt để tô các thẻ nội dung và hàng trong bảng. */
     public static Color withAlpha(Color color, int alpha) {
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.max(0, Math.min(255, alpha)));
     }
@@ -60,6 +61,7 @@ public final class UITheme {
     public static final Font FONT_SMALL = new Font(FONT_FAMILY, Font.PLAIN, 13);
     public static final Font FONT_SMALL_BOLD = new Font(FONT_FAMILY, Font.BOLD, 13);
 
+    /** Chọn phông có sẵn trên máy theo thứ tự ưu tiên, dùng phông dự phòng nếu cần. */
     private static String selectFontFamily() {
         String sample = "Tiếng Việt: Đăng nhập, Hướng dẫn, Đầu hàng, Ắ Ằ Ễ Ộ Ử Ỹ";
         for (String family : new String[]{"Segoe UI", "Arial", Font.SANS_SERIF}) {
@@ -69,9 +71,9 @@ public final class UITheme {
         return Font.DIALOG;
     }
 
-    /** Installs colors for Swing controls that use UI defaults instead of explicit component styling. */
+    /** Cài màu cho các thành phần Swing sử dụng cấu hình giao diện mặc định thay vì định dạng riêng. */
     public static void installDefaults() {
-        // Native controls otherwise keep unrelated fonts and bright button backgrounds.
+        // Nếu không cấu hình, thành phần của hệ điều hành sẽ giữ phông chữ khác và nền nút sáng.
         for (Object key : UIManager.getDefaults().keySet().toArray()) {
             if (UIManager.get(key) instanceof Font) {
                 UIManager.put(key, new FontUIResource(FONT_REGULAR));
@@ -116,7 +118,7 @@ public final class UITheme {
         UIManager.put("ToolTip.foreground", TEXT_TITLE);
     }
 
-    /** Keep a usable minimum size while fitting the current monitor's work area. */
+    /** Giữ kích thước tối thiểu đủ dùng và điều chỉnh cửa sổ vừa vùng làm việc của màn hình hiện tại. */
     public static void configureWindow(Window window, int width, int height, int minWidth, int minHeight) {
         GraphicsConfiguration config = window.getGraphicsConfiguration();
         Rectangle area = new Rectangle(config.getBounds());
@@ -129,7 +131,7 @@ public final class UITheme {
         if (window instanceof Dialog dialog) dialog.setResizable(true);
     }
 
-    /** Dialogs have no native maximize button on Windows; expose the same action via F11. */
+    /** Hộp thoại trên Windows không có nút phóng to mặc định; cung cấp thao tác tương đương qua phím F11. */
     public static JButton createDialogSizeButton(JDialog dialog) {
         JButton button = new JButton("Phóng to");
         styleOutlineButton(button, BORDER_CARD, COLOR_SECONDARY_HOVER, TEXT_TITLE);
@@ -162,6 +164,7 @@ public final class UITheme {
         return button;
     }
 
+    /** Hiển thị nội dung HTML trong vùng cuộn với kiểu chữ và màu của ứng dụng. */
     public static JScrollPane createHtmlScrollPane(String html) {
         JEditorPane editor = new JEditorPane();
         HTMLEditorKit kit = new HTMLEditorKit();
@@ -185,6 +188,7 @@ public final class UITheme {
         return scroll;
     }
 
+    /** Cài màu, kiểu chữ và hiệu ứng di chuột cho nút nền đặc. */
     public static void styleButton(JButton btn, Color bg, Color hoverBg, Color fg) {
         btn.setUI(new javax.swing.plaf.basic.BasicButtonUI());
         btn.setFont(FONT_BOLD);
@@ -201,6 +205,7 @@ public final class UITheme {
         });
     }
 
+    /** Cài viền, màu và hiệu ứng di chuột cho nút dạng đường viền. */
     public static void styleOutlineButton(JButton btn, Color borderColor, Color hoverBg, Color fg) {
         btn.setUI(new javax.swing.plaf.basic.BasicButtonUI());
         btn.setFont(FONT_BOLD);
@@ -217,6 +222,7 @@ public final class UITheme {
         });
     }
 
+    /** Áp dụng màu nền, chữ và đường viền dùng chung cho ô nhập. */
     public static void styleTextField(JTextField field) {
         field.setFont(FONT_REGULAR);
         field.setBackground(BG_PANEL);
@@ -226,15 +232,17 @@ public final class UITheme {
         field.setBorder(new CompoundBorder(new LineBorder(BORDER_CARD, 1, true), new EmptyBorder(7, 10, 7, 10)));
     }
 
+    /** Áp dụng kiểu ô nhập chung cho ô mật khẩu. */
     public static void stylePasswordField(JPasswordField field) {
         styleTextField(field);
     }
 
+    /** Cài kiểu bảng, tiêu đề, chiều cao dòng và cách hiển thị ô theo giao diện chung. */
     public static void styleTable(JTable table) {
         styleTable(table, false);
     }
 
-    /** Compact lobby tables always fit their viewport, including after data refreshes. */
+    /** Bảng gọn trong sảnh luôn vừa vùng hiển thị, kể cả sau khi làm mới dữ liệu. */
     public static void styleCompactTable(JTable table, int... columnWidths) {
         styleTable(table, true);
         for (int i = 0; i < columnWidths.length; i++) {
@@ -242,6 +250,7 @@ public final class UITheme {
         }
     }
 
+    /** Cài kiểu bảng, tiêu đề, chiều cao dòng và cách hiển thị ô theo giao diện chung. */
     private static void styleTable(JTable table, boolean compact) {
         table.setRowHeight(compact ? 28 : 34);
         table.setFont(compact ? FONT_REGULAR.deriveFont(12f) : FONT_REGULAR);
@@ -255,11 +264,11 @@ public final class UITheme {
         table.setIntercellSpacing(new Dimension(1, 1));
         table.setFillsViewportHeight(true);
         if (compact) {
-            // Never toggle resize modes on viewport resize: scrollbar visibility can
-            // otherwise trigger another layout and move the columns back and forth.
+            // Không đổi chế độ co giãn cột khi vùng hiển thị đổi kích thước: việc hiện/ẩn thanh cuộn có thể
+            // kích hoạt bố trí lại liên tục và khiến các cột dịch qua lại.
             table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         } else {
-            // Wider detail tables retain horizontal scrolling when necessary.
+            // Bảng chi tiết rộng hơn vẫn cho phép cuộn ngang khi cần.
             table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
             table.addHierarchyListener(event -> {
                 if ((event.getChangeFlags() & HierarchyEvent.PARENT_CHANGED) != 0
@@ -309,6 +318,7 @@ public final class UITheme {
         });
     }
 
+    /** Phân bổ chiều rộng cột theo vùng nhìn thấy của bảng. */
     private static void fitTableColumns(JTable table, JViewport viewport) {
         FontMetrics metrics = table.getFontMetrics(FONT_BOLD);
         int preferredWidth = 0;
@@ -323,12 +333,14 @@ public final class UITheme {
                 ? JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS : JTable.AUTO_RESIZE_OFF);
     }
 
+    /** Tạo đường viền và khoảng đệm cho khối nội dung có tiêu đề. */
     public static Border createCardBorder(String title) {
         return BorderFactory.createTitledBorder(new LineBorder(BORDER_CARD, 1, true), title,
                 javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
                 javax.swing.border.TitledBorder.DEFAULT_POSITION, FONT_TITLE, COLOR_PRIMARY);
     }
 
+    /** Cài màu nền, viền và thanh cuộn cho vùng cuộn. */
     public static void styleScrollPane(JScrollPane scrollPane) {
         scrollPane.setBackground(withAlpha(BG_PANEL, 160));
         scrollPane.setOpaque(false);
@@ -338,6 +350,7 @@ public final class UITheme {
         styleScrollBar(scrollPane.getHorizontalScrollBar());
     }
 
+    /** Cài kiểu hiển thị các tab theo bảng màu chung. */
     public static void styleTabbedPane(JTabbedPane tabbedPane) {
         tabbedPane.setOpaque(false);
         tabbedPane.setBackground(BG_PANEL);
@@ -363,19 +376,20 @@ public final class UITheme {
 
             @Override
             protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-                // Child scroll panes draw their own dark border; suppress the platform's
-                // default bright content frame so the tabs stay consistent on Windows.
+                // Vùng cuộn con tự vẽ viền tối; ẩn khung nội dung sáng mặc định của hệ điều hành
+                // để các tab có giao diện thống nhất trên Windows.
             }
 
             @Override
             protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects,
                                                int tabIndex, Rectangle iconRect, Rectangle textRect,
                                                boolean isSelected) {
-                // Avoid the light dotted focus box from the native look and feel.
+                // Tránh khung chấm sáng đánh dấu tiêu điểm của giao diện hệ điều hành.
             }
         });
     }
 
+    /** Cài màu và hình thức thanh cuộn để đồng bộ với giao diện. */
     private static void styleScrollBar(JScrollBar bar) {
         bar.setUI(new BasicScrollBarUI() {
             @Override protected void configureScrollBarColors() {
@@ -389,6 +403,7 @@ public final class UITheme {
         bar.setBackground(BG_PANEL);
     }
 
+    /** Tạo nút rỗng để bỏ mũi tên mặc định của thanh cuộn. */
     private static JButton createEmptyScrollButton() {
         JButton button = new JButton();
         button.setPreferredSize(new Dimension(0, 0));
@@ -397,7 +412,7 @@ public final class UITheme {
         return button;
     }
 
-    /** Rank labels and score bands displayed in the supplied design. */
+    /** Tên cấp bậc và các khoảng điểm hiển thị theo thiết kế. */
     public static String getRankTitle(int score) {
         if (score >= 1000) return "Huyền thoại";
         if (score >= 500) return "Cao thủ";

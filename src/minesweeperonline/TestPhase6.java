@@ -17,6 +17,7 @@ import java.util.List;
  */
 public class TestPhase6 {
 
+    /** Chạy các bước kiểm tra trong lớp; bật -ea khi chạy Java để các câu lệnh assert có hiệu lực. */
     public static void main(String[] args) {
         System.out.println("==================================================");
         System.out.println("       RUNNING PHASE 6 GAME LOGIC VERIFICATION    ");

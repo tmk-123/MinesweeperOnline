@@ -19,6 +19,7 @@ public class ClientManager {
     // Map userId -> ClientHandler đã đăng nhập
     private final ConcurrentHashMap<Integer, ClientHandler> onlineUsers = new ConcurrentHashMap<>();
 
+    /** Ghi nhận kết nối TCP mới, kể cả khi kết nối đó chưa đăng nhập tài khoản. */
     public void addClient(ClientHandler client) {
         if (client != null && !allClients.contains(client)) {
             allClients.add(client);
@@ -26,6 +27,7 @@ public class ClientManager {
         }
     }
 
+    /** Xóa handler khỏi danh sách kết nối và bỏ ánh xạ tài khoản online nếu handler đã đăng nhập. */
     public void removeClient(ClientHandler client) {
         if (client != null) {
             allClients.remove(client);
@@ -37,12 +39,14 @@ public class ClientManager {
         }
     }
 
+    /** Ánh xạ userId tới handler sau khi đăng nhập để server có thể gửi tin trực tiếp cho tài khoản. */
     public void registerUser(int userId, ClientHandler client) {
         onlineUsers.put(userId, client);
         System.out.println("[ClientManager] User registered online: userId=" + userId +
                 " (" + (client.getUser() != null ? client.getUser().getUsername() : "unknown") + ")");
     }
 
+    /** Bỏ tài khoản khỏi danh sách online; thao tác này không tự đóng socket. */
     public void unregisterUser(int userId) {
         onlineUsers.remove(userId);
     }
@@ -55,6 +59,7 @@ public class ClientManager {
         return onlineUsers.containsKey(userId);
     }
 
+    /** Tra handler của tài khoản và gửi message nếu người đó còn trong danh sách online. */
     public void sendMessageToUser(int userId, Message message) {
         ClientHandler handler = onlineUsers.get(userId);
         if (handler != null) {
@@ -62,12 +67,14 @@ public class ClientManager {
         }
     }
 
+    /** Gửi cùng một message tới mọi kết nối đang được quản lý, bao gồm kết nối chưa đăng nhập. */
     public void broadcast(Message message) {
         for (ClientHandler client : allClients) {
             client.sendMessage(message);
         }
     }
 
+    /** Phát message tới các kết nối khác, bỏ qua handler được chỉ định. */
     public void broadcastExcept(Message message, ClientHandler except) {
         for (ClientHandler client : allClients) {
             if (client != except) {

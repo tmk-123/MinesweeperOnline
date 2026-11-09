@@ -20,6 +20,7 @@ public class ChallengeDialog extends JDialog {
     private JLabel lblTimer;
     private boolean responded = false;
 
+    /** Dựng hộp thoại trả lời lời mời, gắn người thách đấu và bắt đầu đếm ngược. */
     public ChallengeDialog(Frame owner, ServerConnection connection, int challengerUserId, String challengerUsername) {
         super(owner, "Lời mời thách đấu", true);
         this.connection = connection;
@@ -29,6 +30,7 @@ public class ChallengeDialog extends JDialog {
         startCountdown();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         UITheme.configureWindow(this, 560, 400, 520, 370);
         setLocationRelativeTo(getOwner());
@@ -79,6 +81,7 @@ public class ChallengeDialog extends JDialog {
         btnReject.addActionListener(e -> rejectChallenge());
     }
 
+    /** Tạo phần hiển thị danh tính người chơi trong lời mời thách đấu. */
     private JComponent createPlayerBadge(String name, Color accent) {
         JPanel badge = new JPanel(new BorderLayout(4, 8));
         badge.setOpaque(false);
@@ -94,6 +97,7 @@ public class ChallengeDialog extends JDialog {
         return badge;
     }
 
+    /** Chạy bộ đếm hiển thị thời hạn trả lời lời mời bằng Swing Timer. */
     private void startCountdown() {
         countdownTimer = new Timer(1000, e -> {
             remainingSeconds--;
@@ -105,6 +109,7 @@ public class ChallengeDialog extends JDialog {
         countdownTimer.start();
     }
 
+    /** Gửi ACCEPT cho lời mời hiện tại và đóng hộp thoại. */
     private synchronized void acceptChallenge() {
         if (responded) return;
         responded = true;
@@ -113,6 +118,7 @@ public class ChallengeDialog extends JDialog {
         dispose();
     }
 
+    /** Gửi REJECT cho lời mời hiện tại và đóng hộp thoại. */
     private synchronized void rejectChallenge() {
         if (responded) return;
         responded = true;

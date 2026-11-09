@@ -2,21 +2,69 @@
 
 [Mục lục các luồng](README.md) · [Câu hỏi tổng hợp](../ON_TAP_VAN_DAP.md)
 
-## Sự kiện bắt đầu
+## Tình huống cụ thể
 
-Một hoặc cả hai người gửi PLAY_AGAIN sau kết thúc.
+Trận a1b2c3d4 đã FINISHED. A bấm Chơi lại trước; B đồng ý sau.
 
-## Luồng tổng quát
+## Hàm nào gọi hàm nào, ở đâu?
 
-```text
-PLAY_AGAIN → playAgainRequests → đủ hai người → session mới → MATCH_CREATED
+| Bước | Vị trí | Hàm / dấu mốc | Dữ liệu và việc thực hiện |
+|---|---|---|---|
+| 1 | [ResultDialog.java:130](../../src/minesweeperonline/client/ui/ResultDialog.java#L130) | `JsonProtocol.createPlayAgain(` | Nút chơi lại gửi PLAY_AGAIN mang mã trận hiện tại. |
+| 2 | [ClientHandler.java:605](../../src/minesweeperonline/server/ClientHandler.java#L605) | `private void handlePlayAgain(` | Tra session theo userId, gọi session.handlePlayAgain(userId,gameManager). |
+| 3 | [GameSession.java:396](../../src/minesweeperonline/server/GameSession.java#L396) | `public void handlePlayAgain(` | Chỉ xử lý khi finished=true; thêm ID vào Set playAgainRequests, yêu cầu lặp của A không tính thành hai người. |
+| 4 | [GameSession.java:437](../../src/minesweeperonline/server/GameSession.java#L437) | `pReq.addProperty("status", "WAITING")` | Nếu mới có A: gửi WAITING cho A, REQUESTED kèm danh tính A cho B. |
+| 5 | [GameManager.java:64](../../src/minesweeperonline/server/GameManager.java#L64) | `public void removeSession(` | Khi có đủ hai ID, xóa session cũ cùng ánh xạ cũ. |
+| 6 | [GameManager.java:19](../../src/minesweeperonline/server/GameManager.java#L19) | `public GameSession createSession(` | Tạo mã trận mới, hai Board mới, reset thống kê và bắt đầu READY. |
+| 7 | [MainMenuFrame.java:305](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L305) | `private void handleMatchCreated(` | Nhận MATCH_CREATED của ván mới, thay GameFrame cũ bằng cửa sổ mới. |
+
+## Message và kết quả trong tình huống này
+
+A → server:
+
+```json
+{
+  "type": "PLAY_AGAIN",
+  "gameId": "a1b2c3d4",
+  "payload": {}
+}
 ```
+
+Server → A khi mới có một người yêu cầu:
+
+```json
+{
+  "type": "PLAY_AGAIN",
+  "payload": {
+    "status": "WAITING",
+    "message": "Đang chờ đối thủ đồng ý chơi lại..."
+  }
+}
+```
+
+Server → B:
+
+```json
+{
+  "type": "PLAY_AGAIN",
+  "payload": {
+    "status": "REQUESTED",
+    "requestedByUserId": 101,
+    "requestedByUsername": "an_demo",
+    "message": "Đối thủ [an_demo] muốn tái đấu ván mới!"
+  }
+}
+```
+
+Khi B đồng ý, server gửi MATCH_CREATED có **gameId mới** cho từng người. Không dùng lại bàn cũ, không sinh mìn ngay: phải chờ lần mở đầu của ván mới. Nếu đối thủ đã EXIT và session bị xóa thì một yêu cầu chơi lại không tạo được ván.
+
+Các JSON minh họa được xuống dòng để dễ đọc; trên socket, mỗi gói là **một dòng UTF-8 kết thúc bằng `\n`**. ID, mã trận `a1b2c3d4`, vị trí mìn và số liệu là ví dụ, không phải dữ liệu thật. Client không tự sinh requestId cho những thao tác này; Gson bỏ các trường đang null.
 
 ## Các bước và code
 
 ### Bước 1. Chuyển yêu cầu tới session cũ.
 
-**Code:** [ClientHandler.java — dòng 587](../../src/minesweeperonline/server/ClientHandler.java#L587). Tìm `private void handlePlayAgain(`.
+**Code:** [ClientHandler.java — dòng 605](../../src/minesweeperonline/server/ClientHandler.java#L605). Tìm `private void handlePlayAgain(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -31,7 +79,7 @@ private void handlePlayAgain(Message message) {
 
 ### Bước 2. Chỉ nhận khi đã kết thúc; thêm userId vào Set.
 
-**Code:** [GameSession.java — dòng 392](../../src/minesweeperonline/server/GameSession.java#L392). Tìm `public void handlePlayAgain(`.
+**Code:** [GameSession.java — dòng 396](../../src/minesweeperonline/server/GameSession.java#L396). Tìm `public void handlePlayAgain(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -52,7 +100,7 @@ public void handlePlayAgain(int userId, GameManager gameManager) {
 
 ### Bước 3. Đủ hai người thì xóa session cũ, tạo session mới và gửi MATCH_CREATED.
 
-**Code:** [GameSession.java — dòng 401](../../src/minesweeperonline/server/GameSession.java#L401). Tìm `if (playAgainRequests.size() >= 2)`.
+**Code:** [GameSession.java — dòng 405](../../src/minesweeperonline/server/GameSession.java#L405). Tìm `if (playAgainRequests.size() >= 2)`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -91,7 +139,7 @@ if (playAgainRequests.size() >= 2) {
 
 ### Bước 4. Mới một người thì báo WAITING cho họ và REQUESTED cho đối thủ.
 
-**Code:** [GameSession.java — dòng 433](../../src/minesweeperonline/server/GameSession.java#L433). Tìm `pReq.addProperty("status", "WAITING")`.
+**Code:** [GameSession.java — dòng 437](../../src/minesweeperonline/server/GameSession.java#L437). Tìm `pReq.addProperty("status", "WAITING")`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 
@@ -112,12 +160,11 @@ Trích đoạn bắt đầu tại vị trí trên:
         }
     }
 }
-
 ```
 
 ### Bước 5. Client mở giao diện trận mới.
 
-**Code:** [MainMenuFrame.java — dòng 313](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L313). Tìm `private void handleMatchCreated(`.
+**Code:** [MainMenuFrame.java — dòng 305](../../src/minesweeperonline/client/ui/MainMenuFrame.java#L305). Tìm `private void handleMatchCreated(`.
 
 Trích đoạn bắt đầu tại vị trí trên:
 

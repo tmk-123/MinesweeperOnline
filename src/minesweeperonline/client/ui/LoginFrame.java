@@ -28,6 +28,7 @@ public class LoginFrame extends JFrame {
         setupNetworkListener();
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         setTitle("Minesweeper Online - Đăng nhập");
         UITheme.configureWindow(this, 960, 660, 860, 560);
@@ -129,6 +130,7 @@ public class LoginFrame extends JFrame {
         });
     }
 
+    /** Kiểm tra dữ liệu nhập rồi gửi LOGIN; giao diện chờ phản hồi thay vì tự xác nhận đăng nhập. */
     private void performLogin() {
         String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
@@ -164,6 +166,7 @@ public class LoginFrame extends JFrame {
         }
     }
 
+    /** Hủy listener nhận phản hồi đăng nhập trước khi đóng cửa sổ để tránh xử lý message lặp. */
     @Override
     public void dispose() {
         // Nếu không gỡ listener, frame đã dispose vẫn tiếp tục phản hồi LOGIN_SUCCESS sau khi đăng xuất
@@ -171,6 +174,7 @@ public class LoginFrame extends JFrame {
         super.dispose();
     }
 
+    /** Đăng ký nhận phản hồi từ server và chuyển phần cập nhật giao diện sang EDT bằng invokeLater. */
     private void setupNetworkListener() {
         loginListener = message -> {
             SwingUtilities.invokeLater(() -> {

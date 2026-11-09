@@ -4,10 +4,11 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/** Themed confirmation shown before sending a one-to-one challenge. */
+/** Hộp thoại xác nhận theo giao diện chung, hiển thị trước khi gửi lời mời đấu một đối một. */
 public class ChallengeConfirmDialog extends JDialog {
     private boolean confirmed;
 
+    /** Dựng hộp thoại xác nhận trước khi gửi lời mời thách đấu tới server. */
     private ChallengeConfirmDialog(Window owner, String opponentName) {
         super(owner, "Xác nhận thách đấu", Dialog.ModalityType.APPLICATION_MODAL);
         UITheme.configureWindow(this, 540, 380, 500, 350);
@@ -59,6 +60,7 @@ public class ChallengeConfirmDialog extends JDialog {
         getRootPane().setDefaultButton(send);
     }
 
+    /** Tạo khối hiển thị avatar và tên người chơi trong hộp thoại xác nhận. */
     private JPanel createPlayer(String name, Color accent) {
         JPanel player = new JPanel(new BorderLayout(0, 5));
         player.setOpaque(false);
@@ -72,6 +74,7 @@ public class ChallengeConfirmDialog extends JDialog {
         return player;
     }
 
+    /** Mở hộp thoại modal và trả về lựa chọn; nơi gọi chỉ gửi thách đấu khi kết quả là true. */
     public static boolean confirm(Component parent, String opponentName) {
         Window owner = parent == null ? null : SwingUtilities.getWindowAncestor(parent);
         ChallengeConfirmDialog dialog = new ChallengeConfirmDialog(owner, opponentName);

@@ -17,6 +17,7 @@ public class CellState implements Serializable {
     private boolean mine;      // true nếu ô là mìn (ẩn cho đến khi lộ ra/kết thúc game)
     private boolean exploded;  // true nếu ô này bị mở và phát nổ
 
+    /** Khởi tạo dữ liệu trạng thái của một ô để biểu diễn hoặc truyền qua JSON. */
     public CellState() {
         this.opened = false;
         this.flagged = false;
@@ -25,6 +26,7 @@ public class CellState implements Serializable {
         this.exploded = false;
     }
 
+    /** Khởi tạo dữ liệu trạng thái của một ô để biểu diễn hoặc truyền qua JSON. */
     public CellState(int row, int col) {
         this.row = row;
         this.col = col;

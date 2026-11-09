@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 
 /**
- * DAO (Data Access Object) cho entity Match.
+ * Lớp truy cập dữ liệu cho thực thể Match.
  */
 public class MatchDAO {
 

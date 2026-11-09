@@ -25,6 +25,7 @@ public class HelpDialog extends InfoFrame {
         this(owner, 0);
     }
 
+    /** Dựng bố cục, định dạng component và gắn các sự kiện của màn hình. */
     private void initComponents() {
         UITheme.configureWindow(this, 940, 680, 700, 500);
         setLocationRelativeTo(getParentFrame());
@@ -84,6 +85,7 @@ public class HelpDialog extends InfoFrame {
         add(footerPanel, BorderLayout.SOUTH);
     }
 
+    /** Tạo nội dung hướng dẫn luật và điều kiện kết thúc trận. */
     private JComponent createRulesTab() {
         String html = "<html><body style='color: #CBD6DC; margin: 12px; line-height: 1.5;'>"
                 + "<h2 style='color: #F6B842; margin-top: 0;'>1. Tổng quan Trận đấu Đối Kháng 1v1</h2>"
@@ -116,6 +118,7 @@ public class HelpDialog extends InfoFrame {
         return createHtmlScrollPane(html);
     }
 
+    /** Tạo nội dung giải thích điểm và thứ hạng. */
     private JComponent createRankTab() {
         String html = "<html><body style='color: #CBD6DC; margin: 12px; line-height: 1.5;'>"
                 + "<h2 style='color: #F6B842; margin-top: 0;'>1. Cơ chế Cộng / Trừ Điểm sau mỗi trận</h2>"
@@ -185,6 +188,7 @@ public class HelpDialog extends InfoFrame {
         return createHtmlScrollPane(html);
     }
 
+    /** Tạo hướng dẫn các thao tác điều khiển trên giao diện. */
     private JComponent createControlsTab() {
         String html = "<html><body style='color: #CBD6DC; margin: 12px; line-height: 1.5;'>"
                 + "<h2 style='color: #F6B842; margin-top: 0;'>1. Thao tác Chuột trong ván đấu</h2>"
@@ -225,6 +229,7 @@ public class HelpDialog extends InfoFrame {
         return createHtmlScrollPane(html);
     }
 
+    /** Hiển thị nội dung HTML trong vùng cuộn với kiểu chữ và màu của ứng dụng. */
     private JScrollPane createHtmlScrollPane(String html) {
         return UITheme.createHtmlScrollPane(html);
     }

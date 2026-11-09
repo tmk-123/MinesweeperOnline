@@ -8,7 +8,7 @@ import minesweeperonline.server.ServerConfig;
 public enum GameResult {
     VICTORY(ServerConfig.SCORE_VICTORY),
     DEFEAT(ServerConfig.SCORE_DEFEAT),
-    FORFEIT(ServerConfig.SCORE_FORFEIT),
+    FORFEIT(ServerConfig.SCORE_FORFEIT), // đầu hàng
     DRAW(ServerConfig.SCORE_DRAW),
     ONGOING(0);
 
